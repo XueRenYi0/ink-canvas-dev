@@ -92,25 +92,31 @@ namespace Ink_Canvas
             isShapePanelDragDropInEffect = false;
             Mouse.Capture(null);
 
-            //防拖飞：松手时把面板拉回屏幕工作区（主窗口全屏，窗口内坐标≈屏幕坐标）
+            //防拖飞：BorderDrawShape 现在在 Main_Grid 根层级（已脱离 Viewbox 缩放），
+            //Margin.Left/Top 就是窗口内绝对坐标，直接用窗口尺寸做边界校验
             try
             {
-                Point tl = BorderDrawShape.TranslatePoint(new Point(0, 0), this);
-                double w = BorderDrawShape.ActualWidth, h = BorderDrawShape.ActualHeight;
-                double wa = SystemParameters.WorkArea.Width, ha = SystemParameters.WorkArea.Height;
+                double x = BorderDrawShape.Margin.Left;
+                double y = BorderDrawShape.Margin.Top;
+                double w = BorderDrawShape.ActualWidth;
+                double h = BorderDrawShape.ActualHeight;
+                double wa = this.ActualWidth;
+                double ha = this.ActualHeight;
 
-                double dx = 0, dy = 0;
-                if (tl.X < -w * 0.5) dx = -w * 0.5 - tl.X;          //左侧：最多只允许一半出屏
-                if (tl.X > wa - w * 0.5) dx = wa - w * 0.5 - tl.X;  //右侧同
-                if (tl.Y < 0) dy = -tl.Y;                            //顶部：完全拉回
-                if (tl.Y + h > ha) dy = ha - h - tl.Y;               //底部同
+                const double allowHalfOut = 0.3; //允许最多 30% 出屏（悬浮条级别）
+                double minX = -w * allowHalfOut;
+                double maxX = wa - w * (1 - allowHalfOut);
+                double minY = -h * allowHalfOut;
+                double maxY = ha - h * (1 - allowHalfOut);
 
-                if (dx != 0 || dy != 0)
+                bool needClamp = x < minX || x > maxX || y < minY || y > maxY;
+                if (needClamp)
                 {
                     BorderDrawShape.Margin = new Thickness(
-                        BorderDrawShape.Margin.Left + dx, BorderDrawShape.Margin.Top + dy,
-                        BorderDrawShape.Margin.Right, BorderDrawShape.Margin.Bottom);
-                    LogHelper.WriteLogToFile($"[ShapePanel] 拖动越界已拉回 (dx={dx:F0},dy={dy:F0})", LogHelper.LogType.Event);
+                        Math.Max(minX, Math.Min(maxX, x)),
+                        Math.Max(minY, Math.Min(maxY, y)),
+                        0, 0);
+                    LogHelper.WriteLogToFile($"[ShapePanel] 拖动越界已拉回 (x={BorderDrawShape.Margin.Left:F0},y={BorderDrawShape.Margin.Top:F0})", LogHelper.LogType.Event);
                 }
             }
             catch { }
