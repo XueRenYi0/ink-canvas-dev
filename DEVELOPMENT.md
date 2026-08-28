@@ -6,9 +6,40 @@
 ## 项目现状
 
 - **框架**：.NET Framework 4.7.2 WPF（保持不动，Win10/Win11 均可运行）
-- **代码规模**：约 9000 行 C#，其中 MainWindow.xaml.cs 约 6866 行（巨石文件，后续逐步拆分）
 - **主要依赖**：iNKORE UI WPF、Autoupdater.NET、Microsoft.Office.Interop.PowerPoint、
   内置墨迹识别库（IACore.dll / IALoader.dll / IAWinFX.dll / Microsoft.Ink.dll）
+- **csproj 为 SDK 风格**：新增 .cs 文件自动包含进编译，无需手动登记
+
+## 代码结构（MainWindow 已拆分为分部类）
+
+原 MainWindow.xaml.cs 共 7662 行（巨石文件），已按原有 `#region` 边界
+**纯机械移动**拆分为以下分部类文件（逻辑零改动，git 可追溯）：
+
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| MainWindow.xaml.cs | 47 | 类声明骨架（唯一声明 `: Window` 基类） |
+| MW_Init.cs | 155 | 窗口初始化、定时器（PPT 检测/进程清理） |
+| MW_InkCanvas.cs | 122 | 墨迹画布基础功能 |
+| MW_Hotkeys.cs | 145 | 快捷键 |
+| MW_TimeMachine.cs | 356 | 撤销重做 |
+| MW_DefinitionsLoading.cs | 667 | 字段定义与初始化加载 |
+| MW_RightPanel.cs | 679 | 右侧工具面板与颜色按钮 |
+| MW_TouchEvents.cs | 439 | 触摸事件（含多指） |
+| MW_PPT.cs | 703 | PowerPoint 放映交互 |
+| MW_Settings.cs | 648 | 设置（行为/外观/自动化/手势等） |
+| MW_LeftPanel.cs | 120 | 左侧面板与其他控件 |
+| MW_SelectionGestures.cs | 509 | 墨迹选区与手势 |
+| MW_ShapeDrawing.cs | 1565 | 图形绘制（形状按钮） |
+| MW_WhiteboardControls.cs | 275 | 白板页面控制 |
+| MW_SimulatePressure.cs | 641 | 压感模拟与墨迹转图形 |
+| MW_MiscFunctions.cs | 402 | 杂项（自启/主题/截图/通知/工具） |
+| MW_FloatBar.cs | 515 | 浮动工具栏（含拖动） |
+| MW_SaveOpen.cs | 158 | 墨迹保存与打开 |
+| PenPlugins.cs | 289 | 自定义 StylusPlugin 渲染器（命名空间级类，非 MainWindow 成员） |
+
+注意：分部类共享同一类的全部字段，这只是**文件级拆分**（方便定位与修改），
+类内耦合未降低。后续功能开发（如笔记滚动）的代码请放到对应职责的新分部文件
+（如 `MW_Scroll.cs`），不要再往回堆。
 
 ## 构建方法
 
