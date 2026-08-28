@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -54,6 +54,76 @@ namespace Ink_Canvas
                 BorderDrawShape.Visibility = Visibility.Visible;
             }
         }
+
+        #region 图形面板：标题栏拖动 / 叉号关闭
+
+        //拖动状态（仅标题栏把手生效；Move 中持续校验左键，防 MouseUp 丢失导致卡死拖飞——悬浮条 bug 的教训）
+        bool isShapePanelDragDropInEffect = false;
+        Point shapePanelDragStartPos = new Point();
+        double shapePanelMarginLeftStart = 0, shapePanelMarginTopStart = 0;
+
+        private void BorderDrawShape_DragHandle_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+
+            isShapePanelDragDropInEffect = true;
+            shapePanelDragStartPos = e.GetPosition(null);
+            shapePanelMarginLeftStart = BorderDrawShape.Margin.Left;
+            shapePanelMarginTopStart = BorderDrawShape.Margin.Top;
+            Mouse.Capture((IInputElement)sender); //捕获：拖出标题区仍持续收到 Move/Up
+        }
+
+        private void BorderDrawShape_DragHandle_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isShapePanelDragDropInEffect) return;
+            if (e.LeftButton != MouseButtonState.Pressed) { isShapePanelDragDropInEffect = false; return; }
+
+            Point p = e.GetPosition(null);
+            double x = shapePanelMarginLeftStart + (p.X - shapePanelDragStartPos.X);
+            double y = shapePanelMarginTopStart + (p.Y - shapePanelDragStartPos.Y);
+            BorderDrawShape.Margin = new Thickness(x, y, BorderDrawShape.Margin.Right, BorderDrawShape.Margin.Bottom);
+        }
+
+        private void BorderDrawShape_DragHandle_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+            if (!isShapePanelDragDropInEffect) return;
+
+            isShapePanelDragDropInEffect = false;
+            Mouse.Capture(null);
+
+            //防拖飞：松手时把面板拉回屏幕工作区（主窗口全屏，窗口内坐标≈屏幕坐标）
+            try
+            {
+                Point tl = BorderDrawShape.TranslatePoint(new Point(0, 0), this);
+                double w = BorderDrawShape.ActualWidth, h = BorderDrawShape.ActualHeight;
+                double wa = SystemParameters.WorkArea.Width, ha = SystemParameters.WorkArea.Height;
+
+                double dx = 0, dy = 0;
+                if (tl.X < -w * 0.5) dx = -w * 0.5 - tl.X;          //左侧：最多只允许一半出屏
+                if (tl.X > wa - w * 0.5) dx = wa - w * 0.5 - tl.X;  //右侧同
+                if (tl.Y < 0) dy = -tl.Y;                            //顶部：完全拉回
+                if (tl.Y + h > ha) dy = ha - h - tl.Y;               //底部同
+
+                if (dx != 0 || dy != 0)
+                {
+                    BorderDrawShape.Margin = new Thickness(
+                        BorderDrawShape.Margin.Left + dx, BorderDrawShape.Margin.Top + dy,
+                        BorderDrawShape.Margin.Right, BorderDrawShape.Margin.Bottom);
+                    LogHelper.WriteLogToFile($"[ShapePanel] 拖动越界已拉回 (dx={dx:F0},dy={dy:F0})", LogHelper.LogType.Event);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>标题栏叉号：关闭图形面板</summary>
+        private void SymbolIconCloseShapePanel_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            BorderDrawShape.Visibility = Visibility.Collapsed;
+        }
+
+        #endregion
 
         #endregion Floating Bar Control
 

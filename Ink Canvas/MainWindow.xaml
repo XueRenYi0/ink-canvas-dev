@@ -1116,17 +1116,26 @@
                                     CornerRadius="8" Margin="-100,-265,-100,30" Height="240">
                                     <Viewbox Margin="0,0,0,2">
                                         <ui:SimpleStackPanel Spacing="-8" Orientation="Vertical">
-                                            <TextBlock FontSize="16" Foreground="{DynamicResource FloatBarForeground}"
-                                                       HorizontalAlignment="Left" Margin="10,8">
-                                                <Run Text="图形"/>
-                                                <Run Text="(第一行支持长按保持选中)" FontSize="10"/>
-                                            </TextBlock>
-                                            <ui:SymbolIcon Margin="0,-20,8,15" Symbol="Pin" MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp" Foreground="{DynamicResource FloatBarForeground}" HorizontalAlignment="Right"/>
+                                            <ui:SimpleStackPanel Orientation="Horizontal">
+                                                <TextBlock FontSize="16" Foreground="{DynamicResource FloatBarForeground}"
+                                                           Background="Transparent" Cursor="SizeAll"
+                                                           MouseLeftButtonDown="BorderDrawShape_DragHandle_MouseDown"
+                                                           MouseMove="BorderDrawShape_DragHandle_MouseMove"
+                                                           MouseLeftButtonUp="BorderDrawShape_DragHandle_MouseUp"
+                                                           HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,8,10,4">
+                                                    <Run Text="图形"/>
+                                                    <Run Text="(标题栏可拖动)" FontSize="10"/>
+                                                </TextBlock>
+                                                <ui:SimpleStackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                    <ui:SymbolIcon Symbol="Cancel" MouseDown="Border_MouseDown" MouseUp="SymbolIconCloseShapePanel_MouseUp" Foreground="{DynamicResource FloatBarForeground}"/>
+                                                    <ui:SymbolIcon Symbol="UnPin" MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp" Foreground="{DynamicResource FloatBarForeground}"/>
+                                                </ui:SimpleStackPanel>
+                                            </ui:SimpleStackPanel>
                                             <ui:SimpleStackPanel Margin="20,0,0,0" Orientation="Horizontal">
                                                 <ui:SimpleStackPanel Visibility="Collapsed" Margin="58,6,5,6" Width="54">
                                                     <Label Margin="0,0,0,-2" Content="自动隐藏" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
                                                     <Viewbox Height="25">
-                                                        <ui:ToggleSwitch Name="ToggleSwitchDrawShapeBorderAutoHide" Foreground="{DynamicResource FloatBarForeground}" FontFamily="Microsoft YaHei UI" Width="70" OnContent="开" OffContent="关" IsOn="True"/>
+                                                        <ui:ToggleSwitch Name="ToggleSwitchDrawShapeBorderAutoHide" Foreground="{DynamicResource FloatBarForeground}" FontFamily="Microsoft YaHei UI" Width="70" OnContent="开" OffContent="关" IsOn="False"/>
                                                     </Viewbox>
                                                 </ui:SimpleStackPanel>
                                             </ui:SimpleStackPanel>
@@ -1190,11 +1199,11 @@
                                                     </ui:SimpleStackPanel>
                                                 </Viewbox>
                                             </ui:SimpleStackPanel>
-                                            <!--我的图形：排在内置图形之后，由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
+                                            <!--我的图形：排在内置图形之后，由 MW_CustomShapes.cs 动态加载（每行 5 个与内置行对齐）；无自定义图形时整区折叠隐藏-->
                                             <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
                                                 <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
                                                            HorizontalAlignment="Left" Margin="16,4,0,0"/>
-                                                <ui:SimpleStackPanel Height="44" Spacing="10" Orientation="Horizontal" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
+                                                <ui:SimpleStackPanel Orientation="Vertical" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
                                             </ui:SimpleStackPanel>
                                         </ui:SimpleStackPanel>
                                     </Viewbox>

@@ -84,6 +84,11 @@ namespace Ink_Canvas
             {
                 if (Directory.Exists(CustomShapesDir))
                 {
+                    //每行 5 个（与内置图形行对齐，行高 50），超出自动换行
+                    const int PerRow = 5;
+                    iNKORE.UI.WPF.Modern.Controls.SimpleStackPanel row = null;
+                    int inRow = 0;
+
                     //按保存时间排序：旧图形在前，新存的排后面（与"排在原图形后面"的增长方向一致）
                     foreach (string file in Directory.GetFiles(CustomShapesDir, "*.isc").OrderBy(f => File.GetLastWriteTime(f)))
                     {
@@ -97,12 +102,25 @@ namespace Ink_Canvas
                         ImageSource thumb = RenderShapeThumbnail(strokes);
                         if (thumb == null) continue;
 
+                        //行满换新行
+                        if (row == null || inRow >= PerRow)
+                        {
+                            row = new iNKORE.UI.WPF.Modern.Controls.SimpleStackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Height = 50, //与内置图形行高一致
+                                Spacing = 10
+                            };
+                            StackPanelCustomShapes.Children.Add(row);
+                            inRow = 0;
+                        }
+
                         Image img = new Image();
                         img.Source = thumb;
                         img.MaxWidth = 44;
-                        img.MaxHeight = 32;
+                        img.MaxHeight = 34; //行高50 - 上下margin 8*2，视觉重量与内置图形接近
                         img.Stretch = Stretch.Uniform;
-                        img.Margin = new Thickness(0, 6, 0, 6);
+                        img.Margin = new Thickness(0, 8, 0, 8);
                         img.VerticalAlignment = VerticalAlignment.Center;
                         img.Cursor = Cursors.Hand;
                         img.Tag = file;
@@ -110,7 +128,8 @@ namespace Ink_Canvas
                         img.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
                         img.MouseUp += CustomShapeButton_MouseUp;
                         img.ContextMenu = BuildCustomShapeContextMenu(file);
-                        StackPanelCustomShapes.Children.Add(img);
+                        row.Children.Add(img);
+                        inRow++;
                     }
                 }
             }
