@@ -59,7 +59,11 @@ namespace Ink_Canvas
                     strokes.Save(fs); //ISF 二进制格式，含点数据与笔迹属性
                 }
                 LoadCustomShapes(); //立即刷新面板，立等可见
-                ShowToastNotification("已存为图形（图形面板 → 我的图形）"); //操作反馈：面板未开时用户无从察觉
+                //点击提示可直接打开图形面板（用户"不知道存到哪了"时一步直达）
+                ShowToastNotification("已存入「我的图形」— 点击此处查看", () =>
+                {
+                    BorderDrawShape.Visibility = Visibility.Visible;
+                });
             }
             catch (Exception ex)
             {
@@ -272,9 +276,10 @@ namespace Ink_Canvas
 
         /// <summary>
         /// 轻量 toast 通知：屏幕底部居中淡入，停留约1.6秒后淡出移除。
-        /// 不拦截鼠标（IsHitTestVisible=false），不打断书写；失败静默（仅反馈增强，非关键路径）。
+        /// 传入 onClick 则提示可点击（手型光标），点击执行动作并立即收起；
+        /// 未传 onClick 时不拦截鼠标（IsHitTestVisible=false），不打断书写。失败静默（仅反馈增强，非关键路径）。
         /// </summary>
-        private void ShowToastNotification(string message)
+        private void ShowToastNotification(string message, Action onClick = null)
         {
             try
             {
@@ -285,7 +290,6 @@ namespace Ink_Canvas
                 toast.Background = new SolidColorBrush(Color.FromArgb(190, 0, 0, 0)); //半透明黑底白字，深浅背景都清晰
                 toast.CornerRadius = new CornerRadius(18);
                 toast.Padding = new Thickness(18, 8, 18, 8);
-                toast.IsHitTestVisible = false;
                 toast.Opacity = 0;
                 toast.HorizontalAlignment = HorizontalAlignment.Center;
                 toast.VerticalAlignment = VerticalAlignment.Bottom;
@@ -297,6 +301,36 @@ namespace Ink_Canvas
                 tb.FontSize = 14;
                 toast.Child = tb;
 
+                DispatcherTimer timer = null;
+
+                //立即收起：快速淡出并移除（点击后/超时共用）
+                Action dismiss = () =>
+                {
+                    try
+                    {
+                        if (timer != null) timer.Stop();
+                        DoubleAnimation fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(250));
+                        fadeOut.Completed += (s2, e2) => rootGrid.Children.Remove(toast);
+                        toast.BeginAnimation(OpacityProperty, fadeOut);
+                    }
+                    catch { }
+                };
+
+                if (onClick != null)
+                {
+                    toast.IsHitTestVisible = true;
+                    toast.Cursor = Cursors.Hand;
+                    toast.MouseLeftButtonUp += (s, e) =>
+                    {
+                        try { onClick(); } catch { }
+                        dismiss();
+                    };
+                }
+                else
+                {
+                    toast.IsHitTestVisible = false;
+                }
+
                 rootGrid.Children.Add(toast); //加在最后 = 顶层渲染
 
                 //淡入
@@ -304,13 +338,11 @@ namespace Ink_Canvas
                     new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150)));
 
                 //停留后淡出并移除
-                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+                timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
                 timer.Tick += (s, e) =>
                 {
                     timer.Stop();
-                    DoubleAnimation fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(350));
-                    fadeOut.Completed += (s2, e2) => rootGrid.Children.Remove(toast);
-                    toast.BeginAnimation(OpacityProperty, fadeOut);
+                    dismiss();
                 };
                 timer.Start();
             }
