@@ -50,23 +50,25 @@ namespace Ink_Canvas
             lastBorderMouseDownObject = sender;
         }
 
-        bool isStrokeSelectionCloneOn = false;
         private void BorderStrokeSelectionClone_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (lastBorderMouseDownObject != sender) return;
 
-            if (isStrokeSelectionCloneOn)
-            {
-                BorderStrokeSelectionClone.Background = Brushes.Transparent;
+            //点击即克隆：立即复制一份选中墨迹，偏移一段距离后自动选中副本，
+            //用户可直接拖走（原交互为开关模式，拖动时才复制，易忘关、不直观）
+            var strokes = inkCanvas.GetSelectedStrokes();
+            if (strokes.Count == 0) return;
 
-                isStrokeSelectionCloneOn = false;
-            }
-            else
-            {
-                BorderStrokeSelectionClone.Background = new SolidColorBrush(StringToColor("#FF1ED760"));
+            var cloned = strokes.Clone();
+            var m = new Matrix();
+            m.Translate(24, 24); // 副本向右下偏移，与原件错开可见
+            cloned.Transform(m, false);
 
-                isStrokeSelectionCloneOn = true;
-            }
+            isProgramChangeStrokeSelection = true;
+            inkCanvas.Select(new StrokeCollection());
+            isProgramChangeStrokeSelection = false;
+            inkCanvas.Strokes.Add(cloned);
+            inkCanvas.Select(cloned);
         }
 
         private void BorderStrokeSelectionCloneToNewBoard_MouseUp(object sender, MouseButtonEventArgs e)
@@ -296,21 +298,7 @@ namespace Ink_Canvas
             isGridInkCanvasSelectionCoverMouseDown = true;
             if (e.ChangedButton != MouseButton.Left || dec.Count != 0) return;
 
-            //鼠标路径克隆（原实现只挂在 PreviewTouchDown 触摸事件上，鼠标/数位笔无效）：
-            //克隆开关开启时，按下瞬间复制一份选中墨迹，拖动移动的是副本，原件留在原地
-            if (isStrokeSelectionCloneOn)
-            {
-                StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
-                if (strokes.Count > 0)
-                {
-                    isProgramChangeStrokeSelection = true;
-                    inkCanvas.Select(new StrokeCollection());
-                    StrokesSelectionClone = strokes.Clone();
-                    inkCanvas.Select(strokes);
-                    isProgramChangeStrokeSelection = false;
-                    inkCanvas.Strokes.Add(StrokesSelectionClone);
-                }
-            }
+            //克隆已改为按钮点击即生成（见 BorderStrokeSelectionClone_MouseUp），此处仅负责拖动
 
             //开始鼠标拖动（捕获鼠标保证移出窗口也能收到 Move/Up）
             lastMousePointOnSelectionCover = e.GetPosition(null);
@@ -427,8 +415,6 @@ namespace Ink_Canvas
             else
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
-                BorderStrokeSelectionClone.Background = Brushes.Transparent;
-                isStrokeSelectionCloneOn = false;
                 updateBorderStrokeSelectionControlLocation();
             }
         }
@@ -540,16 +526,7 @@ namespace Ink_Canvas
                 centerPoint = touchPoint.Position;
                 lastTouchPointOnGridInkCanvasCover = touchPoint.Position;
 
-                if (isStrokeSelectionCloneOn)
-                {
-                    StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
-                    isProgramChangeStrokeSelection = true;
-                    inkCanvas.Select(new StrokeCollection());
-                    StrokesSelectionClone = strokes.Clone();
-                    inkCanvas.Select(strokes);
-                    isProgramChangeStrokeSelection = false;
-                    inkCanvas.Strokes.Add(StrokesSelectionClone);
-                }
+                //克隆已改为按钮点击即生成（见 BorderStrokeSelectionClone_MouseUp），触摸路径不再消费开关
             }
         }
 
