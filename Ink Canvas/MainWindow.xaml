@@ -1113,8 +1113,15 @@
                             <Grid Margin="3,5,0,5">
                                 <Image MouseUp="ImageDrawShape_MouseUp" MouseDown="Border_MouseDown" Margin="-2.5" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}"/>
                                 <Border x:Name="BorderDrawShape" Visibility="Visible" Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                                    CornerRadius="8" Margin="-100,-265,-100,30" Height="240">
-                                    <Viewbox Margin="0,0,0,2">
+                                    CornerRadius="8" Margin="-100,-265,-100,30" MinHeight="240">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <!--内置图形区：固定高度238（原240面板等效），Viewbox 保持原有缩放行为，图库增长不影响本区-->
+                                            <RowDefinition Height="238"/>
+                                            <!--图库区：脱离Viewbox不缩放，随行数增长，超3行滚动-->
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Viewbox Margin="0,0,0,2" Grid.Row="0">
                                         <ui:SimpleStackPanel Spacing="-8" Orientation="Vertical">
                                             <TextBlock FontSize="16" Foreground="{DynamicResource FloatBarForeground}"
                                                        HorizontalAlignment="Left" Margin="10,8">
@@ -1190,16 +1197,19 @@
                                                     </ui:SimpleStackPanel>
                                                 </Viewbox>
                                             </ui:SimpleStackPanel>
-                                            <!--我的图形：排在内置图形之后，由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
-                                            <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
-                                                <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
-                                                           HorizontalAlignment="Left" Margin="16,4,0,0"/>
-                                                <!--垂直容器：每行由代码按内置图形行样式（Horizontal+Spacing10）动态创建，每行5个自动换行-->
-                                                <ui:SimpleStackPanel Orientation="Vertical" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
-                                            </ui:SimpleStackPanel>
                                         </ui:SimpleStackPanel>
                                     </Viewbox>
-                                </Border>
+                                            <!--图库：脱离Viewbox独立区域（Row1），不缩放不压缩内置图形；超3行内部滚动-->
+                                            <ScrollViewer Grid.Row="1" MaxHeight="170" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,2,0,4">
+                                                <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
+                                                    <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
+                                                               HorizontalAlignment="Left" Margin="16,4,0,0"/>
+                                                    <!--垂直容器：每行由代码按内置图形行样式（Horizontal+Spacing10）动态创建，每行5个自动换行-->
+                                                    <ui:SimpleStackPanel Orientation="Vertical" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
+                                                </ui:SimpleStackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </Border>
                             </Grid>
                             <ui:SymbolIcon Symbol="Undo" Foreground="{DynamicResource FloatBarForeground}" Margin="0,0,-2,0"
                                            Opacity="{Binding ElementName=BtnUndo, Path=IsEnabled, Converter={StaticResource IsEnabledToOpacityConverter}}"
