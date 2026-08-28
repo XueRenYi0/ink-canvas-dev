@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
 namespace Ink_Canvas
 {
@@ -18,8 +18,24 @@ namespace Ink_Canvas
         public Gesture Gesture { get; set; } = new Gesture();
         [JsonProperty("inkToShape")]
         public InkToShape InkToShape { get; set; } = new InkToShape();
+        [JsonProperty("shortcuts")]
+        public Shortcuts Shortcuts { get; set; } = new Shortcuts();
         [JsonProperty("startup")]
         public Startup Startup { get; set; } = new Startup();
+    }
+
+    /// <summary>
+    /// 全局快捷键（RegisterHotKey 系统级，任何应用下按都触发，不依赖画布焦点）。
+    /// 手势字符串格式："Ctrl+Alt+R"（修饰键+主键，修饰键至少含 Ctrl/Alt/Win 之一，防裸键冲突）。
+    /// 新增快捷键：Settings 加属性 → MW_Shortcuts.cs 注册 → 设置面板加一行录制控件。
+    /// </summary>
+    public class Shortcuts
+    {
+        [JsonProperty("isGlobalShortcutsEnabled")]
+        public bool IsGlobalShortcutsEnabled { get; set; } = true;
+
+        [JsonProperty("restart")]
+        public string Restart { get; set; } = "Ctrl+Alt+R";
     }
 
     public class Canvas
