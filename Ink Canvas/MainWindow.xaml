@@ -983,27 +983,34 @@
                 <ScaleTransform x:Name="ViewboxFloatingBarScaleTransform" ScaleX="1" ScaleY="1"/>
             </Viewbox.LayoutTransform>
             <ui:SimpleStackPanel Orientation="Horizontal">
-                <Border Width="36" Height="36" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}" MouseDown="SymbolIconEmoji_MouseDown" MouseUp="SymbolIconEmoji_MouseUp"
-                        ToolTip="单击展开/收起工具栏 · 按住拖动移动 · 右键更多功能">
-                    <Border.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="展开/收起工具栏" Click="MenuItemFloatBarToggle_Click"/>
-                            <MenuItem Header="回到默认位置" Click="MenuItemFloatBarResetPos_Click"/>
-                            <Separator/>
-                            <MenuItem Header="打开设置" Click="MenuItemFloatBarSettings_Click"/>
-                            <MenuItem Header="重启画板" Click="MenuItemFloatBarRestart_Click"/>
-                            <MenuItem Header="退出程序" Click="MenuItemFloatBarExit_Click"/>
-                        </ContextMenu>
-                    </Border.ContextMenu>
+                <Border Width="36" Height="36" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}" MouseDown="SymbolIconEmoji_MouseDown" MouseUp="SymbolIconEmoji_MouseUp" ToolTip="单击展开/收起工具条&#10;按住拖动改变位置&#10;右键打开菜单">
                     <ui:SimpleStackPanel Margin="0,5,0,5" Spacing="10" Orientation="Horizontal"
                                          HorizontalAlignment="Center">
                         <ui:SymbolIcon Name="SymbolIconEmoji" Symbol="Emoji2" Foreground="{DynamicResource FloatBarForeground}"/>
                     </ui:SimpleStackPanel>
+                    <Border.ContextMenu>
+                        <!--右键快捷菜单：全部复用现有 handler（签名兼容 RoutedEventArgs）-->
+                        <ContextMenu>
+                            <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
+                            <MenuItem Header="重启画板" Click="BtnRestart_Click"/>
+                            <Separator/>
+                            <MenuItem Header="退出" Click="BtnExit_Click"/>
+                        </ContextMenu>
+                    </Border.ContextMenu>
                 </Border>
-                <Border Margin="5,0,0,0" Visibility="Visible" Height="36" Name="BorderFloatingBarMainControls" Background="{DynamicResource FloatBarBackground}" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
+                <Border Margin="5,0,0,0" Visibility="Visible" Opacity="0" Height="36" Name="BorderFloatingBarMainControls" Background="{DynamicResource FloatBarBackground}" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
                     <Border.RenderTransform>
-                        <ScaleTransform />
+                        <!--初始 ScaleX=0：启动默认收起为单笑脸图标，与 borderFloatingBarMainControlsVisibility=false 对应-->
+                        <ScaleTransform ScaleX="0"/>
                     </Border.RenderTransform>
+                    <Border.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
+                            <MenuItem Header="重启画板" Click="BtnRestart_Click"/>
+                            <Separator/>
+                            <MenuItem Header="退出" Click="BtnExit_Click"/>
+                        </ContextMenu>
+                    </Border.ContextMenu>
                     <ui:SimpleStackPanel Name="StackPanelFloatingBar" Spacing="10" Orientation="Horizontal">
                         <ui:SimpleStackPanel Name="StackPanelCanvacMain" Margin="10,5,0,5" Spacing="10" Orientation="{Binding ElementName=StackPanelFloatingBar, Path=Orientation}">
                             <Grid Height="24" Width="0">

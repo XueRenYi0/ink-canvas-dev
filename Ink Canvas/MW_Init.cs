@@ -85,12 +85,6 @@ namespace Ink_Canvas
             InitNoteScroll();
             InitCustomShapes();
 
-            //启动即收起悬浮工具栏，只留笑脸把手（无动画；单击把手展开；PPT 放映仍会自动展开）
-            if (!App.StartArgs.Contains("-o"))
-            {
-                SetBorderFloatingBarMainControlsVisibility(false, false);
-            }
-
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
         }
 
