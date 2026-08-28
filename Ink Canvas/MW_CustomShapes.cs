@@ -114,10 +114,22 @@ namespace Ink_Canvas
                 if (bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0) return null;
 
                 const double margin = 6;
+
+                //缩放系数：图形整体（含 margin）必须装进 120px 内，笔画绘制与位图尺寸同步缩放
+                //（bug 修复：此前只缩了位图尺寸没缩绘制内容，大于120px的图形只截到包围盒左上角空白区域，缩略图全空）
+                const int maxSize = 120;
+                double rawW = bounds.Width + margin * 2;
+                double rawH = bounds.Height + margin * 2;
+                double k = Math.Min(1.0, Math.Min(maxSize / rawW, maxSize / rawH));
+
                 DrawingVisual dv = new DrawingVisual();
                 using (DrawingContext dc = dv.RenderOpen())
                 {
-                    dc.PushTransform(new TranslateTransform(-bounds.Left + margin, -bounds.Top + margin));
+                    //变换：p' = (p - bounds左上角) * k + margin，缩放与平移合并进一个矩阵
+                    Matrix mtx = new Matrix();
+                    mtx.Scale(k, k);
+                    mtx.Translate(margin - k * bounds.Left, margin - k * bounds.Top);
+                    dc.PushTransform(new MatrixTransform(mtx));
                     foreach (Stroke s in strokes)
                     {
                         s.Draw(dc);
@@ -125,16 +137,8 @@ namespace Ink_Canvas
                     dc.Pop();
                 }
 
-                int w = (int)Math.Ceiling(bounds.Width + margin * 2);
-                int h = (int)Math.Ceiling(bounds.Height + margin * 2);
-                //限制缩略图尺寸，防止巨大墨迹生成超大位图
-                const int maxSize = 120;
-                if (w > maxSize || h > maxSize)
-                {
-                    double k = Math.Min(maxSize / (double)w, maxSize / (double)h);
-                    w = Math.Max(1, (int)(w * k));
-                    h = Math.Max(1, (int)(h * k));
-                }
+                int w = Math.Max(1, (int)Math.Ceiling(rawW * k));
+                int h = Math.Max(1, (int)Math.Ceiling(rawH * k));
 
                 RenderTargetBitmap rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
                 rtb.Render(dv);
