@@ -7,7 +7,9 @@ using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Ink_Canvas
@@ -57,6 +59,7 @@ namespace Ink_Canvas
                     strokes.Save(fs); //ISF 二进制格式，含点数据与笔迹属性
                 }
                 LoadCustomShapes(); //立即刷新面板，立等可见
+                ShowToastNotification("已存为图形（图形面板 → 我的图形）"); //操作反馈：面板未开时用户无从察觉
             }
             catch (Exception ex)
             {
@@ -129,6 +132,7 @@ namespace Ink_Canvas
                     {
                         File.Delete(file);
                         LoadCustomShapes(); //立即刷新面板
+                        ShowToastNotification("已删除该图形");
                     }
                 }
                 catch (Exception ex)
@@ -263,6 +267,57 @@ namespace Ink_Canvas
         }
 
         #endregion 插入
+
+        #region 操作反馈
+
+        /// <summary>
+        /// 轻量 toast 通知：屏幕底部居中淡入，停留约1.6秒后淡出移除。
+        /// 不拦截鼠标（IsHitTestVisible=false），不打断书写；失败静默（仅反馈增强，非关键路径）。
+        /// </summary>
+        private void ShowToastNotification(string message)
+        {
+            try
+            {
+                var rootGrid = Main_Grid;
+                if (rootGrid == null) return;
+
+                Border toast = new Border();
+                toast.Background = new SolidColorBrush(Color.FromArgb(190, 0, 0, 0)); //半透明黑底白字，深浅背景都清晰
+                toast.CornerRadius = new CornerRadius(18);
+                toast.Padding = new Thickness(18, 8, 18, 8);
+                toast.IsHitTestVisible = false;
+                toast.Opacity = 0;
+                toast.HorizontalAlignment = HorizontalAlignment.Center;
+                toast.VerticalAlignment = VerticalAlignment.Bottom;
+                toast.Margin = new Thickness(0, 0, 0, SystemParameters.WorkArea.Height * 0.10);
+
+                TextBlock tb = new TextBlock();
+                tb.Text = message;
+                tb.Foreground = Brushes.White;
+                tb.FontSize = 14;
+                toast.Child = tb;
+
+                rootGrid.Children.Add(toast); //加在最后 = 顶层渲染
+
+                //淡入
+                toast.BeginAnimation(OpacityProperty,
+                    new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150)));
+
+                //停留后淡出并移除
+                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+                timer.Tick += (s, e) =>
+                {
+                    timer.Stop();
+                    DoubleAnimation fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(350));
+                    fadeOut.Completed += (s2, e2) => rootGrid.Children.Remove(toast);
+                    toast.BeginAnimation(OpacityProperty, fadeOut);
+                };
+                timer.Start();
+            }
+            catch { }
+        }
+
+        #endregion 操作反馈
 
         #endregion 自定义图形
     }
