@@ -22,8 +22,9 @@ namespace Ink_Canvas
     /// 这样橡皮命中检测、墨迹保存、撤销/重做（TimeMachine 快照与画布
     /// 共享同一批 Stroke 对象引用）都天然保持坐标一致。
     /// 新墨迹直接写在当前可视区域（旧墨迹已物化移走，屏幕自然空白）。
-    /// 启用范围：白板/黑板模式 + 屏幕注释模式（滚轮与按钮均可），
-    /// PPT 放映中禁用（避免干扰翻页习惯）。
+    /// 启用范围：画布可见（正在书写）时——白板/黑板与屏幕/PPT 注释模式；
+    /// 画布收起时滚轮穿透给底层应用（PPT 翻页等），互不干扰。
+    /// 后续统一快捷键系统可直接注册 ScrollNote(delta)。
     /// </summary>
     public partial class MainWindow
     {
@@ -43,16 +44,16 @@ namespace Ink_Canvas
 
         /// <summary>
         /// 当前是否允许笔记滚动：
-        /// 白板/黑板模式（currentMode==1）或屏幕注释模式（currentMode==0 且非 PPT 放映）。
-        /// PPT 放映判定：放映开始时会显示 BtnPPTSlideShowEnd（结束放映按钮）。
+        /// 画布可见（正在书写）即可滚——白板/黑板模式，或屏幕/PPT 注释模式且画布已激活。
+        /// 画布收起时滚轮穿透给底层应用（如 PPT 放映翻页），互不干扰。
+        /// 后续统一快捷键系统可直接注册 ScrollNote()。
         /// </summary>
         private bool IsNoteScrollActive
         {
             get
             {
-                if (currentMode == 1) return true;                       // 白板/黑板
-                if (currentMode != 0) return false;                      // 其他模式
-                return BtnPPTSlideShowEnd.Visibility != Visibility.Visible; // 屏幕模式，但排除 PPT 放映
+                if (inkCanvas.Visibility != Visibility.Visible) return false; // 画布收起：滚轮还给系统
+                return currentMode == 0 || currentMode == 1;                  // 屏幕注释 / 白板黑板
             }
         }
 
