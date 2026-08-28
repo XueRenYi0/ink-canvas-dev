@@ -1292,9 +1292,9 @@
         <Grid Name="GridForFloatingBarDraging" Background="#01000000" Visibility="Collapsed"
               MouseMove="SymbolIconEmoji_MouseMove" MouseUp="SymbolIconEmoji_MouseUp"/>
         <InkCanvas Name="InkCanvasForInkReplay" MouseDown="InkCanvasForInkReplay_MouseDown" Visibility="Collapsed" EditingMode="None" Background="Transparent"/>
-        <!--笔记上下滚动控制：仅白板/黑板模式可见（可见性随白板背景联动），逻辑见 MW_Scroll.cs-->
+        <!--笔记上下滚动控制：白板/黑板与屏幕注释模式可见（MW_Scroll.cs 定时器统一控制可见性），支持滚轮与按钮-->
         <Grid x:Name="GridNoteScrollControls" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
-              Visibility="{Binding ElementName=GridBackgroundCover, Path=Visibility}">
+              Visibility="Collapsed">
             <ui:SimpleStackPanel Spacing="12">
                 <Border x:Name="BorderScrollUp" Width="44" Height="44" CornerRadius="22" Cursor="Hand"
                         Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}"

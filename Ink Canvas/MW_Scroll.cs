@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Point = System.Windows.Point;
 
 namespace Ink_Canvas
@@ -21,6 +22,8 @@ namespace Ink_Canvas
     /// 这样橡皮命中检测、墨迹保存、撤销/重做（TimeMachine 快照与画布
     /// 共享同一批 Stroke 对象引用）都天然保持坐标一致。
     /// 新墨迹直接写在当前可视区域（旧墨迹已物化移走，屏幕自然空白）。
+    /// 启用范围：白板/黑板模式 + 屏幕注释模式（滚轮与按钮均可），
+    /// PPT 放映中禁用（避免干扰翻页习惯）。
     /// </summary>
     public partial class MainWindow
     {
@@ -29,16 +32,47 @@ namespace Ink_Canvas
         /// <summary>当前累计滚动量：&gt;0 表示已向下滚动（历史墨迹已向上平移）。仅作记账，不参与坐标计算。</summary>
         double _noteScrollOffsetY = 0;
 
-        /// <summary>一次滚动的步长：工作区高度的 70%（约一屏板书，类似翻页）</summary>
-        double NoteScrollStep => SystemParameters.WorkArea.Height * 0.7;
+        /// <summary>按钮单次点击的步长：工作区高度的 35%（小半屏）</summary>
+        double NoteScrollButtonStep => SystemParameters.WorkArea.Height * 0.35;
+
+        /// <summary>滚轮每格（Delta=120）的步长：工作区高度的 10%，细粒度顺滑</summary>
+        double NoteScrollWheelStep => SystemParameters.WorkArea.Height * 0.10;
+
+        /// <summary>按钮可见性同步定时器（模式切换点分散，统一低频同步，避免逐点挂钩）</summary>
+        DispatcherTimer _noteScrollVisibilityTimer;
 
         /// <summary>
-        /// 初始化滚动功能（由 MainWindow 构造函数调用）。
-        /// 画布墨迹清空（清屏 / 换页 / 模式切换的中转过程）时滚动位置归零。
+        /// 当前是否允许笔记滚动：
+        /// 白板/黑板模式（currentMode==1）或屏幕注释模式（currentMode==0 且非 PPT 放映）。
+        /// PPT 放映判定：放映开始时会显示 BtnPPTSlideShowEnd（结束放映按钮）。
+        /// </summary>
+        private bool IsNoteScrollActive
+        {
+            get
+            {
+                if (currentMode == 1) return true;                       // 白板/黑板
+                if (currentMode != 0) return false;                      // 其他模式
+                return BtnPPTSlideShowEnd.Visibility != Visibility.Visible; // 屏幕模式，但排除 PPT 放映
+            }
+        }
+
+        /// <summary>
+        /// 初始化滚动功能（由 MainWindow 构造函数调用）：
+        /// 1. 墨迹清空（清屏/换页/模式切换中转）时滚动记账归零；
+        /// 2. 挂滚轮事件；
+        /// 3. 启动按钮可见性同步定时器。
         /// </summary>
         private void InitNoteScroll()
         {
             inkCanvas.Strokes.StrokesChanged += NoteScroll_StrokesChanged;
+            inkCanvas.PreviewMouseWheel += InkCanvas_PreviewMouseWheel;
+
+            _noteScrollVisibilityTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+            _noteScrollVisibilityTimer.Tick += (s, e) =>
+            {
+                GridNoteScrollControls.Visibility = IsNoteScrollActive ? Visibility.Visible : Visibility.Collapsed;
+            };
+            _noteScrollVisibilityTimer.Start();
         }
 
         private void NoteScroll_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
@@ -49,14 +83,25 @@ namespace Ink_Canvas
             if (inkCanvas.Strokes.Count == 0) _noteScrollOffsetY = 0;
         }
 
+        private void InkCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (!IsNoteScrollActive) return;
+
+            // 滚轮向上（正 Delta）= 回看上方历史；向下 = 露出下方空白
+            var notches = e.Delta / 120.0;
+            if (Math.Abs(notches) < 0.01) return;
+            ScrollNote(-notches * NoteScrollWheelStep);
+            e.Handled = true;
+        }
+
         private void BtnScrollUp_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            ScrollNote(-NoteScrollStep);
+            ScrollNote(-NoteScrollButtonStep);
         }
 
         private void BtnScrollDown_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            ScrollNote(NoteScrollStep);
+            ScrollNote(NoteScrollButtonStep);
         }
 
         /// <summary>
@@ -66,8 +111,8 @@ namespace Ink_Canvas
         /// </summary>
         private void ScrollNote(double delta)
         {
-            // 防御：仅白板/黑板模式（按钮可见性已由 XAML 绑定控制，此处双保险）
-            if (GridBackgroundCover.Visibility != Visibility.Visible) return;
+            // 防御：仅白板/黑板与屏幕注释模式（与按钮可见性逻辑双保险）
+            if (!IsNoteScrollActive) return;
 
             var target = Math.Max(0, _noteScrollOffsetY + delta);
             var actual = target - _noteScrollOffsetY;
