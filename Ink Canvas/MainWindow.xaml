@@ -173,11 +173,7 @@
                         <Border CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Height="40">
                             <ui:SimpleStackPanel VerticalAlignment="Center" Spacing="5" Margin="0,-10">
                                 <ui:SimpleStackPanel Orientation="Horizontal" Spacing="15">
-                                    <Grid Height="22" Width="22" MouseDown="Border_MouseDown" MouseUp="ImageRotate45_MouseUp">
-                                        <ui:SymbolIcon Symbol="Rotate" Foreground="{DynamicResource FloatBarForeground}"/>
-                                        <TextBlock Text="15°" FontSize="7" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-3"/>
-                                    </Grid>
+                                    <Image Source="{DynamicResource Rotate15DrawingImage}" Height="22" MouseDown="Border_MouseDown" MouseUp="ImageRotate45_MouseUp"/>
                                     <Image Source="{DynamicResource Rotate90DrawingImage}" Height="22" MouseDown="Border_MouseDown" MouseUp="ImageRotate90_MouseUp"/>
                                 </ui:SimpleStackPanel>
                                 <TextBlock Text="旋转" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
