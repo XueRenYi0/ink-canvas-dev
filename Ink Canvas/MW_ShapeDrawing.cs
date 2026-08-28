@@ -78,62 +78,6 @@ namespace Ink_Canvas
             }
         }
 
-        #region 面板拖动与关闭
-
-        /// <summary>关闭图形面板（叉号）。不影响"存为图形"等功能，只是收起面板。</summary>
-        private void DrawShapeClose_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (lastBorderMouseDownObject != sender) return;
-            BorderDrawShape.Visibility = Visibility.Collapsed;
-        }
-
-        //标题栏拖动状态
-        private bool _drawShapeDragging = false;
-        private Point _drawShapeDragStart;      // 按下时鼠标相对面板的偏移
-        private Thickness _drawShapeDragMargin; // 按下时的 Margin
-
-        /// <summary>
-        /// 标题栏拖动整个图形面板：按住拖动改变 BorderDrawShape.Margin.Left/Top（Right/Bottom 保持 -100/30 的定位技巧不变）。
-        /// 坐标系与悬浮条拖动一致（Margin.Left/Top 即面板左上角相对定位原点的偏移）。
-        /// </summary>
-        private void DrawShapeTitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _drawShapeDragging = true;
-            _drawShapeDragMargin = BorderDrawShape.Margin;
-            _drawShapeDragStart = e.GetPosition(null);
-            DrawShapeTitleBar.CaptureMouse();
-            DrawShapeTitleBar.MouseMove += DrawShapeTitleBar_MouseMove;
-            DrawShapeTitleBar.MouseLeftButtonUp += DrawShapeTitleBar_MouseLeftButtonUp;
-            e.Handled = true; // 阻止冒泡触发 Border_MouseDown 等
-        }
-
-        private void DrawShapeTitleBar_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (!_drawShapeDragging) return;
-            Point cur = e.GetPosition(null);
-            double newLeft = _drawShapeDragMargin.Left + (cur.X - _drawShapeDragStart.X);
-            double newTop = _drawShapeDragMargin.Top + (cur.Y - _drawShapeDragStart.Y);
-
-            //合法性校验：面板不许飞出屏幕工作区（含缓冲），防拖丢（与悬浮条 SetFloatingBarPosition 同一防御思想）
-            double w = BorderDrawShape.ActualWidth > 0 ? BorderDrawShape.ActualWidth : 200;
-            double h = BorderDrawShape.ActualHeight > 0 ? BorderDrawShape.ActualHeight : 200;
-            const double buf = 100;
-            if (newLeft < -w - buf || newLeft > SystemParameters.WorkArea.Width + buf
-                || newTop < -h - buf || newTop > SystemParameters.WorkArea.Height + buf) return;
-
-            BorderDrawShape.Margin = new Thickness(newLeft, newTop, _drawShapeDragMargin.Right, _drawShapeDragMargin.Bottom);
-        }
-
-        private void DrawShapeTitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            _drawShapeDragging = false;
-            DrawShapeTitleBar.ReleaseMouseCapture();
-            DrawShapeTitleBar.MouseMove -= DrawShapeTitleBar_MouseMove;
-            DrawShapeTitleBar.MouseLeftButtonUp -= DrawShapeTitleBar_MouseLeftButtonUp;
-        }
-
-        #endregion 面板拖动与关闭
-
         object lastMouseDownSender = null;
         DateTime lastMouseDownTime = DateTime.MinValue;
 

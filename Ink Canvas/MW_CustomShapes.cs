@@ -84,7 +84,6 @@ namespace Ink_Canvas
             {
                 if (Directory.Exists(CustomShapesDir))
                 {
-                    bool isFirst = true;
                     //按保存时间排序：旧图形在前，新存的排后面（与"排在原图形后面"的增长方向一致）
                     foreach (string file in Directory.GetFiles(CustomShapesDir, "*.isc").OrderBy(f => File.GetLastWriteTime(f)))
                     {
@@ -100,12 +99,10 @@ namespace Ink_Canvas
 
                         Image img = new Image();
                         img.Source = thumb;
-                        img.MaxWidth = 40;
-                        img.MaxHeight = 26;
+                        img.MaxWidth = 44;
+                        img.MaxHeight = 32;
                         img.Stretch = Stretch.Uniform;
-                        //对齐内置图形行：行高50、图标垂直居中、首个图标左Margin=16（与内置行起点一致），后续图标左Margin=0（Spacing=10 控制间距）
-                        img.Margin = isFirst ? new Thickness(16, 12, 0, 12) : new Thickness(0, 12, 0, 12);
-                        isFirst = false;
+                        img.Margin = new Thickness(2, 6, 2, 6); //左右2px间距，WrapPanel 每行5列不挤
                         img.VerticalAlignment = VerticalAlignment.Center;
                         img.Cursor = Cursors.Hand;
                         img.Tag = file;

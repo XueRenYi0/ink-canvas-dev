@@ -1113,27 +1113,15 @@
                             <Grid Margin="3,5,0,5">
                                 <Image MouseUp="ImageDrawShape_MouseUp" MouseDown="Border_MouseDown" Margin="-2.5" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}"/>
                                 <Border x:Name="BorderDrawShape" Visibility="Visible" Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                                    CornerRadius="8" Margin="-100,-265,-100,30">
-                                    <ui:SimpleStackPanel Spacing="0" Orientation="Vertical">
-                                        <!--标题栏：拖动手柄（按住拖动整个面板）+ 图钉锁定 + 叉号关闭-->
-                                        <Grid x:Name="DrawShapeTitleBar" Height="30" Cursor="SizeAll" Background="Transparent"
-                                              MouseLeftButtonDown="DrawShapeTitleBar_MouseLeftButtonDown">
-                                            <TextBlock FontSize="14" Foreground="{DynamicResource FloatBarForeground}"
-                                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0">
-                                                <Run Text="图形"/>
-                                                <Run Text="(拖动此栏移动 · 第一行长按保持选中)" FontSize="9"/>
-                                            </TextBlock>
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
-                                                <ui:SymbolIcon Symbol="Pin" Width="22" Height="22" Cursor="Hand"
-                                                               MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp"
-                                                               Foreground="{DynamicResource FloatBarForeground}" ToolTip="置顶锁定（不自动隐藏）"/>
-                                                <ui:SymbolIcon Symbol="Clear" Width="22" Height="22" Cursor="Hand" Margin="4,0,2,0"
-                                                               MouseDown="Border_MouseDown" MouseUp="DrawShapeClose_MouseUp"
-                                                               Foreground="{DynamicResource FloatBarForeground}" ToolTip="关闭面板"/>
-                                            </StackPanel>
-                                        </Grid>
-                                        <Viewbox Margin="0,0,0,2">
+                                    CornerRadius="8" Margin="-100,-265,-100,30" MinHeight="240">
+                                    <Viewbox Margin="0,0,0,2">
                                         <ui:SimpleStackPanel Spacing="-8" Orientation="Vertical">
+                                            <TextBlock FontSize="16" Foreground="{DynamicResource FloatBarForeground}"
+                                                       HorizontalAlignment="Left" Margin="10,8">
+                                                <Run Text="图形"/>
+                                                <Run Text="(第一行支持长按保持选中)" FontSize="10"/>
+                                            </TextBlock>
+                                            <ui:SymbolIcon Margin="0,-20,8,15" Symbol="Pin" MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp" Foreground="{DynamicResource FloatBarForeground}" HorizontalAlignment="Right"/>
                                             <ui:SimpleStackPanel Margin="20,0,0,0" Orientation="Horizontal">
                                                 <ui:SimpleStackPanel Visibility="Collapsed" Margin="58,6,5,6" Width="54">
                                                     <Label Margin="0,0,0,-2" Content="自动隐藏" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
@@ -1202,15 +1190,15 @@
                                                     </ui:SimpleStackPanel>
                                                 </Viewbox>
                                             </ui:SimpleStackPanel>
-                                            <!--我的图形：排在内置图形之后，行高/间距/左起点与内置行一致（50px高、左Margin16）；由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
+                                            <!--我的图形：排在内置图形之后，由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
                                             <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
                                                 <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
-                                                           HorizontalAlignment="Left" Margin="16,2,0,0"/>
-                                                <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal" Name="StackPanelCustomShapes"/>
+                                                           HorizontalAlignment="Left" Margin="16,4,0,0"/>
+                                                <!--WrapPanel：每行5列自动换行，与内置图形列数对齐；MinHeight 保证内容多时面板撑高不被遮挡-->
+                                                <WrapPanel Orientation="Horizontal" MinHeight="44" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
                                             </ui:SimpleStackPanel>
                                         </ui:SimpleStackPanel>
-                                        </Viewbox>
-                                    </ui:SimpleStackPanel>
+                                    </Viewbox>
                                 </Border>
                             </Grid>
                             <ui:SymbolIcon Symbol="Undo" Foreground="{DynamicResource FloatBarForeground}" Margin="0,0,-2,0"
