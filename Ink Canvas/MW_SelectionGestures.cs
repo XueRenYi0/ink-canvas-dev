@@ -228,7 +228,7 @@ namespace Ink_Canvas
             center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
 
             // Update matrix to reflect translation/rotation
-            m.RotateAt(45, center.X, center.Y);  // 旋转
+            m.RotateAt(15, center.X, center.Y);  // 旋转（原 45°，改为 15° 细步进，教学场景更实用）
 
             StrokeCollection targetStrokes = inkCanvas.GetSelectedStrokes();
             foreach (Stroke stroke in targetStrokes)
@@ -374,9 +374,123 @@ namespace Ink_Canvas
             }
         }
 
+        #region 选中缩放/还原
+
+        //选中快照：SelectionChanged 捕获（还原 = 恢复到本次选中时的状态）
+        Dictionary<Stroke, Tuple<StylusPointCollection, DrawingAttributes>> SelectionSnapshot;
+
+        private void GridSelectionScaleUp_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            ScaleSelection(1.1);
+        }
+
+        private void GridSelectionScaleDown_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            ScaleSelection(0.9);
+        }
+
+        /// <summary>以选区中心整体缩放（点坐标 + 笔画粗细同步，与触摸双指缩放行为一致）</summary>
+        private void ScaleSelection(double factor)
+        {
+            var strokes = inkCanvas.GetSelectedStrokes();
+            if (strokes.Count == 0) return;
+
+            Rect bounds = inkCanvas.GetSelectionBounds();
+            var m = new Matrix();
+            m.ScaleAt(factor, factor, bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
+
+            foreach (Stroke stroke in strokes)
+            {
+                stroke.Transform(m, false); //触发 StylusPointsChanged，自动进撤销历史
+                try
+                {
+                    double w = stroke.DrawingAttributes.Width * factor;
+                    double h = stroke.DrawingAttributes.Height * factor;
+                    //超出 WPF 允许范围则夹取（点坐标照常缩放，仅笔宽受限）
+                    w = Math.Max(DrawingAttributes.MinWidth, Math.Min(DrawingAttributes.MaxWidth, w));
+                    h = Math.Max(DrawingAttributes.MinHeight, Math.Min(DrawingAttributes.MaxHeight, h));
+                    stroke.DrawingAttributes.Width = w;
+                    stroke.DrawingAttributes.Height = h;
+                }
+                catch { }
+            }
+
+            CommitDrawingAttributesHistoryNow();
+            updateBorderStrokeSelectionControlLocation();
+        }
+
+        private void GridSelectionScaleRestore_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+
+            var strokes = inkCanvas.GetSelectedStrokes();
+            if (strokes.Count == 0 || SelectionSnapshot == null) return;
+
+            var history = new Dictionary<Stroke, Tuple<StylusPointCollection, StylusPointCollection>>();
+            foreach (Stroke s in strokes)
+            {
+                if (!SelectionSnapshot.TryGetValue(s, out var snap)) continue;
+                try
+                {
+                    var oldPts = s.StylusPoints.Clone();
+                    s.StylusPoints = snap.Item1; //赋值触发 StylusPointsReplaced，不自动提交历史，下面手动提交
+                    s.DrawingAttributes.Width = snap.Item2.Width;
+                    s.DrawingAttributes.Height = snap.Item2.Height;
+                    history[s] = new Tuple<StylusPointCollection, StylusPointCollection>(oldPts, s.StylusPoints.Clone());
+                }
+                catch { }
+            }
+
+            if (history.Count > 0)
+            {
+                timeMachine.CommitStrokeManipulationHistory(history);
+                foreach (var item in history)
+                {
+                    StrokeInitialHistory[item.Key] = item.Value.Item2;
+                }
+            }
+            CommitDrawingAttributesHistoryNow();
+            updateBorderStrokeSelectionControlLocation();
+        }
+
+        /// <summary>立即提交笔画粗细变更历史（避免滞留到下次拖动/缩放时才一并提交，导致撤销步骤混乱）</summary>
+        private void CommitDrawingAttributesHistoryNow()
+        {
+            try
+            {
+                if (DrawingAttributesHistory.Count > 0)
+                {
+                    timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
+                    DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
+                    foreach (var item in DrawingAttributesHistoryFlag) item.Value.Clear();
+                }
+            }
+            catch { }
+        }
+
+        #endregion 选中缩放/还原
+
+
         private void BtnSelect_Click(object sender, RoutedEventArgs e)
         {
             forceEraser = true;
+
+            #region 选中快照（用于"还原"按钮：恢复到本次选中时的大小/位置/粗细）
+
+            try
+            {
+                SelectionSnapshot = new Dictionary<Stroke, Tuple<StylusPointCollection, DrawingAttributes>>();
+                foreach (Stroke s in inkCanvas.GetSelectedStrokes())
+                {
+                    SelectionSnapshot[s] = new Tuple<StylusPointCollection, DrawingAttributes>(
+                        s.StylusPoints.Clone(), s.DrawingAttributes.Clone());
+                }
+            }
+            catch { }
+
+            #endregion
             drawingShapeMode = 0;
             inkCanvas.IsManipulationEnabled = false;
             if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
@@ -422,17 +536,32 @@ namespace Ink_Canvas
             else
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
+
+                //捕获选中快照（还原按钮用：恢复到选中时的大小/位置/粗细）
+                try
+                {
+                    SelectionSnapshot = new Dictionary<Stroke, Tuple<StylusPointCollection, DrawingAttributes>>();
+                    foreach (Stroke s in inkCanvas.GetSelectedStrokes())
+                    {
+                        SelectionSnapshot[s] = new Tuple<StylusPointCollection, DrawingAttributes>(
+                            s.StylusPoints.Clone(), s.DrawingAttributes.Clone());
+                    }
+                }
+                catch { }
+
                 updateBorderStrokeSelectionControlLocation();
             }
         }
 
         private void updateBorderStrokeSelectionControlLocation()
         {
-            double borderLeft = (inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Right - BorderStrokeSelectionControlWidth) / 2;
+            //按钮增减后实际宽度会变，优先用 ActualWidth（布局完成后 > 10），常量仅作初值兜底
+            double controlWidth = BorderStrokeSelectionControl.ActualWidth > 10 ? BorderStrokeSelectionControl.ActualWidth : BorderStrokeSelectionControlWidth;
+            double borderLeft = (inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Right - controlWidth) / 2;
             double borderTop = inkCanvas.GetSelectionBounds().Bottom + 15;
             if (borderLeft < 0) borderLeft = 0;
             if (borderTop < 0) borderTop = 0;
-            if (Width - borderLeft < BorderStrokeSelectionControlWidth || double.IsNaN(borderLeft)) borderLeft = Width - BorderStrokeSelectionControlWidth;
+            if (Width - borderLeft < controlWidth || double.IsNaN(borderLeft)) borderLeft = Width - controlWidth;
             if (Height - borderTop < BorderStrokeSelectionControlHeight || double.IsNaN(borderTop)) borderTop = Height - BorderStrokeSelectionControlHeight;
             BorderStrokeSelectionControl.Margin = new Thickness(borderLeft, borderTop, 0, 0);
         }
