@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -121,22 +121,6 @@ namespace Ink_Canvas
             {
                 BtnErase_Click(sender, e);
             }
-        }
-
-        private void KeyCapture(object sender, ExecutedRoutedEventArgs e)
-        {
-            BtnScreenshot_Click(sender, e);
-        }
-
-        private void KeyDrawLine(object sender, ExecutedRoutedEventArgs e)
-        {
-            SetColorByIndex();
-            BtnDrawLine_Click(lastMouseDownSender, e);
-        }
-
-        private void KeyHide(object sender, ExecutedRoutedEventArgs e)
-        {
-            SymbolIconEmoji_MouseUp(sender, null);
         }
 
         #endregion Hotkeys

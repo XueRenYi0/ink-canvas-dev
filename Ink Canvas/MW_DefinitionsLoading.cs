@@ -142,6 +142,10 @@ namespace Ink_Canvas
 
             //加载设置
             LoadSettings();
+
+            // 初始化动态快捷键（此时窗口句柄已就绪，避免上次 bc673dd 在构造函数注册全局热键崩溃的坑）
+            InitDynamicShortcuts();
+
             if (Environment.Is64BitProcess)
             {
                 GroupBoxInkRecognition.Visibility = Visibility.Collapsed;

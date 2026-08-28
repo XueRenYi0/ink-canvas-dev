@@ -31,33 +31,17 @@
         <c:IsEnabledToOpacityConverter x:Key="IsEnabledToOpacityConverter"/>
         <RoutedUICommand x:Key="KeyExit" Text=" "/>
         <RoutedUICommand x:Key="back_HotKey_Command" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_Capture" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_Hide" Text=" "/>
         <RoutedUICommand x:Key="HotKey_ChangeToDrawTool" Text=" "/>
         <RoutedUICommand x:Key="HotKey_ChangeToSelect" Text=" "/>
         <RoutedUICommand x:Key="HotKey_ChangeToEraser" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_ChangeToPen1" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_ChangeToPen2" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_ChangeToPen3" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_ChangeToPen4" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_ChangeToPen5" Text=" "/>
-        <RoutedUICommand x:Key="HotKey_DrawLine" Text=" "/>
     </Window.Resources>
-    <!--输入命令绑定-->
+    <!--输入命令绑定：静态保留固定默认键，可自定义的改为代码动态注册（见 MW_Shortcuts.Dynamic.cs）-->
     <Window.InputBindings>
         <KeyBinding Gesture="Shift+Esc" Command="{StaticResource KeyExit}"/>
         <KeyBinding Modifiers="Control" Key="Z" Command="{StaticResource back_HotKey_Command}"/>
         <KeyBinding Modifiers="Alt" Key="S" Command="{StaticResource HotKey_ChangeToSelect}" />
         <KeyBinding Modifiers="Alt" Key="D" Command="{StaticResource HotKey_ChangeToDrawTool}" />
         <KeyBinding Modifiers="Alt" Key="E" Command="{StaticResource HotKey_ChangeToEraser}" />
-        <KeyBinding Modifiers="Alt" Key="C" Command="{StaticResource HotKey_Capture}" />
-        <KeyBinding Modifiers="Alt" Key="D1" Command="{StaticResource HotKey_ChangeToPen1}" />
-        <KeyBinding Modifiers="Alt" Key="D2" Command="{StaticResource HotKey_ChangeToPen2}" />
-        <KeyBinding Modifiers="Alt" Key="D3" Command="{StaticResource HotKey_ChangeToPen3}" />
-        <KeyBinding Modifiers="Alt" Key="D4" Command="{StaticResource HotKey_ChangeToPen4}" />
-        <KeyBinding Modifiers="Alt" Key="D5" Command="{StaticResource HotKey_ChangeToPen5}" />
-        <KeyBinding Modifiers="Alt" Key="V" Command="{StaticResource HotKey_Hide}" />
-        <KeyBinding Modifiers="Alt" Key="L" Command="{StaticResource HotKey_DrawLine}" />
     </Window.InputBindings>
     <!--命令执行方法绑定-->
     <Window.CommandBindings>
@@ -76,15 +60,6 @@
         <CommandBinding Command="{StaticResource HotKey_ChangeToEraser}"
                         CanExecute="CommandBinding_CanExecute"
                         Executed="KeyChangeToEraser"/>
-        <CommandBinding Command="{StaticResource HotKey_Capture}"
-                        CanExecute="CommandBinding_CanExecute"
-                        Executed="KeyCapture"/>
-        <CommandBinding Command="{StaticResource HotKey_Hide}"
-                        CanExecute="CommandBinding_CanExecute"
-                        Executed="KeyHide"/>
-        <CommandBinding Command="{StaticResource HotKey_DrawLine}"
-                        CanExecute="CommandBinding_CanExecute"
-                        Executed="KeyDrawLine"/>
     </Window.CommandBindings>
     <Grid x:Name="Main_Grid" Background="#01FFFFFF">
         <Grid Name="GridBackgroundCoverHolder">
@@ -992,6 +967,10 @@
                         <!--右键快捷菜单：全部复用现有 handler（签名兼容 RoutedEventArgs）-->
                         <ContextMenu>
                             <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
+                            <MenuItem Header="快捷键">
+                                <MenuItem Header="查看快捷键" Click="MenuItemShowShortcuts_Click"/>
+                                <MenuItem Header="恢复默认快捷键" Click="MenuItemResetShortcuts_Click"/>
+                            </MenuItem>
                             <MenuItem Header="重启画板" Click="BtnRestart_Click"/>
                             <Separator/>
                             <MenuItem Header="退出" Click="BtnExit_Click"/>
@@ -1006,6 +985,10 @@
                     <Border.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
+                            <MenuItem Header="快捷键">
+                                <MenuItem Header="查看快捷键" Click="MenuItemShowShortcuts_Click"/>
+                                <MenuItem Header="恢复默认快捷键" Click="MenuItemResetShortcuts_Click"/>
+                            </MenuItem>
                             <MenuItem Header="重启画板" Click="BtnRestart_Click"/>
                             <Separator/>
                             <MenuItem Header="退出" Click="BtnExit_Click"/>

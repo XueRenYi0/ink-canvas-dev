@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Ink_Canvas
 {
@@ -20,6 +21,36 @@ namespace Ink_Canvas
         public InkToShape InkToShape { get; set; } = new InkToShape();
         [JsonProperty("startup")]
         public Startup Startup { get; set; } = new Startup();
+        [JsonProperty("shortcuts")]
+        public ShortcutSettings Shortcuts { get; set; } = new ShortcutSettings();
+    }
+
+    /// <summary>
+    /// 快捷键设置（窗口焦点时生效，用 WPF KeyBinding 动态注册，不走全局热键）。
+    /// Key 是动作标识（如 "Pen"），Value 是按键串（如 "F2"、"Ctrl+Z"、"Alt+S"）。
+    /// </summary>
+    public class ShortcutSettings
+    {
+        [JsonProperty("bindings")]
+        public Dictionary<string, string> Bindings { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>获取某动作的按键串，无配置时返回默认</summary>
+        public string Get(string actionId, string defaultGesture)
+        {
+            if (Bindings != null && Bindings.TryGetValue(actionId, out string g) && !string.IsNullOrWhiteSpace(g))
+                return g;
+            return defaultGesture;
+        }
+
+        /// <summary>设置某动作的按键串</summary>
+        public void Set(string actionId, string gesture)
+        {
+            if (Bindings == null) Bindings = new Dictionary<string, string>();
+            if (string.IsNullOrWhiteSpace(gesture))
+                Bindings.Remove(actionId);
+            else
+                Bindings[actionId] = gesture;
+        }
     }
 
     public class Canvas
