@@ -157,8 +157,8 @@ namespace Ink_Canvas
                 if (maxScroll > 0 && _noteScrollOffsetY > 0)
                     ratio = Math.Min(1.0, _noteScrollOffsetY / maxScroll);
             }
-            // 指示区高 48、滑块高 12、上下边距 4 → 行程 28
-            BorderScrollThumb.Margin = new Thickness(0, 4 + ratio * 28, 0, 0);
+            // 指示区高 48、滑块高 14、上下边距 4 → 行程 48-14-8=26
+            BorderScrollThumb.Margin = new Thickness(0, 4 + ratio * 26, 0, 0);
         }
 
         #endregion
