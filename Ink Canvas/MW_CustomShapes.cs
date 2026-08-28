@@ -75,7 +75,10 @@ namespace Ink_Canvas
 
         #region 面板加载
 
-        /// <summary>扫描 CustomShapes 目录，重建"我的图形"按钮行；无图形时整区折叠隐藏</summary>
+        //每行图形数：与内置图形行（每行5个）保持一致，超出自动换行
+        const int CustomShapesPerRow = 5;
+
+        /// <summary>扫描 CustomShapes 目录，重建"我的图形"按钮行（每行5个自动换行）；无图形时整区折叠隐藏</summary>
         private void LoadCustomShapes()
         {
             if (StackPanelCustomShapes == null) return;
@@ -84,6 +87,10 @@ namespace Ink_Canvas
             {
                 if (Directory.Exists(CustomShapesDir))
                 {
+                    //当前正在填充的行（Horizontal）；满5个或首行前为 null，需要新建
+                    iNKORE.UI.WPF.Modern.Controls.SimpleStackPanel currentRow = null;
+                    int indexInRow = 0;
+
                     //按保存时间排序：旧图形在前，新存的排后面（与"排在原图形后面"的增长方向一致）
                     foreach (string file in Directory.GetFiles(CustomShapesDir, "*.isc").OrderBy(f => File.GetLastWriteTime(f)))
                     {
@@ -97,12 +104,25 @@ namespace Ink_Canvas
                         ImageSource thumb = RenderShapeThumbnail(strokes);
                         if (thumb == null) continue;
 
+                        //换行：行结构与内置图形行一致（Horizontal + Height 44 + Spacing 10）
+                        if (currentRow == null || indexInRow >= CustomShapesPerRow)
+                        {
+                            currentRow = new iNKORE.UI.WPF.Modern.Controls.SimpleStackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Height = 44,
+                                Spacing = 10
+                            };
+                            StackPanelCustomShapes.Children.Add(currentRow);
+                            indexInRow = 0;
+                        }
+
                         Image img = new Image();
                         img.Source = thumb;
                         img.MaxWidth = 44;
                         img.MaxHeight = 32;
                         img.Stretch = Stretch.Uniform;
-                        img.Margin = new Thickness(2, 6, 2, 6); //左右2px间距，WrapPanel 每行5列不挤
+                        img.Margin = new Thickness(0, 6, 0, 6);
                         img.VerticalAlignment = VerticalAlignment.Center;
                         img.Cursor = Cursors.Hand;
                         img.Tag = file;
@@ -110,7 +130,8 @@ namespace Ink_Canvas
                         img.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
                         img.MouseUp += CustomShapeButton_MouseUp;
                         img.ContextMenu = BuildCustomShapeContextMenu(file);
-                        StackPanelCustomShapes.Children.Add(img);
+                        currentRow.Children.Add(img);
+                        indexInRow++;
                     }
                 }
             }
