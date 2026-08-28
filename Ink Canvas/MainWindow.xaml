@@ -121,6 +121,7 @@
             <Grid Name="GridInkCanvasSelectionCover"
                   MouseDown="GridInkCanvasSelectionCover_MouseDown"
                   MouseUp="GridInkCanvasSelectionCover_MouseUp"
+                  MouseMove="GridInkCanvasSelectionCover_MouseMove"
                   IsManipulationEnabled="True"
                   ManipulationStarting="GridInkCanvasSelectionCover_ManipulationStarting"
                   ManipulationCompleted="GridInkCanvasSelectionCover_ManipulationCompleted"

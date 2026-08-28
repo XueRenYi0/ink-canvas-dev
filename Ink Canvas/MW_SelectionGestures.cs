@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -287,17 +287,95 @@ namespace Ink_Canvas
         bool isGridInkCanvasSelectionCoverMouseDown = false;
         StrokeCollection StrokesSelectionClone = new StrokeCollection();
 
+        //鼠标拖动选区状态（触摸走 Manipulation 事件，鼠标/数位笔走此路径；dec>0 表示触摸进行中，让位）
+        bool isMouseSelectionDragging = false;
+        Point lastMousePointOnSelectionCover = new Point(0, 0);
+
         private void GridInkCanvasSelectionCover_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isGridInkCanvasSelectionCoverMouseDown = true;
+            if (e.ChangedButton != MouseButton.Left || dec.Count != 0) return;
+
+            //鼠标路径克隆（原实现只挂在 PreviewTouchDown 触摸事件上，鼠标/数位笔无效）：
+            //克隆开关开启时，按下瞬间复制一份选中墨迹，拖动移动的是副本，原件留在原地
+            if (isStrokeSelectionCloneOn)
+            {
+                StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
+                if (strokes.Count > 0)
+                {
+                    isProgramChangeStrokeSelection = true;
+                    inkCanvas.Select(new StrokeCollection());
+                    StrokesSelectionClone = strokes.Clone();
+                    inkCanvas.Select(strokes);
+                    isProgramChangeStrokeSelection = false;
+                    inkCanvas.Strokes.Add(StrokesSelectionClone);
+                }
+            }
+
+            //开始鼠标拖动（捕获鼠标保证移出窗口也能收到 Move/Up）
+            lastMousePointOnSelectionCover = e.GetPosition(null);
+            isMouseSelectionDragging = true;
+            try { GridInkCanvasSelectionCover.CaptureMouse(); } catch { }
+        }
+
+        private void GridInkCanvasSelectionCover_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!isMouseSelectionDragging) return;
+            if (e.LeftButton != MouseButtonState.Pressed) { FinishMouseSelectionDrag(); return; }
+
+            var pos = e.GetPosition(null);
+            var dx = pos.X - lastMousePointOnSelectionCover.X;
+            var dy = pos.Y - lastMousePointOnSelectionCover.Y;
+            lastMousePointOnSelectionCover = pos;
+            if (Math.Abs(dx) < 0.1 && Math.Abs(dy) < 0.1) return;
+
+            //与触摸路径一致：克隆时拖动副本，否则拖动选中墨迹
+            StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
+            if (StrokesSelectionClone.Count != 0) strokes = StrokesSelectionClone;
+
+            var m = new Matrix();
+            m.Translate(dx, dy);
+            foreach (Stroke stroke in strokes)
+            {
+                stroke.Transform(m, false);
+            }
+
+            //克隆拖动时选区（原件）未动，控制条无需跟随
+            if (StrokesSelectionClone.Count == 0) updateBorderStrokeSelectionControlLocation();
         }
 
         private void GridInkCanvasSelectionCover_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (isGridInkCanvasSelectionCoverMouseDown)
+            if (!isGridInkCanvasSelectionCoverMouseDown) return;
+            isGridInkCanvasSelectionCoverMouseDown = false;
+
+            if (isMouseSelectionDragging)
             {
-                isGridInkCanvasSelectionCoverMouseDown = false;
+                //拖动结束：保持选区可见（与触摸路径一致），提交历史
+                FinishMouseSelectionDrag();
+            }
+            else
+            {
+                //原行为：单击空白处收起选区
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>结束鼠标拖动：释放捕获、清空克隆引用、提交撤销历史（同触摸路径 ManipulationCompleted）</summary>
+        private void FinishMouseSelectionDrag()
+        {
+            isMouseSelectionDragging = false;
+            try { if (GridInkCanvasSelectionCover.IsMouseCaptured) GridInkCanvasSelectionCover.ReleaseMouseCapture(); } catch { }
+            StrokesSelectionClone = new StrokeCollection();
+
+            if (StrokeManipulationHistory?.Count > 0)
+            {
+                timeMachine.CommitStrokeManipulationHistory(StrokeManipulationHistory);
+                foreach (var item in StrokeManipulationHistory)
+                {
+                    StrokeInitialHistory[item.Key] = item.Value.Item2;
+                }
+                StrokeManipulationHistory = null;
             }
         }
 

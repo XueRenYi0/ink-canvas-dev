@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -340,7 +340,9 @@ namespace Ink_Canvas
             }
             StrokeManipulationHistory[sender as Stroke] =
                 new Tuple<StylusPointCollection, StylusPointCollection>(StrokeInitialHistory[sender as Stroke], (sender as Stroke).StylusPoints.Clone());
-            if ((StrokeManipulationHistory.Count == count || sender == null) && dec.Count == 0)
+            //鼠标拖动进行中（isMouseSelectionDragging）暂不提交：由 FinishMouseSelectionDrag 在松开时一次性提交，
+            //否则一次拖动会按每个 MouseMove 碎片化为多个撤销步骤
+            if ((StrokeManipulationHistory.Count == count || sender == null) && dec.Count == 0 && !isMouseSelectionDragging)
             {
                 timeMachine.CommitStrokeManipulationHistory(StrokeManipulationHistory);
                 foreach (var item in StrokeManipulationHistory)
