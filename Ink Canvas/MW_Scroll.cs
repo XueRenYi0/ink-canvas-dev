@@ -72,6 +72,10 @@ namespace Ink_Canvas
             _noteScrollVisibilityTimer.Tick += (s, e) =>
             {
                 GridNoteScrollControls.Visibility = IsNoteScrollActive ? Visibility.Visible : Visibility.Collapsed;
+                // 智能淡化：无墨迹（没东西可滚）时控件整体降为半透明，写字后恢复
+                GridNoteScrollControls.Opacity = inkCanvas.Strokes.Count == 0 ? 0.4 : 1.0;
+                // 墨迹增删会改变内容总深度 → 滑块与禁用态随定时器兜底刷新
+                UpdateScrollIndicators();
             };
             _noteScrollVisibilityTimer.Start();
         }
@@ -81,7 +85,11 @@ namespace Ink_Canvas
             // 换页/清屏流程为 ClearStrokes -> RestoreStrokes：
             // 墨迹数归零的瞬间重置滚动记账，新页从顶部开始。
             // 用户擦除全部墨迹时同理（无内容则滚动位置无意义）。
-            if (inkCanvas.Strokes.Count == 0) _noteScrollOffsetY = 0;
+            if (inkCanvas.Strokes.Count == 0)
+            {
+                _noteScrollOffsetY = 0;
+                UpdateScrollIndicators(); // 归零瞬间滑块立即回顶、上箭头立即禁用（不等定时器兜底）
+            }
         }
 
         private void InkCanvas_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -124,6 +132,33 @@ namespace Ink_Canvas
             var matrix = new Matrix(1, 0, 0, 1, 0, -actual);
             inkCanvas.Strokes.Transform(matrix, true);
             _noteScrollOffsetY = target;
+
+            UpdateScrollIndicators(); // 滚动即时刷新位置指示与禁用态
+        }
+
+        /// <summary>
+        /// 刷新滚动控件的指示状态：
+        /// 1. 滑块位置 = 当前偏移 / 内容总深度（墨迹最低点还原为虚拟坐标后超出首屏的部分 + 书写余量）；
+        /// 2. 边界禁用态：滚到顶时上箭头淡化（下方向无限延伸，永不禁用）。
+        /// 墨迹为物化坐标（滚动时已平移），bounds.Bottom + offset 还原为虚拟画布坐标。
+        /// </summary>
+        private void UpdateScrollIndicators()
+        {
+            // 边界禁用态
+            PathScrollUp.Opacity = _noteScrollOffsetY <= 0.5 ? 0.35 : 1.0;
+
+            // 滑块位置：ratio = 当前偏移 / 最大可滚深度
+            double ratio = 0;
+            var bounds = inkCanvas.Strokes.GetBounds();
+            if (!bounds.IsEmpty)
+            {
+                double contentBottom = bounds.Bottom + _noteScrollOffsetY; // 还原虚拟坐标的内容底部
+                double maxScroll = contentBottom - SystemParameters.WorkArea.Height + 160; // 留书写余量
+                if (maxScroll > 0 && _noteScrollOffsetY > 0)
+                    ratio = Math.Min(1.0, _noteScrollOffsetY / maxScroll);
+            }
+            // 指示区高 48、滑块高 12、上下边距 4 → 行程 28
+            BorderScrollThumb.Margin = new Thickness(0, 4 + ratio * 28, 0, 0);
         }
 
         #endregion
