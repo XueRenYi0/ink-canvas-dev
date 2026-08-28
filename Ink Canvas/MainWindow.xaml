@@ -1191,7 +1191,7 @@
                                             </ui:SimpleStackPanel>
                                             <!--我的图形：排在内置图形之后，由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
                                             <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
-                                                <TextBlock Text="我的图形 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
+                                                <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
                                                            HorizontalAlignment="Left" Margin="16,4,0,0"/>
                                                 <ui:SimpleStackPanel Height="44" Spacing="10" Orientation="Horizontal" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
                                             </ui:SimpleStackPanel>

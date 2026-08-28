@@ -60,7 +60,7 @@ namespace Ink_Canvas
                 }
                 LoadCustomShapes(); //立即刷新面板，立等可见
                 //点击提示可直接打开图形面板（用户"不知道存到哪了"时一步直达）
-                ShowToastNotification("已存入「我的图形」— 点击此处查看", () =>
+                ShowToastNotification("已存入图库 — 点击此处查看", () =>
                 {
                     BorderDrawShape.Visibility = Visibility.Visible;
                 });
