@@ -79,6 +79,7 @@ namespace Ink_Canvas
             if (File.Exists("debug.ini")) Label.Visibility = Visibility.Visible;
 
             InitTimers();
+            InitFloatingBarWatchdog(); // 悬浮条存活性看门狗：拖动卡死自愈 + 运行中强制可见（除非程序关闭）
             timeMachine.OnRedoStateChanged += TimeMachine_OnRedoStateChanged;
             timeMachine.OnUndoStateChanged += TimeMachine_OnUndoStateChanged;
             inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;

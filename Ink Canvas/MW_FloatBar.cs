@@ -441,7 +441,7 @@ namespace Ink_Canvas
             {
                 double xPos = e.GetPosition(null).X - pos.X + ViewboxFloatingBar.Margin.Left;
                 double yPos = e.GetPosition(null).Y - pos.Y + ViewboxFloatingBar.Margin.Top;
-                ViewboxFloatingBar.Margin = new Thickness(xPos, yPos, -2000, -200);
+                SetFloatingBarPosition(xPos, yPos); // 唯一入口：坐标合法性校验，防拖飞
                 pos = e.GetPosition(null);
             }
         }
@@ -477,6 +477,54 @@ namespace Ink_Canvas
 
         //初始 false + XAML ScaleX=0/Opacity=0：启动默认收起为单笑脸图标（单击展开）
         bool borderFloatingBarMainControlsVisibility = false;
+
+        #region 悬浮条存活性防御（bug：右键菜单弹出时点左键，isDragDropInEffect 卡死导致 Margin 被拖出屏幕）
+
+        /// <summary>
+        /// 拖动悬浮条时设置 Margin 的唯一入口：坐标合法性校验。
+        /// 悬浮条飞出屏幕工作区（含缓冲）即拒绝写入并复位拖动状态——运行中悬浮条绝不允许被移出屏幕。
+        /// </summary>
+        private void SetFloatingBarPosition(double x, double y)
+        {
+            double w = ViewboxFloatingBar.ActualWidth > 0 ? ViewboxFloatingBar.ActualWidth : 50;
+            double h = ViewboxFloatingBar.ActualHeight > 0 ? ViewboxFloatingBar.ActualHeight : 50;
+            double wa = SystemParameters.WorkArea.Width, ha = SystemParameters.WorkArea.Height;
+            const double margin = 200; // 缓冲：允许稍微拖出边缘，但不允许完全飞出
+
+            if (x < -w - margin || x > wa + margin || y < -h - margin || y > ha + margin)
+            {
+                // 非法位置：拒绝写入 + 复位拖动状态 + 拉回默认位，防 isDragDropInEffect 卡死连锁拖飞
+                isDragDropInEffect = false;
+                ViewboxFloatingBar.Margin = new Thickness((wa - 284) / 2, ha - 80, -2000, -200);
+                LogHelper.WriteLogToFile($"[FloatBar] 拦截非法位置 ({x:F0},{y:F0})，已复位", LogHelper.LogType.Event);
+                return;
+            }
+            ViewboxFloatingBar.Margin = new Thickness(x, y, -2000, -200);
+        }
+
+        /// <summary>自愈：拖动状态卡死检测。运行中悬浮条必须可见（本机制唯一例外是程序关闭）。</summary>
+        private void InitFloatingBarWatchdog()
+        {
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            timer.Tick += (s, e) =>
+            {
+                // 1) 拖动状态卡死自愈：左键未按下却仍在拖动 → 强制复位（右键菜单吞 MouseUp 的卡死场景）
+                if (isDragDropInEffect && System.Windows.Input.Mouse.LeftButton != MouseButtonState.Pressed)
+                    isDragDropInEffect = false;
+
+                // 2) 可见性自愈：运行中（非旧UI模式）悬浮条必须可见，除非程序正在关闭
+                if (!CloseIsFromButton && !App.StartArgs.Contains("-o")
+                    && ViewboxFloatingBar.Visibility != Visibility.Visible)
+                {
+                    LogHelper.WriteLogToFile("[FloatBar] 检测到悬浮条不可见，已自愈", LogHelper.LogType.Event);
+                    ViewboxFloatingBar.Visibility = Visibility.Visible;
+                }
+            };
+            timer.Start();
+        }
+
+        #endregion
+
         void SetBorderFloatingBarMainControlsVisibility(bool isVisible, bool isAnimated = true)
         {
             borderFloatingBarMainControlsVisibility = isVisible;
