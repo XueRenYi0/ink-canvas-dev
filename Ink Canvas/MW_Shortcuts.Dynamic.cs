@@ -54,7 +54,7 @@ namespace Ink_Canvas
                     Execute = () => SetBorderFloatingBarMainControlsVisibility(!borderFloatingBarMainControlsVisibility) },
                 new ShortcutAction { Id = "Settings",  Name = "设置",       DefaultGesture = "F10",
                     Execute = () => SymbolIconSettings_Click(null, null) },
-                new ShortcutAction { Id = "Restart",   Name = "重启画板",   DefaultGesture = "Ctrl+Alt+R",
+                new ShortcutAction { Id = "Restart",   Name = "重启画板",   DefaultGesture = "Ctrl+Shift+R",
                     Execute = () =>
                     {
                         // 有墨迹时先确认，防误触丢板书（复用现有确认逻辑风格）
