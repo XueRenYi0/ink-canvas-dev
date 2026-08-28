@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -67,42 +68,76 @@ namespace Ink_Canvas
 
         #region 面板加载
 
-        /// <summary>扫描 CustomShapes 目录，重建"我的图形"按钮行</summary>
+        /// <summary>扫描 CustomShapes 目录，重建"我的图形"按钮行；无图形时整区折叠隐藏</summary>
         private void LoadCustomShapes()
         {
             if (StackPanelCustomShapes == null) return;
             StackPanelCustomShapes.Children.Clear();
             try
             {
-                if (!Directory.Exists(CustomShapesDir)) return;
-                foreach (string file in Directory.GetFiles(CustomShapesDir, "*.isc"))
+                if (Directory.Exists(CustomShapesDir))
                 {
-                    StrokeCollection strokes;
-                    using (FileStream fs = File.OpenRead(file))
+                    //按保存时间排序：旧图形在前，新存的排后面（与"排在原图形后面"的增长方向一致）
+                    foreach (string file in Directory.GetFiles(CustomShapesDir, "*.isc").OrderBy(f => File.GetLastWriteTime(f)))
                     {
-                        strokes = new StrokeCollection(fs);
+                        StrokeCollection strokes;
+                        using (FileStream fs = File.OpenRead(file))
+                        {
+                            strokes = new StrokeCollection(fs);
+                        }
+                        if (strokes.Count == 0) continue;
+
+                        ImageSource thumb = RenderShapeThumbnail(strokes);
+                        if (thumb == null) continue;
+
+                        Image img = new Image();
+                        img.Source = thumb;
+                        img.MaxWidth = 44;
+                        img.MaxHeight = 32;
+                        img.Stretch = Stretch.Uniform;
+                        img.Margin = new Thickness(0, 6, 0, 6);
+                        img.VerticalAlignment = VerticalAlignment.Center;
+                        img.Cursor = Cursors.Hand;
+                        img.Tag = file;
+                        img.ToolTip = "左键点击后到画布上落笔插入\n右键可删除此图形";
+                        img.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
+                        img.MouseUp += CustomShapeButton_MouseUp;
+                        img.ContextMenu = BuildCustomShapeContextMenu(file);
+                        StackPanelCustomShapes.Children.Add(img);
                     }
-                    if (strokes.Count == 0) continue;
-
-                    ImageSource thumb = RenderShapeThumbnail(strokes);
-                    if (thumb == null) continue;
-
-                    Image img = new Image();
-                    img.Source = thumb;
-                    img.MaxWidth = 44;
-                    img.MaxHeight = 34;
-                    img.Stretch = Stretch.Uniform;
-                    img.Margin = new Thickness(0, 8, 0, 8);
-                    img.VerticalAlignment = VerticalAlignment.Center;
-                    img.Cursor = Cursors.Hand;
-                    img.Tag = file;
-                    img.ToolTip = "点击后到画布上落笔插入\n（文件：" + Path.GetFileName(file) + "）";
-                    img.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
-                    img.MouseUp += CustomShapeButton_MouseUp;
-                    StackPanelCustomShapes.Children.Add(img);
                 }
             }
             catch { }
+
+            //空状态折叠整区（标题+行），不占面板空间
+            StackPanelCustomShapesRow.Visibility =
+                StackPanelCustomShapes.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        /// <summary>缩略图右键菜单：删除自定义图形（带确认）</summary>
+        private ContextMenu BuildCustomShapeContextMenu(string file)
+        {
+            ContextMenu menu = new ContextMenu();
+            MenuItem deleteItem = new MenuItem();
+            deleteItem.Header = "删除此图形";
+            deleteItem.Click += (s, args) =>
+            {
+                try
+                {
+                    if (MessageBox.Show("确定删除这个自定义图形吗？\n（画布上已插入的内容不受影响）",
+                        "删除自定义图形", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    {
+                        File.Delete(file);
+                        LoadCustomShapes(); //立即刷新面板
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("删除失败：" + ex.Message);
+                }
+            };
+            menu.Items.Add(deleteItem);
+            return menu;
         }
 
         /// <summary>渲染墨迹集合缩略图（DrawingVisual + Stroke.Draw → RenderTargetBitmap）</summary>
@@ -154,6 +189,8 @@ namespace Ink_Canvas
 
         private void CustomShapeButton_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            //只响应左键：右键释放会先于 ContextMenu 弹出触发本事件，若不拦截会误入插入模式
+            if (e.ChangedButton != MouseButton.Left) return;
             if (lastBorderMouseDownObject != sender) return;
 
             string file = (sender as FrameworkElement)?.Tag as string;
