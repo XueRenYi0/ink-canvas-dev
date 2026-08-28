@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -448,6 +448,9 @@ namespace Ink_Canvas
 
         void SymbolIconEmoji_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            //只响应左键：右键用于呼出 ContextMenu，若不拦截会误触发拖拽与全屏拖拽网格
+            if (e != null && e.ChangedButton != MouseButton.Left) return;
+
             isDragDropInEffect = true;
             pos = e.GetPosition(null);
             downPos = e.GetPosition(null);
@@ -458,6 +461,9 @@ namespace Ink_Canvas
 
         void SymbolIconEmoji_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            //只响应左键（右键释放会先于 ContextMenu 弹出触发本事件）
+            if (e != null && e.ChangedButton != MouseButton.Left) return;
+
             isDragDropInEffect = false;
 
             if (e is null || (downPos.X == e.GetPosition(null).X && downPos.Y == e.GetPosition(null).Y))
@@ -489,6 +495,36 @@ namespace Ink_Canvas
                 });
                 BorderFloatingBarMainControls.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(isAnimated ? 160 : 0)));
             }
+        }
+
+        /// <summary>悬浮条把手右键菜单：展开/收起工具栏</summary>
+        private void MenuItemFloatBarToggle_Click(object sender, RoutedEventArgs e)
+        {
+            SetBorderFloatingBarMainControlsVisibility(!borderFloatingBarMainControlsVisibility);
+        }
+
+        /// <summary>悬浮条把手右键菜单：回到默认位置（底部居中，与 MW_Init 构造函数新 UI 初始定位一致）</summary>
+        private void MenuItemFloatBarResetPos_Click(object sender, RoutedEventArgs e)
+        {
+            ViewboxFloatingBar.Margin = new Thickness((SystemParameters.WorkArea.Width - 284) / 2, SystemParameters.WorkArea.Height - 80, -2000, -200);
+        }
+
+        /// <summary>悬浮条把手右键菜单：打开设置（方法内部不使用 sender/e，转发安全）</summary>
+        private void MenuItemFloatBarSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SymbolIconSettings_Click(null, null);
+        }
+
+        /// <summary>悬浮条把手右键菜单：重启画板（复用设置面板"立即重新启动画板"：拉新实例(-m绕过单实例锁)再关自己）</summary>
+        private void MenuItemFloatBarRestart_Click(object sender, RoutedEventArgs e)
+        {
+            BtnRestart_Click(null, null);
+        }
+
+        /// <summary>悬浮条把手右键菜单：退出程序（复用设置面板"立即退出"，行为一致：直接关闭）</summary>
+        private void MenuItemFloatBarExit_Click(object sender, RoutedEventArgs e)
+        {
+            BtnExit_Click(null, null);
         }
 
         #endregion
