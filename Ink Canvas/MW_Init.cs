@@ -84,7 +84,6 @@ namespace Ink_Canvas
             inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
             InitNoteScroll();
             InitCustomShapes();
-            InitShortcuts();
 
             //启动即收起悬浮工具栏，只留笑脸把手（XAML 初始 ScaleX=0；单击把手展开；PPT 放映仍会自动展开）
             //-o（old ui）保持老行为：启动即展开

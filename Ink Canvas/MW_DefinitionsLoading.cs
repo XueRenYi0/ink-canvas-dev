@@ -230,11 +230,6 @@ namespace Ink_Canvas
             {
                 ToggleSwitchAutoEnterModeFinger.IsOn = false;
             }
-
-            //全局快捷键：初始化开关与显示（isLoaded 尚为 false，Toggled 不会触发误注册）
-            ToggleSwitchGlobalShortcuts.IsOn = Settings.Shortcuts.IsGlobalShortcutsEnabled;
-            TextBoxShortcutRestart.Text = Settings.Shortcuts.Restart;
-
             if (Settings.Startup.IsAutoHideCanvas)
             {
                 if (isStartup)
