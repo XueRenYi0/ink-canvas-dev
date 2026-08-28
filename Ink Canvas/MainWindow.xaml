@@ -1299,12 +1299,14 @@
                 <Border x:Name="BorderScrollUp" Width="44" Height="44" CornerRadius="22" Cursor="Hand"
                         Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}"
                         MouseDown="Border_MouseDown" MouseUp="BtnScrollUp_MouseUp">
-                    <ui:SymbolIcon Symbol="ChevronUp" Foreground="{DynamicResource FloatBarForeground}"/>
+                    <Path Data="M7,13.5 L15,5.5 L23,13.5" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="2.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="30" Height="20" Stretch="Uniform"/>
                 </Border>
                 <Border x:Name="BorderScrollDown" Width="44" Height="44" CornerRadius="22" Cursor="Hand"
                         Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}"
                         MouseDown="Border_MouseDown" MouseUp="BtnScrollDown_MouseUp">
-                    <ui:SymbolIcon Symbol="ChevronDown" Foreground="{DynamicResource FloatBarForeground}"/>
+                    <Path Data="M7,5.5 L15,13.5 L23,5.5" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="2.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="30" Height="20" Stretch="Uniform"/>
                 </Border>
             </ui:SimpleStackPanel>
         </Grid>
