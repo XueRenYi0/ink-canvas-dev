@@ -54,6 +54,18 @@ namespace Ink_Canvas
                     Execute = () => SetBorderFloatingBarMainControlsVisibility(!borderFloatingBarMainControlsVisibility) },
                 new ShortcutAction { Id = "Settings",  Name = "设置",       DefaultGesture = "F10",
                     Execute = () => SymbolIconSettings_Click(null, null) },
+                new ShortcutAction { Id = "Restart",   Name = "重启画板",   DefaultGesture = "Ctrl+Alt+R",
+                    Execute = () =>
+                    {
+                        // 有墨迹时先确认，防误触丢板书（复用现有确认逻辑风格）
+                        if (inkCanvas.Strokes.Count > 0)
+                        {
+                            var r = MessageBox.Show($"画布上有 {inkCanvas.Strokes.Count} 笔墨迹，重启将丢失。\n确定重启画板？",
+                                "重启画板", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            if (r != MessageBoxResult.Yes) return;
+                        }
+                        BtnRestart_Click(null, null);
+                    } },
                 new ShortcutAction { Id = "Exit",      Name = "结束放映/退出", DefaultGesture = "Shift+Esc",
                     Execute = () => KeyExit(null, null) },
             };
