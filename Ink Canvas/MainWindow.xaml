@@ -1112,6 +1112,106 @@
                             <ui:SymbolIcon Name="SymbolIconSelect" Symbol="SelectAll" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSelect_MouseUp"/>
                             <Grid Margin="3,5,0,5">
                                 <Image MouseUp="ImageDrawShape_MouseUp" MouseDown="Border_MouseDown" Margin="-2.5" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}"/>
+                                <Border x:Name="BorderDrawShape" Visibility="Visible" Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
+                                    CornerRadius="8" Margin="-100,-265,-100,30">
+                                    <ui:SimpleStackPanel Spacing="0" Orientation="Vertical">
+                                        <!--标题栏：拖动手柄（按住拖动整个面板）+ 图钉锁定 + 叉号关闭-->
+                                        <Grid x:Name="DrawShapeTitleBar" Height="30" Cursor="SizeAll" Background="Transparent"
+                                              MouseLeftButtonDown="DrawShapeTitleBar_MouseLeftButtonDown">
+                                            <TextBlock FontSize="14" Foreground="{DynamicResource FloatBarForeground}"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0">
+                                                <Run Text="图形"/>
+                                                <Run Text="(拖动此栏移动 · 第一行长按保持选中)" FontSize="9"/>
+                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <ui:SymbolIcon Symbol="Pin" Width="22" Height="22" Cursor="Hand"
+                                                               MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp"
+                                                               Foreground="{DynamicResource FloatBarForeground}" ToolTip="置顶锁定（不自动隐藏）"/>
+                                                <ui:SymbolIcon Symbol="Clear" Width="22" Height="22" Cursor="Hand" Margin="4,0,2,0"
+                                                               MouseDown="Border_MouseDown" MouseUp="DrawShapeClose_MouseUp"
+                                                               Foreground="{DynamicResource FloatBarForeground}" ToolTip="关闭面板"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Viewbox Margin="0,0,0,2">
+                                        <ui:SimpleStackPanel Spacing="-8" Orientation="Vertical">
+                                            <ui:SimpleStackPanel Margin="20,0,0,0" Orientation="Horizontal">
+                                                <ui:SimpleStackPanel Visibility="Collapsed" Margin="58,6,5,6" Width="54">
+                                                    <Label Margin="0,0,0,-2" Content="自动隐藏" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <Viewbox Height="25">
+                                                        <ui:ToggleSwitch Name="ToggleSwitchDrawShapeBorderAutoHide" Foreground="{DynamicResource FloatBarForeground}" FontFamily="Microsoft YaHei UI" Width="70" OnContent="开" OffContent="关" IsOn="True"/>
+                                                    </Viewbox>
+                                                </ui:SimpleStackPanel>
+                                            </ui:SimpleStackPanel>
+                                            <ui:SimpleStackPanel Height="50" Spacing="14" Orientation="Horizontal">
+                                                <Image Name="ImageDrawLine" Margin="16,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawLine_Click" Source="{DynamicResource DrawShapeImageSource.Line}"/>
+                                                <Image Name="ImageDrawDashedLine" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawDashedLine_Click" Source="{DynamicResource DrawShapeImageSource.DashedLine}"/>
+                                                <Image Name="ImageDrawDotLine" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawDotLine_Click" Source="{DynamicResource DrawShapeImageSource.DotLine}"/>
+                                                <Image Name="ImageDrawArrow" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawArrow_Click" Source="{DynamicResource DrawShapeImageSource.ArrowLine}"/>
+                                                <Image Name="ImageDrawParallelLine" Margin="0,11.5,16,11.5" MouseDown="Image_MouseDown" MouseUp="BtnDrawParallelLine_Click" Source="{DynamicResource DrawShapeImageSource.ParallelLine}"/>
+                                            </ui:SimpleStackPanel>
+                                            <ui:SimpleStackPanel Height="50" Spacing="15" Orientation="Horizontal">
+                                                <Image Margin="16,12,0,12" MouseUp="BtnDrawCoordinate1_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate1}"/>
+                                                <Image Margin="0,12" MouseUp="BtnDrawCoordinate2_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate2}"/>
+                                                <Image Margin="0,12" MouseUp="BtnDrawCoordinate3_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate3}"/>
+                                                <Image Margin="0,12" MouseUp="BtnDrawCoordinate4_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate4}"/>
+                                                <Image Margin="-1,11.5" MouseUp="BtnDrawCoordinate5_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate5}"/>
+                                            </ui:SimpleStackPanel>
+                                            <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
+                                                <Image Margin="16,11,2,11" MouseUp="BtnDrawRectangleCenter_Click" Source="{DynamicResource DrawShapeImageSource.RectangleCenter}"/>
+                                                <Image Visibility="Collapsed" Margin="0,10" MouseUp="BtnDrawEllipse_Click" Source="{DynamicResource DrawShapeImageSource.Ellipse}"/>
+                                                <Image Margin="0,10" MouseUp="BtnDrawCircle_Click" Source="{DynamicResource DrawShapeImageSource.Circle}"/>
+                                                <Image Margin="0,10" MouseUp="BtnDrawDashedCircle_Click" Source="{DynamicResource DrawShapeImageSource.DashedCircle}"/>
+                                                <Image Margin="0,10" MouseUp="BtnDrawCenterEllipse_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenter}" Width="30"/>
+                                                <Image Margin="0,10" MouseUp="BtnDrawCenterEllipseWithFocalPoint_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenterWithFocalPoint}" Width="30"/>
+                                            </ui:SimpleStackPanel>
+                                            <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
+                                                <Image Margin="16,10,2,10" MouseUp="BtnDrawHyperbola_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Hyperbola}"/>
+                                                <Image Margin="4,10,2,10" MouseUp="BtnDrawHyperbolaWithFocalPoint_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.HyperbolaWithFocalPoint}"/>
+                                                <Image Margin="2.5,10,2,10" MouseUp="BtnDrawParabola1_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Parabola}"/>
+                                                <Image Margin="1,10,2,10" MouseUp="BtnDrawParabolaWithFocalPoint_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.ParabolaWithFocalPoint}" RenderTransformOrigin="0.5,0.5">
+                                                    <Image.RenderTransform>
+                                                        <TransformGroup>
+                                                            <ScaleTransform/>
+                                                            <SkewTransform/>
+                                                            <RotateTransform Angle="90"/>
+                                                            <TranslateTransform/>
+                                                        </TransformGroup>
+                                                    </Image.RenderTransform>
+                                                </Image>
+                                                <Image Margin="2,10,2,10" MouseUp="BtnDrawParabola2_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Parabola}" RenderTransformOrigin="0.5,0.5">
+                                                    <Image.RenderTransform>
+                                                        <TransformGroup>
+                                                            <ScaleTransform/>
+                                                            <SkewTransform/>
+                                                            <RotateTransform Angle="90"/>
+                                                            <TranslateTransform/>
+                                                        </TransformGroup>
+                                                    </Image.RenderTransform>
+                                                </Image>
+                                            </ui:SimpleStackPanel>
+                                            <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
+                                                <Image Margin="15,11,2,11" MouseUp="BtnDrawRectangle_Click" Source="{DynamicResource DrawShapeImageSource.Rectangle}"/>
+                                                <Image Margin="6,10,2,10" MouseUp="BtnDrawCylinder_Click" Source="{DynamicResource DrawShapeImageSource.Cylinder}"/>
+                                                <Image Margin="8,12.5,0,10" MouseUp="BtnDrawCone_Click" Source="{DynamicResource DrawShapeImageSource.Cone}"/>
+                                                <Image Margin="5.5,12.5,2.5,10" MouseUp="BtnDrawCuboid_Click" Source="{DynamicResource DrawShapeImageSource.Cuboid}"/>
+                                                <Image Visibility="Collapsed" Margin="0,11.5,2.5,9.5" MouseUp="BtnDrawCuboid_Click" Source="{DynamicResource DrawShapeImageSource.Tetrahedron}"/>
+                                                <Viewbox Height="40" Margin="-4,-4,0,0">
+                                                    <ui:SimpleStackPanel>
+                                                        <Image Height="55" Visibility="{Binding ElementName=GroupBoxMASEZVersion, Path=Visibility}" Source="Resources/logo2.png"/>
+                                                        <TextBlock Margin="0,-15,0,0" Visibility="{Binding ElementName=GroupBoxMASEZVersion, Path=Visibility}" Text="二中专版" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
+                                                    </ui:SimpleStackPanel>
+                                                </Viewbox>
+                                            </ui:SimpleStackPanel>
+                                            <!--我的图形：排在内置图形之后，行高/间距/左起点与内置行一致（50px高、左Margin16）；由 MW_CustomShapes.cs 动态加载；无自定义图形时整区折叠隐藏-->
+                                            <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
+                                                <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
+                                                           HorizontalAlignment="Left" Margin="16,2,0,0"/>
+                                                <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal" Name="StackPanelCustomShapes"/>
+                                            </ui:SimpleStackPanel>
+                                        </ui:SimpleStackPanel>
+                                        </Viewbox>
+                                    </ui:SimpleStackPanel>
+                                </Border>
                             </Grid>
                             <ui:SymbolIcon Symbol="Undo" Foreground="{DynamicResource FloatBarForeground}" Margin="0,0,-2,0"
                                            Opacity="{Binding ElementName=BtnUndo, Path=IsEnabled, Converter={StaticResource IsEnabledToOpacityConverter}}"
@@ -1255,100 +1355,5 @@
                 </Border>
             </ui:SimpleStackPanel>
         </Grid>
-        <Border x:Name="BorderDrawShape" Visibility="Collapsed" Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                CornerRadius="8" Height="240"
-                Margin="120,15,0,0"
-                HorizontalAlignment="Left" VerticalAlignment="Top">
-            <ui:SimpleStackPanel Spacing="-8" Orientation="Vertical">
-                <ui:SimpleStackPanel Orientation="Horizontal">
-                    <TextBlock FontSize="16" Foreground="{DynamicResource FloatBarForeground}"
-                               Background="Transparent" Cursor="SizeAll"
-                               MouseLeftButtonDown="BorderDrawShape_DragHandle_MouseDown"
-                               MouseMove="BorderDrawShape_DragHandle_MouseMove"
-                               MouseLeftButtonUp="BorderDrawShape_DragHandle_MouseUp"
-                               HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,8,10,4">
-                        <Run Text="图形"/>
-                        <Run Text="(标题栏可拖动)" FontSize="10"/>
-                    </TextBlock>
-                    <ui:SimpleStackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="0,0,8,0">
-                        <ui:SymbolIcon Symbol="Cancel" MouseDown="Border_MouseDown" MouseUp="SymbolIconCloseShapePanel_MouseUp" Foreground="{DynamicResource FloatBarForeground}"/>
-                        <ui:SymbolIcon Symbol="UnPin" MouseDown="Border_MouseDown" MouseUp="SymbolIconPinBorderDrawShape_MouseUp" Foreground="{DynamicResource FloatBarForeground}"/>
-                    </ui:SimpleStackPanel>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Margin="20,0,0,0" Orientation="Horizontal">
-                    <ui:SimpleStackPanel Visibility="Collapsed" Margin="58,6,5,6" Width="54">
-                        <Label Margin="0,0,0,-2" Content="自动隐藏" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
-                        <Viewbox Height="25">
-                            <ui:ToggleSwitch Name="ToggleSwitchDrawShapeBorderAutoHide" Foreground="{DynamicResource FloatBarForeground}" FontFamily="Microsoft YaHei UI" Width="70" OnContent="开" OffContent="关" IsOn="False"/>
-                        </Viewbox>
-                    </ui:SimpleStackPanel>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Height="50" Spacing="14" Orientation="Horizontal">
-                    <Image Name="ImageDrawLine" Margin="16,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawLine_Click" Source="{DynamicResource DrawShapeImageSource.Line}"/>
-                    <Image Name="ImageDrawDashedLine" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawDashedLine_Click" Source="{DynamicResource DrawShapeImageSource.DashedLine}"/>
-                    <Image Name="ImageDrawDotLine" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawDotLine_Click" Source="{DynamicResource DrawShapeImageSource.DotLine}"/>
-                    <Image Name="ImageDrawArrow" Margin="0,12,0,12" MouseDown="Image_MouseDown" MouseUp="BtnDrawArrow_Click" Source="{DynamicResource DrawShapeImageSource.ArrowLine}"/>
-                    <Image Name="ImageDrawParallelLine" Margin="0,11.5,16,11.5" MouseDown="Image_MouseDown" MouseUp="BtnDrawParallelLine_Click" Source="{DynamicResource DrawShapeImageSource.ParallelLine}"/>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Height="50" Spacing="15" Orientation="Horizontal">
-                    <Image Margin="16,12,0,12" MouseUp="BtnDrawCoordinate1_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate1}"/>
-                    <Image Margin="0,12" MouseUp="BtnDrawCoordinate2_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate2}"/>
-                    <Image Margin="0,12" MouseUp="BtnDrawCoordinate3_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate3}"/>
-                    <Image Margin="0,12" MouseUp="BtnDrawCoordinate4_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate4}"/>
-                    <Image Margin="-1,11.5" MouseUp="BtnDrawCoordinate5_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate5}"/>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
-                    <Image Margin="16,11,2,11" MouseUp="BtnDrawRectangleCenter_Click" Source="{DynamicResource DrawShapeImageSource.RectangleCenter}"/>
-                    <Image Visibility="Collapsed" Margin="0,10" MouseUp="BtnDrawEllipse_Click" Source="{DynamicResource DrawShapeImageSource.Ellipse}"/>
-                    <Image Margin="0,10" MouseUp="BtnDrawCircle_Click" Source="{DynamicResource DrawShapeImageSource.Circle}"/>
-                    <Image Margin="0,10" MouseUp="BtnDrawDashedCircle_Click" Source="{DynamicResource DrawShapeImageSource.DashedCircle}"/>
-                    <Image Margin="0,10" MouseUp="BtnDrawCenterEllipse_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenter}" Width="30"/>
-                    <Image Margin="0,10" MouseUp="BtnDrawCenterEllipseWithFocalPoint_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenterWithFocalPoint}" Width="30"/>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
-                    <Image Margin="16,10,2,10" MouseUp="BtnDrawHyperbola_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Hyperbola}"/>
-                    <Image Margin="4,10,2,10" MouseUp="BtnDrawHyperbolaWithFocalPoint_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.HyperbolaWithFocalPoint}"/>
-                    <Image Margin="2.5,10,2,10" MouseUp="BtnDrawParabola1_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Parabola}"/>
-                    <Image Margin="1,10,2,10" MouseUp="BtnDrawParabolaWithFocalPoint_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.ParabolaWithFocalPoint}" RenderTransformOrigin="0.5,0.5">
-                        <Image.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform/>
-                                <SkewTransform/>
-                                <RotateTransform Angle="90"/>
-                                <TranslateTransform/>
-                            </TransformGroup>
-                        </Image.RenderTransform>
-                    </Image>
-                    <Image Margin="2,10,2,10" MouseUp="BtnDrawParabola2_Click" Width="26" Source="{DynamicResource DrawShapeImageSource.Parabola}" RenderTransformOrigin="0.5,0.5">
-                        <Image.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform/>
-                                <SkewTransform/>
-                                <RotateTransform Angle="90"/>
-                                <TranslateTransform/>
-                            </TransformGroup>
-                        </Image.RenderTransform>
-                    </Image>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Height="50" Spacing="10" Orientation="Horizontal">
-                    <Image Margin="15,11,2,11" MouseUp="BtnDrawRectangle_Click" Source="{DynamicResource DrawShapeImageSource.Rectangle}"/>
-                    <Image Margin="6,10,2,10" MouseUp="BtnDrawCylinder_Click" Source="{DynamicResource DrawShapeImageSource.Cylinder}"/>
-                    <Image Margin="8,12.5,0,10" MouseUp="BtnDrawCone_Click" Source="{DynamicResource DrawShapeImageSource.Cone}"/>
-                    <Image Margin="5.5,12.5,2.5,10" MouseUp="BtnDrawCuboid_Click" Source="{DynamicResource DrawShapeImageSource.Cuboid}"/>
-                    <Image Visibility="Collapsed" Margin="0,11.5,2.5,9.5" MouseUp="BtnDrawCuboid_Click" Source="{DynamicResource DrawShapeImageSource.Tetrahedron}"/>
-                    <Viewbox Height="40" Margin="-4,-4,0,0">
-                        <ui:SimpleStackPanel>
-                            <Image Height="55" Visibility="{Binding ElementName=GroupBoxMASEZVersion, Path=Visibility}" Source="Resources/logo2.png"/>
-                            <TextBlock Margin="0,-15,0,0" Visibility="{Binding ElementName=GroupBoxMASEZVersion, Path=Visibility}" Text="二中专版" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
-                        </ui:SimpleStackPanel>
-                    </Viewbox>
-                </ui:SimpleStackPanel>
-                <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical">
-                    <TextBlock Text="图库 (左键插入 / 右键删除)" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"
-                               HorizontalAlignment="Left" Margin="16,4,0,0"/>
-                    <ui:SimpleStackPanel Orientation="Vertical" Name="StackPanelCustomShapes" Margin="16,0,0,0"/>
-                </ui:SimpleStackPanel>
-            </ui:SimpleStackPanel>
-        </Border>
     </Grid>
 </Window>
