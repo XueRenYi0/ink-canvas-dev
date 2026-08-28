@@ -291,6 +291,7 @@ namespace Ink_Canvas
 
         //鼠标拖动选区状态（触摸走 Manipulation 事件，鼠标/数位笔走此路径；dec>0 表示触摸进行中，让位）
         bool isMouseSelectionDragging = false;
+        bool hasMouseSelectionDragMoved = false; // 按下后是否真的移动过（区分"拖动"与"单击取消选区"）
         Point lastMousePointOnSelectionCover = new Point(0, 0);
 
         private void GridInkCanvasSelectionCover_MouseDown(object sender, MouseButtonEventArgs e)
@@ -303,6 +304,7 @@ namespace Ink_Canvas
             //开始鼠标拖动（捕获鼠标保证移出窗口也能收到 Move/Up）
             lastMousePointOnSelectionCover = e.GetPosition(null);
             isMouseSelectionDragging = true;
+            hasMouseSelectionDragMoved = false;
             try { GridInkCanvasSelectionCover.CaptureMouse(); } catch { }
         }
 
@@ -316,6 +318,7 @@ namespace Ink_Canvas
             var dy = pos.Y - lastMousePointOnSelectionCover.Y;
             lastMousePointOnSelectionCover = pos;
             if (Math.Abs(dx) < 0.1 && Math.Abs(dy) < 0.1) return;
+            hasMouseSelectionDragMoved = true; // 超过阈值的移动才算拖动
 
             //与触摸路径一致：克隆时拖动副本，否则拖动选中墨迹
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
@@ -337,14 +340,18 @@ namespace Ink_Canvas
             if (!isGridInkCanvasSelectionCoverMouseDown) return;
             isGridInkCanvasSelectionCoverMouseDown = false;
 
-            if (isMouseSelectionDragging)
+            if (isMouseSelectionDragging && hasMouseSelectionDragMoved)
             {
-                //拖动结束：保持选区可见（与触摸路径一致），提交历史
+                //真实拖动结束：保持选区可见，提交撤销历史
                 FinishMouseSelectionDrag();
             }
             else
             {
-                //原行为：单击空白处收起选区
+                //单击（未拖动）：结束拖动状态并取消选区（恢复原行为）
+                if (isMouseSelectionDragging) FinishMouseSelectionDrag();
+                isProgramChangeStrokeSelection = true;
+                inkCanvas.Select(new StrokeCollection());
+                isProgramChangeStrokeSelection = false;
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
             }
         }
