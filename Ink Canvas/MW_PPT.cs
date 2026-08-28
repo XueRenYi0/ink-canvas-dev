@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -607,8 +607,15 @@ namespace Ink_Canvas
             {
                 new Thread(new ThreadStart(() =>
                 {
-                    pptApplication.SlideShowWindows[1].Activate();
-                    pptApplication.SlideShowWindows[1].View.Previous();
+                    // 线程内部的 COM 调用必须自行捕获：
+                    // 在第 1 页调 Previous()、放映已结束等场景会抛 COMException，
+                    // 后台线程未捕获异常会直接终止整个进程（曾导致 PPT 翻页时软件静默消失）。
+                    try
+                    {
+                        pptApplication.SlideShowWindows[1].Activate();
+                        pptApplication.SlideShowWindows[1].View.Previous();
+                    }
+                    catch { }
                 })).Start();
             }
             catch
@@ -633,8 +640,13 @@ namespace Ink_Canvas
             {
                 new Thread(new ThreadStart(() =>
                 {
-                    pptApplication.SlideShowWindows[1].Activate();
-                    pptApplication.SlideShowWindows[1].View.Next();
+                    // 同 BtnPPTSlidesUp_Click：线程内 COM 调用自行捕获，防止进程被静默终止
+                    try
+                    {
+                        pptApplication.SlideShowWindows[1].Activate();
+                        pptApplication.SlideShowWindows[1].View.Next();
+                    }
+                    catch { }
                 })).Start();
             }
             catch
