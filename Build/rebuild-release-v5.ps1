@@ -20,13 +20,13 @@ Write-Host ('MSBuild exit: ' + $LASTEXITCODE)
 $readme = Join-Path $out '使用说明 README.txt'
 if (Test-Path -LiteralPath $readme) {
     $txt = [IO.File]::ReadAllText($readme)
-    $txt = $txt.Replace('2.1.0', '5.0.0').Replace('2.1.2026.0829', '5.0.2026.0829')
+    $txt = $txt.Replace('2.1.0', '5.1.0').Replace('2.1.2026.0829', '5.1.2026.0829').Replace('5.0.0', '5.1.0').Replace('5.0.2026.0829', '5.1.2026.0829')
     [IO.File]::WriteAllText($readme, $txt, [Text.UTF8Encoding]::new($false))
-    Write-Host 'README updated to 5.0.0'
+    Write-Host 'README updated to 5.1.0'
 }
 
-# VersionInfo.ini 写回 5.0.0（Rebuild 可能清掉 bin\Release）
-[IO.File]::WriteAllText((Join-Path $out 'VersionInfo.ini'), '5.0.0', [Text.ASCIIEncoding]::new())
+# VersionInfo.ini 写回 5.1.0（Rebuild 可能清掉 bin\Release）
+[IO.File]::WriteAllText((Join-Path $out 'VersionInfo.ini'), '5.1.0', [Text.ASCIIEncoding]::new())
 
 # 校验 exe 版本
 $exe = Join-Path $out 'Ink Canvas.exe'
@@ -41,5 +41,5 @@ Write-Host ('VersionInfo.ini:  ' + [IO.File]::ReadAllText((Join-Path $out 'Versi
 $setupOut = Join-Path $releases 'SetupSource.exe'
 New-Item -ItemType Directory -Path $releases -Force | Out-Null
 if (Test-Path -LiteralPath $setupOut) { Remove-Item -LiteralPath $setupOut -Force }
-& $csc /nologo /target:winexe /out:$setupOut /r:System.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.Core.dll $src
+& $csc /nologo /target:winexe /out:$setupOut /r:System.dll /r:System.Core.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll $src
 Write-Host ('SetupSource exists: ' + (Test-Path -LiteralPath $setupOut))

@@ -16,7 +16,7 @@ Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Extension -eq '.zip' } |
 }
 
 # 暂存目录：从 bin\Release 拷贝，排除运行期用户数据与调试文件
-$stagedir = Join-Path $r 'stage-v5\Ink Canvas v5.0.0'
+$stagedir = Join-Path $r 'stage-v5\Ink Canvas v5.1.0'
 $stageRoot = Split-Path -Parent $stagedir
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
 New-Item -ItemType Directory -Path $stagedir -Force | Out-Null
@@ -47,13 +47,38 @@ $iniPath = Join-Path $stagedir 'VersionInfo.ini'
 Write-Host ('stage: Assembly=' + $asm + '  File=' + $fvi.FileVersion + '  ini=' + [IO.File]::ReadAllText($iniPath).Trim())
 
 # Portable zip（暂存目录整体打包，解压后得到同名文件夹）
-$zipP = Join-Path $r 'InkCanvas-v5.0.0-Portable.zip'
+$zipP = Join-Path $r 'InkCanvas-v5.1.0-Portable.zip'
 if (Test-Path -LiteralPath $zipP) { Remove-Item -LiteralPath $zipP -Force }
 Compress-Archive -LiteralPath $stagedir -DestinationPath $zipP -CompressionLevel Optimal -Force
 Write-Host ('+ portable: ' + $zipP + '   ' + [math]::Round((Get-Item -LiteralPath $zipP).Length/1MB,2) + ' MB')
 
+# 单文件安装包：payload 压成 zip 嵌入 Setup.exe 资源，双击即装、无需解压
+$ver = '5.1.0'
+$csc = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+$setupCs = Join-Path $PSScriptRoot 'InkCanvasSetup.cs'
+if ((Test-Path -LiteralPath $csc) -and (Test-Path -LiteralPath $setupCs)) {
+    $work = Join-Path $r 'stage-v5\single'
+    New-Item -ItemType Directory -Path $work -Force | Out-Null
+    $payloadZip = Join-Path $work 'payload.zip'
+    Compress-Archive -Path (Join-Path $stagedir '*') -DestinationPath $payloadZip -CompressionLevel Optimal -Force
+    $singleExe = Join-Path $r ('InkCanvas-v' + $ver + '-Setup.exe')
+    if (Test-Path -LiteralPath $singleExe) { Remove-Item -LiteralPath $singleExe -Force }
+    & $csc /nologo /target:winexe /optimize+ /out:$singleExe `
+        /r:System.dll /r:System.Core.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+        /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll `
+        /resource:$payloadZip,payload.zip $setupCs
+    if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $singleExe)) {
+        Write-Host ('+ single exe: ' + $singleExe + '   ' + [math]::Round((Get-Item -LiteralPath $singleExe).Length/1MB,2) + ' MB')
+    } else {
+        Write-Host 'WARN: 单文件安装包编译失败（不影响其他产物）'
+    }
+    Remove-Item -LiteralPath $work -Recurse -Force
+} else {
+    Write-Host 'WARN: 未找到 csc 或 InkCanvasSetup.cs，跳过单文件安装包'
+}
+
 # Setup zip（payload + Setup.exe）
-$sroot = Join-Path $r 'InkCanvas-v5.0.0-Setup'
+$sroot = Join-Path $r 'InkCanvas-v5.1.0-Setup'
 $payload = Join-Path $sroot 'payload'
 if (Test-Path -LiteralPath $sroot) { Remove-Item -LiteralPath $sroot -Recurse -Force }
 New-Item -ItemType Directory -Path $payload -Force | Out-Null
@@ -64,7 +89,7 @@ if (-not (Test-Path -LiteralPath $setupSrc)) {
     exit 1
 }
 Copy-Item -LiteralPath $setupSrc -Destination (Join-Path $sroot 'Setup.exe') -Force
-$zipS = Join-Path $r 'InkCanvas-v5.0.0-Setup.zip'
+$zipS = Join-Path $r 'InkCanvas-v5.1.0-Setup.zip'
 if (Test-Path -LiteralPath $zipS) { Remove-Item -LiteralPath $zipS -Force }
 Compress-Archive -Path (Join-Path $sroot '*') -DestinationPath $zipS -CompressionLevel Optimal -Force
 Write-Host ('+ setup:    ' + $zipS + '   ' + [math]::Round((Get-Item -LiteralPath $zipS).Length/1MB,2) + ' MB')

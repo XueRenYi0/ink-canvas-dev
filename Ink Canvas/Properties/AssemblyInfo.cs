@@ -49,7 +49,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 统一升到 5.0.0，避免客户端自动更新提醒
-[assembly: AssemblyVersion("5.0.0.0")]
-[assembly: AssemblyFileVersion("5.0.2026.0829")]
-[assembly: AssemblyInformationalVersion("5.0.0")]
+// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 5.1.0：选区缩放交互（角点等比/边中点单轴/Ctrl+滚轮/Ctrl+加减号）、右键菜单限定笑脸
+[assembly: AssemblyVersion("5.1.0.0")]
+[assembly: AssemblyFileVersion("5.1.2026.0829")]
+[assembly: AssemblyInformationalVersion("5.1.0")]
