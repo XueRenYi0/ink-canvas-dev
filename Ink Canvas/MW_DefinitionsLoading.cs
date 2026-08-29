@@ -195,6 +195,8 @@ namespace Ink_Canvas
         private void Window_Closed(object sender, EventArgs e)
         {
             LogHelper.WriteLogToFile("Ink Canvas closed", LogHelper.LogType.Event);
+            //释放函数识别的数学面板 COM 资源（MW_MathGraph.cs）
+            ReleaseMathInputPanel();
             //主动退出（退出/重启按钮路径）：立即终止进程释放单实例互斥锁。
             //否则后台线程收尾期间进程残留持锁，用户紧接着双击 exe 会误报"已有一个程序实例正在运行"（日志 14:13:08 实证，等17秒才恢复）
             if (CloseIsFromButton)

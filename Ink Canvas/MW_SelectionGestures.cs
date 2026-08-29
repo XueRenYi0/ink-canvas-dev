@@ -357,6 +357,15 @@ namespace Ink_Canvas
             if (!isGridInkCanvasSelectionCoverMouseDown) return;
             isGridInkCanvasSelectionCoverMouseDown = false;
 
+            //右键松开且有选中笔迹：弹"识别为函数"菜单（框选识别入口）
+            //（右键原来和左键一样走"单击取消选区"，导致菜单永远弹不出来）
+            if (e.ChangedButton == MouseButton.Right && inkCanvas.GetSelectedStrokes().Count > 0)
+            {
+                ShowMathContextMenu();
+                e.Handled = true;
+                return;
+            }
+
             bool wasHandleDrag = _activeHandleDragKind != SelectionHandleKind.None;
 
             if (isMouseSelectionDragging && hasMouseSelectionDragMoved)

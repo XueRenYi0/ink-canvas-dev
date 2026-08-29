@@ -995,6 +995,47 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
+    <!-- 正弦曲线图标：一个完整周期的正弦波（三段贝塞尔近似），坐标空间 750x750 正方形（与 Line 等图标一致，保证按钮行内等高对齐），曲线垂直居中于 y=375 -->
+    <DrawingImage x:Key="DrawShapeImageSource.SinCurve">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V750 H750 V0 H0 Z">
+                <GeometryDrawing Geometry="M25,375 C80,195 145,175 200,175 C255,175 320,195 375,375 C430,555 495,575 550,575 C605,575 670,555 725,375">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <!-- 函数识别图标：手写体 f 加 x，表示"写公式出函数图像" -->
+    <DrawingImage x:Key="DrawShapeImageSource.FunctionRecognize">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V750 H750 V0 H0 Z">
+                <!-- f 的竖钩 + 横弯钩（两段贝塞尔画出手写体 f 的形态） -->
+                <GeometryDrawing Geometry="M560,150 C480,130 430,170 430,250 L430,600">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M330,330 L620,330">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <!-- 右下角手写体 x（两条交叉弧线，比直线 x 更像手写的样子） -->
+                <GeometryDrawing Geometry="M160,520 C190,490 215,465 235,445 C255,465 280,490 310,520">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M160,445 C190,475 215,500 235,520 C255,500 280,475 310,445">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
     <DrawingImage x:Key="DrawShapeImageSource.HyperbolaWithFocalPoint">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V772.73 H777.7 V0 H0 Z">

@@ -400,6 +400,16 @@ namespace Ink_Canvas
             CancelSingleFingerDragMode();
         }
 
+        // 正弦曲线按钮：进入"画 sin"模式（drawingShapeMode = 26）
+        private void BtnDrawSin_Click(object sender, EventArgs e)
+        {
+            forceEraser = true;
+            drawingShapeMode = 26;
+            inkCanvas.EditingMode = InkCanvasEditingMode.None;
+            inkCanvas.IsManipulationEnabled = true;
+            CancelSingleFingerDragMode();
+        }
+
         private void BtnDrawCylinder_Click(object sender, EventArgs e)
         {
             forceEraser = true;
@@ -1018,6 +1028,35 @@ namespace Ink_Canvas
                     stylusPoint = new StylusPoint(iniP.X - p / 2, iniP.Y, (float)1.0);
                     point = new StylusPointCollection();
                     point.Add(stylusPoint);
+                    stroke = new Stroke(point)
+                    {
+                        DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
+                    };
+                    strokes.Add(stroke.Clone());
+                    try
+                    {
+                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
+                    }
+                    catch { }
+                    lastTempStrokeCollection = strokes;
+                    inkCanvas.Strokes.Add(strokes);
+                    break;
+                case 26:
+                    _currentCommitType = CommitReason.ShapeDrawing;
+                    //正弦曲线 y = A·sin(2πx/T)
+                    //拖拽交互：按下点 = 曲线起点（相当于原点），
+                    //          水平拖动距离 = 一个周期 T，纵向拖动距离 = 振幅 A
+                    if (Math.Abs(iniP.X - endP.X) < 0.01 || Math.Abs(iniP.Y - endP.Y) < 0.01) return;
+                    double sinPeriod = Math.Abs(endP.X - iniP.X); //周期 T = 水平拖动距离
+                    double sinAmplitude = iniP.Y - endP.Y;        //振幅 A（向上拖为正，符合数学 y 轴向上）
+                    double sinDirX = endP.X > iniP.X ? 1 : -1;   //曲线延伸方向：向右拖向右画，向左拖向左画
+                    pointList = new List<Point>();
+                    for (double i = 0.0; i <= sinPeriod; i += 0.5)
+                    {
+                        //屏幕坐标 y 向下、数学 y 向上，因此 sin 项取负号
+                        pointList.Add(new Point(iniP.X + sinDirX * i, iniP.Y - sinAmplitude * Math.Sin(2 * Math.PI * i / sinPeriod)));
+                    }
+                    point = new StylusPointCollection(pointList);
                     stroke = new Stroke(point)
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()

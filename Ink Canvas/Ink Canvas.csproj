@@ -65,6 +65,14 @@
 		<Reference Include="IAWinFX">
 			<HintPath>.\IAWinFX.dll</HintPath>
 		</Reference>
+		<Reference Include="Microsoft.Ink">
+			<HintPath>.\Microsoft.Ink.dll</HintPath>
+		</Reference>
+		<!--微软数学输入面板的互操作程序集（tlbimp 从系统 micaut.dll 导出）-->
+		<Reference Include="Interop.micaut">
+			<HintPath>.\Interop.micaut.dll</HintPath>
+			<EmbedInteropTypes>false</EmbedInteropTypes>
+		</Reference>
 		<Reference Include="netstandard" />
 		<Reference Include="Windows">
 			<HintPath>Windows.WinMD</HintPath>

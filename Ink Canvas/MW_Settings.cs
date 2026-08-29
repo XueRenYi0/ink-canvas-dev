@@ -637,7 +637,14 @@ namespace Ink_Canvas
             e.Handled = true;
         }
 
+        // 点击"开源地址"超链接：用系统默认浏览器打开本仓库（优化分支）页面
         private void HyperlinkSource_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://github.com/XueRenYi0/ink-canvas-dev");
+        }
+
+        // 点击"上游项目"超链接：用系统默认浏览器打开上游原版仓库页面
+        private void HyperlinkUpstream_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("https://github.com/WXRIW/Ink-Canvas");
         }
