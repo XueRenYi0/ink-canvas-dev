@@ -79,11 +79,13 @@
 
 | 脚本 | 作用 |
 |---|---|
-| `rebuild-release-v5.ps1` | 重新编译 Release（AnyCPU 32 位首选，与上游运行时行为一致），刷新版本号文件，用 `InkCanvasSetup.cs` 编译出 `Setup.exe` |
-| `build-zips.ps1` | 从 `bin\Release` 生成 `InkCanvas-v5.0.0-Portable.zip` 与 `InkCanvas-v5.0.0-Setup.zip`（自动排除用户数据：Settings.json/Log.txt 等） |
+| `rebuild-release-v5.ps1` | 重新编译 Release（AnyCPU 32 位首选，与上游运行时行为一致），刷新版本号文件 |
+| `build-zips.ps1` | 从 `bin\Release` 生成 `InkCanvas-v5.1.0-Portable.zip`（自动排除用户数据：Settings.json/Log.txt 等），并调用 Inno Setup 编译出单文件安装包 `InkCanvas-v5.1.0-Setup.exe` |
+| `InkCanvas.iss` | Inno Setup 安装脚本：**用户级安装**（`%LocalAppData%\Programs`，免 UAC——软件把运行数据写在 exe 目录，装 Program Files 会导致普通权限无法保存设置），正规开始菜单/桌面快捷方式与卸载项 |
 | `verify-v5.ps1` | 解包两个 zip 校验版本号一致性（AssemblyVersion / VersionInfo.ini / README） |
 | `read-logs.ps1` | 本地调试用：查看 Release/Debug/Releases 下的 Log.txt 尾部 |
-| `package-v5.ps1`、`prepare-setup.ps1` | 旧版打包流程（v2.1.0 命名），已被上面脚本取代，仅留档 |
+
+> 前置依赖：构建安装包需安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php)（`winget install JRSoftware.InnoSetup`）。中文语言包在 `Build/InnoLang/ChineseSimplified.isl`（来自 kira-96 的 Inno-Setup-Chinese-Simplified-Translation，MIT）。旧 csc 自制安装器（`InkCanvasSetup.cs`、`package-v5.ps1`、`prepare-setup.ps1`）已删除。
 
 典型发布流程（在仓库根目录的 PowerShell 中执行）：
 

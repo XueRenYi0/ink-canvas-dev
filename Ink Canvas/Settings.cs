@@ -69,7 +69,8 @@ namespace Ink_Canvas
         public bool HideStrokeWhenSelecting { get; set; } = true;
 
         [JsonProperty("usingWhiteboard")]
-        public bool UsingWhiteboard { get; set; }
+        // 默认开：黑板模式以白色板面启动（用户需求：初始即白板）。已保存过设置的用户不受影响
+        public bool UsingWhiteboard { get; set; } = true;
 
         [JsonProperty("whiteboardPattern")]
         public int WhiteboardPattern { get; set; } = 0; // 白板底纹：0=无 1=方格 2=横线（即改即存，下次启动继承）

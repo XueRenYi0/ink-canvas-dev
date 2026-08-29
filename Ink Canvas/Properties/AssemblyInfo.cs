@@ -49,7 +49,9 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 5.1.0：选区缩放交互（角点等比/边中点单轴/Ctrl+滚轮/Ctrl+加减号）、右键菜单限定笑脸
-[assembly: AssemblyVersion("5.1.0.0")]
-[assembly: AssemblyFileVersion("5.1.2026.0829")]
-[assembly: AssemblyInformationalVersion("5.1.0")]
+// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 5.2.0：白板底纹（方格/横线）、滚动胶囊对称化+可拖滑块、
+// 翻页组左右对称+末页自动加页、退出白板显式出口（两侧✕+图标角标）、多人书写入驻悬浮栏并修复鼠标书写、
+// 默认白色板面启动、Inno Setup 正式安装包（替换自制 csc 安装器）
+[assembly: AssemblyVersion("5.2.0.0")]
+[assembly: AssemblyFileVersion("5.2.2026.0829")]
+[assembly: AssemblyInformationalVersion("5.2.0")]
