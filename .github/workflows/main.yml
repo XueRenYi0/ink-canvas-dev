@@ -2,9 +2,9 @@ name: .NET Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ dev-scroll ]
   pull_request:
-    branches: [ master ]
+    branches: [ dev-scroll ]
 
 jobs:
 

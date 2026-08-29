@@ -9,6 +9,9 @@ Other Projects/
 # History Versions
 History Versions/
 
+# NuGet 升级迁移备份（本地生成，不入库）
+MigrationBackup/
+
 #Installer
 Installer/
 
@@ -347,3 +350,9 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# NuGet 升级备份目录
+MigrationBackup/
+
+# 图标设计工作文件（本地预览）
+Resources/icon-preview.png

@@ -1,17 +1,17 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Ink Canvas")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("WXRIW")]
+[assembly: AssemblyTitle("Ink Canvas · 板书白板")]
+[assembly: AssemblyDescription("适用于课堂 PPT 放映和演示场景的板书白板：支持 PPT 批注、自由书写、选择缩放旋转、自定义图形图库、快捷键、笔记滚动、矩形橡皮擦等。")]
+[assembly: AssemblyConfiguration("Release")]
+[assembly: AssemblyCompany("Ink Canvas Team")]
 [assembly: AssemblyProduct("Ink Canvas")]
-[assembly: AssemblyCopyright("Copyright © XY Wang 2023")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCopyright("Copyright © Ink Canvas 2023–2026")]
+[assembly: AssemblyTrademark("Ink Canvas")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
@@ -49,5 +49,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("4.0.0.0")]
-[assembly: AssemblyFileVersion("4.0.0.0")]
+// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 统一升到 5.0.0，避免客户端自动更新提醒
+[assembly: AssemblyVersion("5.0.0.0")]
+[assembly: AssemblyFileVersion("5.0.2026.0829")]
+[assembly: AssemblyInformationalVersion("5.0.0")]
