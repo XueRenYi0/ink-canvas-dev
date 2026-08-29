@@ -11,8 +11,8 @@ namespace InkCanvasSetup
     {
         // 运行期间的安装元数据（发布时改这里即可）
         public const string AppName = "Ink Canvas";
-        public const string AppVersion = "5.0.0";
-        public const string DisplayVersion = "5.0.2026.0829";
+        public const string AppVersion = "5.1.0";
+        public const string DisplayVersion = "5.1.2026.0829";
         public const string Publisher = "Ink Canvas Team";
         public const string UninstallRegistryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + AppName;
         public static readonly string[] PayloadFolders = new[] { "payload" };
@@ -68,6 +68,28 @@ namespace InkCanvasSetup
             Directory.CreateDirectory(dst);
             foreach (var f in srcDir.GetFiles()) f.CopyTo(Path.Combine(dst, f.Name), true);
             foreach (var d in srcDir.GetDirectories()) CopyDirectory(d.FullName, Path.Combine(dst, d.Name));
+        }
+
+        // 单文件安装模式：把嵌入资源的 payload.zip（逻辑名以 payload.zip 结尾）释放到临时目录并解压
+        public static string ExtractEmbeddedPayload()
+        {
+            var asm = System.Reflection.Assembly.GetExecutingAssembly();
+            string resName = null;
+            foreach (var n in asm.GetManifestResourceNames())
+            {
+                if (n.EndsWith("payload.zip", StringComparison.OrdinalIgnoreCase)) { resName = n; break; }
+            }
+            if (resName == null) return null;
+            string dir = Path.Combine(Path.GetTempPath(), "InkCanvasSetup_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            string zipPath = dir + ".zip";
+            using (var s = asm.GetManifestResourceStream(resName))
+            using (var fs = File.Create(zipPath))
+            {
+                s.CopyTo(fs);
+            }
+            System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, dir);
+            try { File.Delete(zipPath); } catch { }
+            return dir;
         }
 
         public static void CreateShortcut(string shortcutPath, string targetPath, string workDir, string description, string iconPath = null)
@@ -172,11 +194,20 @@ namespace InkCanvasSetup
             string targetDir = txtPath.Text;
             try
             {
-                // 查找 payload 目录：优先 exe 同目录下的 payload 文件夹
+                // 查找 payload：优先 exe 同目录下的 payload 文件夹（zip 分发模式）；
+                // 找不到则释放嵌入资源 payload.zip（单文件 exe 安装包模式）
                 string exeDir = Path.GetDirectoryName(Application.ExecutablePath) ?? ".";
                 string payloadRoot = Path.Combine(exeDir, "payload");
-                if (!Directory.Exists(payloadRoot))
-                    throw new Exception("找不到 payload 安装目录，请确认 payload 文件夹与本安装程序在同一目录。");
+                bool embedded = false;
+                if (!Directory.Exists(payloadRoot) || Directory.GetFileSystemEntries(payloadRoot).Length == 0)
+                {
+                    payloadRoot = Program.ExtractEmbeddedPayload();
+                    embedded = payloadRoot != null;
+                }
+                if (payloadRoot == null || !Directory.Exists(payloadRoot))
+                    throw new Exception("找不到安装数据（payload）：外部 payload 文件夹与内置数据均不存在，安装包可能已损坏。");
+                if (embedded) lblInfo.Text = "已释放内置安装数据，正在复制文件…";
+                Application.DoEvents();
 
                 Directory.CreateDirectory(targetDir);
                 lblInfo.Text = "正在复制文件…";
