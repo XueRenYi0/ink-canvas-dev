@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -97,16 +97,50 @@ namespace Ink_Canvas
                     forcePointEraser = false;
                     break;
             }
-            inkCanvas.EraserShape = forcePointEraser ? new EllipseStylusShape(50, 50) : new EllipseStylusShape(5, 5);
+            inkCanvas.EraserShape = CreateEraserShape(forcePointEraser);
             inkCanvas.EditingMode =
                 forcePointEraser ? InkCanvasEditingMode.EraseByPoint : InkCanvasEditingMode.EraseByStroke;
             drawingShapeMode = 0;
-            GeometryDrawingEraser.Brush = forcePointEraser
-                ? new SolidColorBrush(Color.FromRgb(0x23, 0xA9, 0xF2))
-                : new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x66));
+            UpdateEraserIcon();
             ImageEraser.Visibility = Visibility.Collapsed;
             inkCanvas_EditingModeChanged(inkCanvas, null);
             CancelSingleFingerDragMode();
+        }
+
+        /// <summary>
+        /// 创建橡皮擦形状：黄金比例竖矩形（宽:高 = 1:1.618），大小取自设置面板5档
+        /// 档位宽度：30/45/60/80/100，高度 = 宽度 × 1.618（默认中档 60×97）
+        /// </summary>
+        private StylusShape CreateEraserShape(bool isPointEraser)
+        {
+            if (!isPointEraser) return new RectangleStylusShape(8, 8); // 笔画擦不显示橡皮轮廓，形状无所谓
+            int[] widths = { 30, 45, 60, 80, 100 };
+            int index = Settings.Canvas.EraserSize;
+            if (index < 0 || index >= widths.Length) index = 2; // 默认中档
+            int w = widths[index];
+            int h = (int)Math.Round(w * 1.618); // 黄金分割比
+            return new RectangleStylusShape(w, h);
+        }
+
+        /// <summary>
+        /// 根据当前擦除模式同步更新两层橡皮图标（未选中态 + 选中态），确保形状一致：
+        /// 面积擦：纯矩形橡皮（选中蓝、未选中灰）
+        /// 笔画擦：橡皮 + 波浪笔画穿过装饰（选中橙、未选中灰）
+        /// </summary>
+        private void UpdateEraserIcon()
+        {
+            if (forcePointEraser)
+            {
+                // 矩形面积擦：蓝色选中态 + 灰色未选中态，形状均为纯矩形
+                ImageEraser.Source = FindResource("ImageSource.RubberNormal") as DrawingImage;
+                ImageEraserMask.Source = FindResource("ImageSource.RubberSelectedPoint") as DrawingImage;
+            }
+            else
+            {
+                // 笔画擦：橙色选中态 + 灰色未选中态，形状均带波浪笔画+断裂标记
+                ImageEraser.Source = FindResource("ImageSource.RubberStrokeEraser") as DrawingImage;
+                ImageEraserMask.Source = FindResource("ImageSource.RubberSelectedStroke") as DrawingImage;
+            }
         }
 
         private void BtnClear_Click(object sender, RoutedEventArgs e)

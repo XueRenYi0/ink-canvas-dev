@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -259,7 +259,8 @@ namespace Ink_Canvas
             else
             {
                 isLastTouchEraser = false;
-                inkCanvas.EraserShape = forcePointEraser ? new EllipseStylusShape(50, 50) : new EllipseStylusShape(5, 5);
+                // 触摸事件橡皮形状：黄金比例竖矩形（与按钮逻辑共用同一方法）
+                inkCanvas.EraserShape = CreateEraserShape(forcePointEraser);
                 if (forceEraser) return;
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             }

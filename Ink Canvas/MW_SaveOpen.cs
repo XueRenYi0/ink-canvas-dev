@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -85,8 +85,22 @@ namespace Ink_Canvas
         private void SymbolIconPin_MouseUp(object sender, MouseButtonEventArgs e)
         {
             _lockSmith = !_lockSmith;
-            if (_lockSmith) LockSmithSymbol.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.UnPin;
-            else LockSmithSymbol.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.Pin;
+            UpdateGestureLockIcon();
+        }
+
+        /// <summary>双指手势锁图标状态：锁定=显示斜杠+手指变淡；解锁=隐藏斜杠+手指正常</summary>
+        private void UpdateGestureLockIcon()
+        {
+            if (_lockSmith)
+            {
+                PathGestureSlash.Visibility = Visibility.Visible;
+                PathGestureFingers.Opacity = 0.45;
+            }
+            else
+            {
+                PathGestureSlash.Visibility = Visibility.Collapsed;
+                PathGestureFingers.Opacity = 1.0;
+            }
         }
 
         private void SymbolIconOpenStrokes_MouseUp(object sender, MouseButtonEventArgs e)

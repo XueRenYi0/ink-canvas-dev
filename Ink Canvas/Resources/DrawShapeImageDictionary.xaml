@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <DrawingImage x:Key="DrawShapeImageSource.Circle">
         <DrawingImage.Drawing>
@@ -496,16 +496,28 @@
     </DrawingImage>
     <DrawingImage x:Key="DrawShapeImageSource.DrawShapeIcon">
         <DrawingImage.Drawing>
-            <DrawingGroup ClipGeometry="M0,0 V806.56 H868.59 V0 H0 Z">
-                <DrawingGroup Transform="1,0,0,1,-65.71,-96.72">
-                    <GeometryDrawing Brush="{DynamicResource FloatBarForeground}" Geometry="F1 M868.59,806.56z M0,0z M562,655.39C561.93,792.12 450.68,903.27 313.89,903.28 176.7,903.28 65.51,791.82 65.73,654.48 65.94,517.88 177.42,406.93 314.32,407.07 451,407.21 562.05,518.56 562,655.39z M500.25,655.54C500.35,552.64 417.25,469.02 314.71,468.81 211.25,468.59 127.57,551.72 127.47,654.81 127.38,757.71 210.47,841.32 313.01,841.54 416.45,841.76 500.14,758.62 500.23,655.54z" />
-                </DrawingGroup>
-                <DrawingGroup Transform="1,0,0,1,-65.71,-96.72">
-                    <GeometryDrawing Brush="{DynamicResource FloatBarForeground}" Geometry="F1 M868.59,806.56z M0,0z M587.75,717.08C590.08,696.17,592.29,676.36,594.63,655.48L849.63,655.48 665.33,341.9 559.18,518.72C557.47,516.72 556.07,515.23 554.89,513.61 544.47,499.26 534.31,484.7 523.53,470.61 520.53,466.67 519.89,464.18 522.53,459.79 561.22,395.63 599.59,331.27 638.32,267.13 652.23,244.13 679.84,244.98 693.8,268.7Q776.62,409.4,859.25,550.18C881.99,588.88 904.58,627.67 927.57,666.23 934.57,677.94 937.26,689.46 929.99,701.77 922.99,713.65 911.99,717.2 898.71,717.17Q748.39,716.92,598.07,717.08z" />
-                </DrawingGroup>
-                <DrawingGroup Transform="1,0,0,1,-65.71,-96.72">
-                    <GeometryDrawing Brush="{DynamicResource FloatBarForeground}" Geometry="F1 M868.59,806.56z M0,0z M562.23,328.74L562.23,159 251.88,159 251.88,381.15 190.34,402.94C190.19,400.16,189.88,397.13,189.88,394.11Q189.88,263.25 189.88,132.39 189.88,96.75 225.73,96.73 407.01,96.73 588.3,96.73 624.05,96.73 624.07,132.46C624.07,164.13 624.24,195.79 623.89,227.46 623.89,231.46 621.66,235.77 619.56,239.46 616.56,244.74 612.34,249.36 609.18,254.59 594.18,279.42 579.28,304.36 564.35,329.26z" />
-                </DrawingGroup>
+            <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
+                <!-- 三角形（实心） -->
+                <GeometryDrawing Brush="{DynamicResource FloatBarForeground}">
+                    <GeometryDrawing.Geometry>
+                        <PathGeometry Figures="M9.5,2.5 L14.5,10 L4.5,10 Z"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- 圆形（描边） -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="2"/>
+                    </GeometryDrawing.Pen>
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="6.5,15.5" RadiusX="4.6" RadiusY="4.6"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <!-- 正方形（实心，圆角） -->
+                <GeometryDrawing Brush="{DynamicResource FloatBarForeground}">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="13.5,11.5,8.5,9.5" RadiusX="1" RadiusY="1"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>

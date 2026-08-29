@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -175,7 +175,7 @@ namespace Ink_Canvas
                 FloatBarForegroundColor = (Color)Application.Current.FindResource("FloatBarForegroundColor");
             }
 
-            SymbolIconSelect.Foreground = new SolidColorBrush(FloatBarForegroundColor);
+            SetSelectToolColor(FloatBarForegroundColor);
             SymbolIconDelete.Foreground = new SolidColorBrush(FloatBarForegroundColor);
         }
 

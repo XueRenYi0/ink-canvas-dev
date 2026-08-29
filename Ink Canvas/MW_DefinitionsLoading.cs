@@ -26,6 +26,7 @@ using System.Windows.Input;
 using System.Windows.Input.StylusPlugIns;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Application = System.Windows.Application;
 using File = System.IO.File;
@@ -41,6 +42,13 @@ namespace Ink_Canvas
     {
         #region Definations and Loading
 
+        /// <summary>
+        /// 自定义图标的统一 StrokeThickness 基准。
+        /// 来源：同排 SeewoImageSource.PPTExitNormal，viewBox≈30 宽，矩形框 Pen Thickness=2 → 相对 2/30 ≈ 6.67%
+        /// 自定义图标 Grid Width=20 → 20 × 6.67% = 1.22（已与 Undo/Redo Symbol 原生笔画粗细对比校准通过）
+        /// </summary>
+        internal const double IconStrokeThickness = 1.22;
+
         public static Settings Settings = new Settings();
         public static string settingsFileName = "Settings.json";
         bool isLoaded = false;
@@ -48,7 +56,6 @@ namespace Ink_Canvas
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            //new CountdownTimerWindow().ShowDialog();
             //检查
             new Thread(new ThreadStart(() =>
             {
@@ -353,14 +360,13 @@ namespace Ink_Canvas
             {
                 ToggleSwitchDisableLockSmithByDefault.IsOn = true;
                 _lockSmith = false;
-                LockSmithSymbol.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.Pin;
             }
             else
             {
                 ToggleSwitchDisableLockSmithByDefault.IsOn = false;
                 _lockSmith = true;
-                LockSmithSymbol.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.UnPin;
             }
+            UpdateGestureLockIcon();
             if (Settings.Gesture.IsEnableTwoFingerZoom)
             {
                 ToggleSwitchEnableTwoFingerZoom.IsOn = true;
@@ -600,6 +606,8 @@ namespace Ink_Canvas
                         forcePointEraser = false;
                         break;
                 }
+                // 初始化橡皮图标（匹配当前模式）
+                UpdateEraserIcon();
 
                 ComboBoxEraserType.SelectedIndex = Settings.Canvas.EraserType;
 

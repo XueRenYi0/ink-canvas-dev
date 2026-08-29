@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -104,16 +104,28 @@ namespace Ink_Canvas
             {
                 inkCanvas1.ForceCursor = false;
             }
-            if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink) forcePointEraser = !forcePointEraser;
+            if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink)
+            {
+                forcePointEraser = !forcePointEraser;
+                UpdateEraserIcon();
+            }
 
             if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
             {
-                SymbolIconSelect.Foreground = new SolidColorBrush(Color.FromRgb(0, 136, 255));
+                SetSelectToolColor(Color.FromRgb(0, 136, 255));
             }
             else
             {
-                SymbolIconSelect.Foreground = new SolidColorBrush(FloatBarForegroundColor);
+                SetSelectToolColor(FloatBarForegroundColor);
             }
+        }
+
+        /// <summary>更新选择图标的颜色（虚线框描边 + 箭头填充共用同一画刷）</summary>
+        private void SetSelectToolColor(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            PathSelectBox.Stroke = brush;
+            PathSelectCursor.Fill = brush;
         }
 
         #endregion Ink Canvas
