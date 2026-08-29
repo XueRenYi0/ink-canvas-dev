@@ -96,6 +96,14 @@ namespace Ink_Canvas
         {
             if (!IsNoteScrollActive) return;
 
+            //Ctrl+滚轮：缩放批注（有选区缩选区，无选区缩当前屏幕全部批注），不滚动笔记
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (Math.Abs(e.Delta) >= 1 && ScaleAllOrSelection(e.Delta > 0 ? 1.1 : 0.9))
+                    e.Handled = true;
+                return;
+            }
+
             // 滚轮向上（正 Delta）= 回看上方历史；向下 = 露出下方空白
             var notches = e.Delta / 120.0;
             if (Math.Abs(notches) < 0.01) return;

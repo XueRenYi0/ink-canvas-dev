@@ -101,6 +101,8 @@
                   MouseDown="GridInkCanvasSelectionCover_MouseDown"
                   MouseUp="GridInkCanvasSelectionCover_MouseUp"
                   MouseMove="GridInkCanvasSelectionCover_MouseMove"
+                  PreviewMouseMove="GridInkCanvasSelectionCover_PreviewMouseMove"
+                  PreviewMouseWheel="GridInkCanvasSelectionCover_PreviewMouseWheel"
                   IsManipulationEnabled="True"
                   ManipulationStarting="GridInkCanvasSelectionCover_ManipulationStarting"
                   ManipulationCompleted="GridInkCanvasSelectionCover_ManipulationCompleted"
@@ -986,18 +988,6 @@
                         <!--初始 ScaleX=0：启动默认收起为单笑脸图标，与 borderFloatingBarMainControlsVisibility=false 对应-->
                         <ScaleTransform ScaleX="0"/>
                     </Border.RenderTransform>
-                    <Border.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
-                            <MenuItem Header="快捷键">
-                                <MenuItem Header="查看快捷键" Click="MenuItemShowShortcuts_Click"/>
-                                <MenuItem Header="恢复默认快捷键" Click="MenuItemResetShortcuts_Click"/>
-                            </MenuItem>
-                            <MenuItem Header="重启画板" Click="BtnRestart_Click"/>
-                            <Separator/>
-                            <MenuItem Header="退出" Click="BtnExit_Click"/>
-                        </ContextMenu>
-                    </Border.ContextMenu>
                     <ui:SimpleStackPanel Name="StackPanelFloatingBar" Spacing="10" Orientation="Horizontal">
                         <ui:SimpleStackPanel Name="StackPanelCanvacMain" Margin="10,5,0,5" Spacing="10" Orientation="{Binding ElementName=StackPanelFloatingBar, Path=Orientation}">
                             <Grid Height="24" Width="0">

@@ -68,6 +68,10 @@ namespace Ink_Canvas
                     } },
                 new ShortcutAction { Id = "Exit",      Name = "结束放映/退出", DefaultGesture = "Shift+Esc",
                     Execute = () => KeyExit(null, null) },
+                new ShortcutAction { Id = "ScaleUp",   Name = "放大批注",   DefaultGesture = "Ctrl+=",
+                    Execute = () => ScaleAllOrSelection(1.1) },
+                new ShortcutAction { Id = "ScaleDown", Name = "缩小批注",   DefaultGesture = "Ctrl+-",
+                    Execute = () => ScaleAllOrSelection(0.9) },
             };
 
             RebindAllShortcuts();
@@ -99,6 +103,13 @@ namespace Ink_Canvas
                 var command = new RoutedUICommand(action.Name, "dyn:" + action.Id, typeof(MainWindow));
                 var binding = new KeyBinding(command, key, mods);
                 InputBindings.Add(binding);
+
+                //数字小键盘 +/- 也映射到放大/缩小批注（主键盘 OemPlus/OemMinus 之外的第二位置）
+                if (action.Id == "ScaleUp" || action.Id == "ScaleDown")
+                {
+                    InputBindings.Add(new KeyBinding(command,
+                        action.Id == "ScaleUp" ? Key.Add : Key.Subtract, mods));
+                }
 
                 // 命令 → 动作：用 CommandBinding 挂到窗口，Executed 时调用对应 handler
                 CommandBindings.Add(new CommandBinding(command,
@@ -145,12 +156,14 @@ namespace Ink_Canvas
             key = Key.None;
             if (string.IsNullOrEmpty(s)) return false;
 
-            // 单字符：字母/数字（D0-D9 / A-Z）
+            // 单字符：字母/数字（D0-D9 / A-Z）、加/减号（OemPlus/OemMinus）
             if (s.Length == 1)
             {
                 char c = s[0];
                 if (char.IsLetter(c)) { key = (Key)Enum.Parse(typeof(Key), c.ToString().ToUpperInvariant()); return true; }
                 if (char.IsDigit(c)) { key = (Key)Enum.Parse(typeof(Key), "D" + c); return true; }
+                if (c == '=') { key = Key.OemPlus; return true; }
+                if (c == '-') { key = Key.OemMinus; return true; }
                 return false;
             }
 
