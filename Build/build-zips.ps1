@@ -30,6 +30,16 @@ Get-ChildItem -LiteralPath $src -Force | Where-Object {
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $stagedir $_.Name) -Recurse -Force
 }
 
+# 打包内使用说明（模板存于 Build/，纳入版本管理，Rebuild 不会丢）
+$readmeTpl = Join-Path $PSScriptRoot '使用说明 README.txt'
+if (Test-Path -LiteralPath $readmeTpl) {
+    $txt = [IO.File]::ReadAllText($readmeTpl)
+    [IO.File]::WriteAllText((Join-Path $stagedir '使用说明 README.txt'), $txt, [Text.UTF8Encoding]::new($true))
+    Write-Host '使用说明 README.txt: included'
+} else {
+    Write-Host 'WARN: 未找到 Build\使用说明 README.txt'
+}
+
 $exe = Join-Path $stagedir 'Ink Canvas.exe'
 $fvi = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
 $asm = [Reflection.AssemblyName]::GetAssemblyName($exe).Version
