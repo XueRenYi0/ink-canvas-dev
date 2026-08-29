@@ -56,7 +56,9 @@ namespace Ink_Canvas
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Children.Clear();
                 isInMultiTouchMode = false;
-                SymbolIconMultiTouchMode.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.People;
+                //切回单人书写：显示单人像（自绘 Path，与工具栏描边风格统一）
+                PathPersonSingle.Visibility = Visibility.Visible;
+                PathPeopleMulti.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -65,10 +67,14 @@ namespace Ink_Canvas
                 inkCanvas.StylusUp += MainWindow_StylusUp;
                 inkCanvas.TouchDown -= Main_Grid_TouchDown;
                 inkCanvas.TouchDown += MainWindow_TouchDown;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
+                //多人模式：保持 Ink 模式——鼠标/手写板仍走原生墨迹通道；
+                //Stylus/Touch 自定义多笔路径通过 e.Handled 防止双写，切后鼠标无需再点颜色就能写。
+                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Children.Clear();
                 isInMultiTouchMode = true;
-                SymbolIconMultiTouchMode.Symbol = iNKORE.UI.WPF.Modern.Controls.Symbol.Contact;
+                //开启多指书写：显示双人像（左前大人 + 右后小孩，错位布局）
+                PathPersonSingle.Visibility = Visibility.Collapsed;
+                PathPeopleMulti.Visibility = Visibility.Visible;
             }
         }
 
@@ -84,13 +90,16 @@ namespace Ink_Canvas
             else
             {
                 TouchDownPointsList[e.TouchDevice.Id] = InkCanvasEditingMode.None;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
+                //注意：Touch 不走原生 Ink 通道（保留 EditingMode=Ink 给鼠标用），触摸多笔靠自定义 Stylus 通道合成
+                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             }
+            e.Handled = true;
         }
 
         private void MainWindow_StylusDown(object sender, StylusDownEventArgs e)
         {
             TouchDownPointsList[e.StylusDevice.Id] = InkCanvasEditingMode.None;
+            e.Handled = true; //阻止 Stylus 再进入 Ink 原生通道，避免与多笔自定义路径双写
         }
 
         private void MainWindow_StylusUp(object sender, StylusEventArgs e)
@@ -120,6 +129,7 @@ namespace Ink_Canvas
                 }
             }
             catch { }
+            e.Handled = true;
         }
 
         private void MainWindow_StylusMove(object sender, StylusEventArgs e)
@@ -142,6 +152,7 @@ namespace Ink_Canvas
                 strokeVisual.Redraw();
             }
             catch { }
+            e.Handled = true;
         }
 
         private StrokeVisual GetStrokeVisual(int id)

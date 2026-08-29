@@ -350,6 +350,8 @@ namespace Ink_Canvas
             {
                 ToggleSwitchTransparentButtonBackground_Toggled(ToggleSwitchTransparentButtonBackground, null);
             }
+            // 深浅板面切换后重建底纹线色（白板浅灰线 / 黑板半透明白线）
+            ApplyWhiteboardPattern();
         }
         private void SetColorByIndex()
         {

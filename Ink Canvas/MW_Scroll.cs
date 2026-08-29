@@ -39,6 +39,18 @@ namespace Ink_Canvas
         /// <summary>滚轮每格（Delta=120）的步长：工作区高度的 10%，细粒度顺滑</summary>
         double NoteScrollWheelStep => SystemParameters.WorkArea.Height * 0.10;
 
+        /// <summary>滑块行程：轨道高 144 - 滑块高 14 - 上下边距 8 = 122px（与 XAML 胶囊结构对应）</summary>
+        const double ScrollThumbTravel = 122;
+
+        /// <summary>滑块拖动中标记（右侧 BorderScrollThumb / 左侧 BorderScrollThumbL 共用一套 handler）</summary>
+        bool _isDraggingScrollThumb = false;
+
+        /// <summary>左右胶囊各自是否被悬停（悬停时该侧显形为 1.0，离开回落到基础半透明）</summary>
+        bool _scrollHoverRight = false, _scrollHoverLeft = false;
+
+        /// <summary>胶囊基础不透明度：无墨迹更淡（没东西可滚），有墨迹仍保持安静姿态不抢书写视觉</summary>
+        double ScrollControlsBaseOpacity => inkCanvas.Strokes.Count == 0 ? 0.15 : 0.35;
+
         /// <summary>按钮可见性同步定时器（模式切换点分散，统一低频同步，避免逐点挂钩）</summary>
         DispatcherTimer _noteScrollVisibilityTimer;
 
@@ -71,13 +83,44 @@ namespace Ink_Canvas
             _noteScrollVisibilityTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
             _noteScrollVisibilityTimer.Tick += (s, e) =>
             {
-                GridNoteScrollControls.Visibility = IsNoteScrollActive ? Visibility.Visible : Visibility.Collapsed;
-                // 智能淡化：无墨迹（没东西可滚）时控件整体降为半透明，写字后恢复
-                GridNoteScrollControls.Opacity = inkCanvas.Strokes.Count == 0 ? 0.4 : 1.0;
+                //左右对称双胶囊同步显隐：两侧入口控制同一视图（共享 _noteScrollOffsetY）
+                var visibility = IsNoteScrollActive ? Visibility.Visible : Visibility.Collapsed;
+                GridNoteScrollControls.Visibility = visibility;
+                GridNoteScrollControlsLeft.Visibility = visibility;
+                // 智能淡化（悬停显形的基础态）：无墨迹（没东西可滚）更淡，写字后稍增；
+                // 悬停/拖动中的一侧不覆盖（由 MouseEnter/Leave handler 以 1.0 接管）
+                if (!_scrollHoverRight) GridNoteScrollControls.Opacity = ScrollControlsBaseOpacity;
+                if (!_scrollHoverLeft) GridNoteScrollControlsLeft.Opacity = ScrollControlsBaseOpacity;
                 // 墨迹增删会改变内容总深度 → 滑块与禁用态随定时器兜底刷新
                 UpdateScrollIndicators();
             };
             _noteScrollVisibilityTimer.Start();
+        }
+
+        /// <summary>右侧胶囊悬停：显形为完全不透明，离开回落到基础半透明</summary>
+        private void GridNoteScrollControls_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _scrollHoverRight = true;
+            GridNoteScrollControls.Opacity = 1.0;
+        }
+
+        private void GridNoteScrollControls_MouseLeave(object sender, MouseEventArgs e)
+        {
+            _scrollHoverRight = false;
+            GridNoteScrollControls.Opacity = ScrollControlsBaseOpacity;
+        }
+
+        /// <summary>左侧胶囊悬停：同右侧（两侧独立显形，互不牵连）</summary>
+        private void GridNoteScrollControlsLeft_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _scrollHoverLeft = true;
+            GridNoteScrollControlsLeft.Opacity = 1.0;
+        }
+
+        private void GridNoteScrollControlsLeft_MouseLeave(object sender, MouseEventArgs e)
+        {
+            _scrollHoverLeft = false;
+            GridNoteScrollControlsLeft.Opacity = ScrollControlsBaseOpacity;
         }
 
         private void NoteScroll_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
@@ -145,29 +188,85 @@ namespace Ink_Canvas
         }
 
         /// <summary>
-        /// 刷新滚动控件的指示状态：
-        /// 1. 滑块位置 = 当前偏移 / 内容总深度（墨迹最低点还原为虚拟坐标后超出首屏的部分 + 书写余量）；
-        /// 2. 边界禁用态：滚到顶时上箭头淡化（下方向无限延伸，永不禁用）。
+        /// 内容最大可滚深度：墨迹最低点（还原为虚拟坐标）超出首屏的部分 + 书写余量。
         /// 墨迹为物化坐标（滚动时已平移），bounds.Bottom + offset 还原为虚拟画布坐标。
+        /// 供滑块比例计算与拖动跳转（拖到哪滚到哪）共用。
+        /// </summary>
+        private double GetMaxScroll()
+        {
+            var bounds = inkCanvas.Strokes.GetBounds();
+            if (bounds.IsEmpty) return 0;
+            double contentBottom = bounds.Bottom + _noteScrollOffsetY;
+            return Math.Max(0, contentBottom - SystemParameters.WorkArea.Height + 160); // 留书写余量
+        }
+
+        /// <summary>
+        /// 刷新滚动控件的指示状态（左右两侧同步）：
+        /// 1. 滑块位置 = 当前偏移 / 最大可滚深度；
+        /// 2. 边界禁用态：滚到顶时上箭头淡化（下方向无限延伸，永不禁用）。
         /// </summary>
         private void UpdateScrollIndicators()
         {
-            // 边界禁用态
+            // 边界禁用态（两侧同步）
             PathScrollUp.Opacity = _noteScrollOffsetY <= 0.5 ? 0.35 : 1.0;
+            PathScrollUpL.Opacity = PathScrollUp.Opacity;
 
             // 滑块位置：ratio = 当前偏移 / 最大可滚深度
             double ratio = 0;
-            var bounds = inkCanvas.Strokes.GetBounds();
-            if (!bounds.IsEmpty)
-            {
-                double contentBottom = bounds.Bottom + _noteScrollOffsetY; // 还原虚拟坐标的内容底部
-                double maxScroll = contentBottom - SystemParameters.WorkArea.Height + 160; // 留书写余量
-                if (maxScroll > 0 && _noteScrollOffsetY > 0)
-                    ratio = Math.Min(1.0, _noteScrollOffsetY / maxScroll);
-            }
-            // 指示区高 48、滑块高 14、上下边距 4 → 行程 48-14-8=26
-            BorderScrollThumb.Margin = new Thickness(0, 4 + ratio * 26, 0, 0);
+            double maxScroll = GetMaxScroll();
+            if (maxScroll > 0 && _noteScrollOffsetY > 0)
+                ratio = Math.Min(1.0, _noteScrollOffsetY / maxScroll);
+            // 指示区高 144、滑块高 14、上下边距 4 → 行程 ScrollThumbTravel=122（两侧同步）
+            var thumbMargin = new Thickness(0, 4 + ratio * ScrollThumbTravel, 0, 0);
+            BorderScrollThumb.Margin = thumbMargin;
+            BorderScrollThumbL.Margin = thumbMargin;
         }
+
+        #region 滑块拖动（左右胶囊共用一套 handler）
+
+        /// <summary>滑块按下：捕获鼠标并立即跳到按压位置（无内容可滚时忽略）</summary>
+        private void BorderScrollThumb_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.Left) return;
+            if (GetMaxScroll() <= 0) return; // 没有可滚内容，拖动无意义
+            _isDraggingScrollThumb = true;
+            var thumb = (Border)sender;
+            try { thumb.CaptureMouse(); } catch { }
+            ScrollThumbFollowPointer(thumb, e.GetPosition((FrameworkElement)thumb.Parent));
+            e.Handled = true;
+        }
+
+        /// <summary>拖动中：滑块中心跟随鼠标，滚动实时映射（ScrollNote 内部即时刷新指示）</summary>
+        private void BorderScrollThumb_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isDraggingScrollThumb) return;
+            var thumb = (Border)sender;
+            ScrollThumbFollowPointer(thumb, e.GetPosition((FrameworkElement)thumb.Parent));
+        }
+
+        /// <summary>松开：释放捕获，指示回到精确比例位置</summary>
+        private void BorderScrollThumb_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isDraggingScrollThumb) return;
+            _isDraggingScrollThumb = false;
+            try { ((Border)sender).ReleaseMouseCapture(); } catch { }
+            UpdateScrollIndicators();
+        }
+
+        /// <summary>
+        /// 鼠标位置 → 滚动位置：滑块中心对齐鼠标 Y，换算为轨道比例，
+        /// 再乘最大可滚深度得到目标偏移，经 ScrollNote 跳转（矩阵物化一次完成）。
+        /// </summary>
+        private void ScrollThumbFollowPointer(Border thumb, Point pos)
+        {
+            // 滑块高 14：让滑块中心对准鼠标 → 顶边距 = y - 7；有效范围 [4, 4+Travel]
+            double desiredTop = pos.Y - 7;
+            double ratio = Math.Max(0, Math.Min(1, (desiredTop - 4) / ScrollThumbTravel));
+            // 拖到哪滚到哪：目标偏移 = 比例 × 最大深度（顶部夹取由 ScrollNote 内部完成）
+            ScrollNote(ratio * GetMaxScroll() - _noteScrollOffsetY);
+        }
+
+        #endregion
 
         #endregion
     }

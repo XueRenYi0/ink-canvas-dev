@@ -71,6 +71,11 @@ namespace Ink_Canvas
         [JsonProperty("usingWhiteboard")]
         public bool UsingWhiteboard { get; set; }
 
+        [JsonProperty("whiteboardPattern")]
+        public int WhiteboardPattern { get; set; } = 0; // 白板底纹：0=无 1=方格 2=横线（即改即存，下次启动继承）
+        [JsonProperty("whiteboardGridSize")]
+        public double WhiteboardGridSize { get; set; } = 40; // 底纹间距（px）：方格边长/横线行距共用
+
         [JsonProperty("hyperbolaAsymptoteOption")]
         public OptionalOperation HyperbolaAsymptoteOption { get; set; } = OptionalOperation.Ask;
     }

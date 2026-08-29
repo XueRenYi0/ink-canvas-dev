@@ -597,6 +597,9 @@ namespace Ink_Canvas
                     BtnSwitchTheme_Click(null, null);
                 }
 
+                // 白板底纹：恢复上次使用的类型与间距（MW_WhiteboardPattern.cs）
+                InitWhiteboardPatternUI();
+
                 switch (Settings.Canvas.EraserType)
                 {
                     case 1:
