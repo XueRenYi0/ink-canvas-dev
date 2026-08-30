@@ -81,15 +81,6 @@ namespace Ink_Canvas
             e.CanExecute = true;
         }
 
-        private void back_HotKey(object sender, ExecutedRoutedEventArgs e)
-        {
-            try
-            {
-                inkCanvas.Strokes.Remove(inkCanvas.Strokes[inkCanvas.Strokes.Count - 1]);
-            }
-            catch { }
-        }
-
         private void KeyExit(object sender, ExecutedRoutedEventArgs e)
         {
             BtnPPTSlideShowEnd_Click(BtnPPTSlideShowEnd, null);

@@ -103,10 +103,14 @@ namespace Ink_Canvas
                         if (inkCanvas.Strokes.Contains(strokes))
                             inkCanvas.Strokes.Remove(strokes);
                     }
-                    foreach (var strokes in item.ReplacedStroke)
+                    //ReplacedStroke 可能为 null（无原迹的替换型提交，如停顿拉直），防御性跳过
+                    if (item.ReplacedStroke != null)
                     {
-                        if (!inkCanvas.Strokes.Contains(strokes))
-                            inkCanvas.Strokes.Add(strokes);
+                        foreach (var strokes in item.ReplacedStroke)
+                        {
+                            if (!inkCanvas.Strokes.Contains(strokes))
+                                inkCanvas.Strokes.Add(strokes);
+                        }
                     }
                 }
                 else
@@ -116,10 +120,13 @@ namespace Ink_Canvas
                         if (!inkCanvas.Strokes.Contains(strokes))
                             inkCanvas.Strokes.Add(strokes);
                     }
-                    foreach (var strokes in item.ReplacedStroke)
+                    if (item.ReplacedStroke != null)
                     {
-                        if (inkCanvas.Strokes.Contains(strokes))
-                            inkCanvas.Strokes.Remove(strokes);
+                        foreach (var strokes in item.ReplacedStroke)
+                        {
+                            if (inkCanvas.Strokes.Contains(strokes))
+                                inkCanvas.Strokes.Remove(strokes);
+                        }
                     }
                 }
             }
@@ -254,7 +261,11 @@ namespace Ink_Canvas
             {
                 if (_currentCommitType == CommitReason.ShapeRecognition)
                 {
-                    timeMachine.CommitStrokeShapeHistory(ReplacedStroke, e.Added);
+                    //ReplacedStroke 可能为 null（拉直场景：EditingMode=None 后无手绘原迹被收集，
+                    //只有新直线被 Add）。null 传入会让历史项的 ReplacedStroke 为空，
+                    //撤销时 ApplyHistoryToCanvas 遍历它直接抛 NullReferenceException。
+                    //此处兜底传空集合，语义 = "没有原迹可恢复"。
+                    timeMachine.CommitStrokeShapeHistory(ReplacedStroke ?? new StrokeCollection(), e.Added);
                     ReplacedStroke = null;
                     return;
                 }

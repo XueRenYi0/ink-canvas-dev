@@ -5,13 +5,13 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Ink Canvas · 板书白板")]
+[assembly: AssemblyTitle("Inkboard · 板书白板")]
 [assembly: AssemblyDescription("适用于课堂 PPT 放映和演示场景的板书白板：支持 PPT 批注、自由书写、选择缩放旋转、自定义图形图库、快捷键、笔记滚动、矩形橡皮擦等。")]
 [assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyCompany("Ink Canvas Team")]
-[assembly: AssemblyProduct("Ink Canvas")]
-[assembly: AssemblyCopyright("Copyright © Ink Canvas 2023–2026")]
-[assembly: AssemblyTrademark("Ink Canvas")]
+[assembly: AssemblyCompany("Inkboard Team")]
+[assembly: AssemblyProduct("Inkboard")]
+[assembly: AssemblyCopyright("Copyright © Inkboard (formerly Ink Canvas) 2023–2026")]
+[assembly: AssemblyTrademark("Inkboard")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
@@ -49,9 +49,10 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 5.2.0：白板底纹（方格/横线）、滚动胶囊对称化+可拖滑块、
-// 翻页组左右对称+末页自动加页、退出白板显式出口（两侧✕+图标角标）、多人书写入驻悬浮栏并修复鼠标书写、
-// 默认白色板面启动、Inno Setup 正式安装包（替换自制 csc 安装器）
-[assembly: AssemblyVersion("5.2.0.0")]
-[assembly: AssemblyFileVersion("5.2.2026.0829")]
-[assembly: AssemblyInformationalVersion("5.2.0")]
+// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 6.0.0：更名 Inkboard（原 Ink Canvas）、
+// MathGraph 函数绘图模块（MathML 解析 + 采样绘制 + sin 快捷按钮）、数学公式识别面板、
+// 停顿拉直（两条线修复）、选中框旋转手柄、框外直接书写、图形面板位置/图库高度优化、
+// 撤销/快捷键统一走 TimeMachine
+[assembly: AssemblyVersion("6.0.0.0")]
+[assembly: AssemblyFileVersion("6.0.2026.0830")]
+[assembly: AssemblyInformationalVersion("6.0.0")]

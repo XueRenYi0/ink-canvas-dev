@@ -124,28 +124,9 @@ namespace Ink_Canvas
         /// </summary>
         private void inkCanvas_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            //有选中笔迹时：弹"识别为函数"菜单（框选识别入口，见 MW_MathGraph.cs）
-            if (inkCanvas.GetSelectedStrokes().Count > 0)
-            {
-                ShowMathContextMenu();
-                e.Handled = true;
-                return;
-            }
             if (GridBackgroundCover.Visibility != Visibility.Visible) return;
             ShowWhiteboardPatternMenu(inkCanvas);
             e.Handled = true;
-        }
-
-        /// <summary>
-        /// 框选笔迹后的右键菜单：识别为函数（选中笔迹 → 数学识别 → 原位替换成函数图像）
-        /// </summary>
-        private void ShowMathContextMenu()
-        {
-            var menu = new ContextMenu();
-            var item = new MenuItem { Header = "识别为函数" };
-            item.Click += (s, args) => RecognizeSelectedAsFunction();
-            menu.Items.Add(item);
-            menu.IsOpen = true;
         }
 
         /// <summary>

@@ -33,6 +33,10 @@ namespace Ink_Canvas
         //防触摸 promoted 鼠标事件双触发（StylusDown 与 MouseDown 会先后到达）
         DateTime lastCustomShapeInsertTime = DateTime.MinValue;
 
+        //整理模式（触摸屏删除入口）：开启后缩略图显示 × 角标，点角标即删；
+        //此模式下点缩略图本体不进入插入模式（防整理时误插入）
+        private bool _libraryEditMode = false;
+
         /// <summary>初始化：挂载落笔事件、加载已存图形</summary>
         private void InitCustomShapes()
         {
@@ -60,9 +64,10 @@ namespace Ink_Canvas
                 }
                 LoadCustomShapes(); //立即刷新面板，立等可见
                 //点击提示可直接打开图形面板（用户"不知道存到哪了"时一步直达）
+                //走 ShowShapePanel 统一入口：面板已解挂为自由小窗口，显示前需要先定位
                 ShowToastNotification("已存入图库 — 点击此处查看", () =>
                 {
-                    BorderDrawShape.Visibility = Visibility.Visible;
+                    ShowShapePanel();
                 });
             }
             catch (Exception ex)
@@ -75,7 +80,7 @@ namespace Ink_Canvas
 
         #region 面板加载
 
-        /// <summary>扫描 CustomShapes 目录，重建"我的图形"按钮行；无图形时整区折叠隐藏</summary>
+        /// <summary>扫描 CustomShapes 目录，重建"我的图形"缩略图墙；无图形时整区折叠隐藏</summary>
         private void LoadCustomShapes()
         {
             if (StackPanelCustomShapes == null) return;
@@ -97,28 +102,129 @@ namespace Ink_Canvas
                         ImageSource thumb = RenderShapeThumbnail(strokes);
                         if (thumb == null) continue;
 
-                        Image img = new Image();
-                        img.Source = thumb;
-                        img.MaxWidth = 44;
-                        img.MaxHeight = 32;
-                        img.Stretch = Stretch.Uniform;
-                        img.Margin = new Thickness(0, 6, 0, 6);
-                        img.VerticalAlignment = VerticalAlignment.Center;
-                        img.Cursor = Cursors.Hand;
-                        img.Tag = file;
-                        img.ToolTip = "左键点击后到画布上落笔插入\n右键可删除此图形";
-                        img.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
-                        img.MouseUp += CustomShapeButton_MouseUp;
-                        img.ContextMenu = BuildCustomShapeContextMenu(file);
-                        StackPanelCustomShapes.Children.Add(img);
+                        StackPanelCustomShapes.Children.Add(BuildShapeThumbCell(thumb, file));
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                //不再静默吞掉（上次"整理后图全消失"就是因为异常被吞、面板误判为空）
+                System.Diagnostics.Debug.WriteLine("[LoadCustomShapes] 加载失败: " + ex.Message);
+            }
+
+            int count = StackPanelCustomShapes.Children.Count;
+
+            //图数统计（0 个时隐藏计数，只留"图库"二字也不显示——整区都折叠了）
+            TextBlockLibraryCount.Text = count > 0 ? $"· {count} 个" : "";
+
+            //图删空时自动退出整理模式（角标无目标可挂，按钮状态回"整理"）
+            if (count == 0 && _libraryEditMode)
+            {
+                _libraryEditMode = false;
+                UpdateLibraryEditVisual();
+            }
 
             //空状态折叠整区（标题+行），不占面板空间
             StackPanelCustomShapesRow.Visibility =
-                StackPanelCustomShapes.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+                count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        /// <summary>
+        /// 构建单个图库缩略图格：64×56 格子（用户存的图形比内置图标金贵，格子放大一档）。
+        /// 缩略图一律填满格子（全貌可见）；整理模式下叠加红色 × 角标（触摸屏删除入口）。
+        /// </summary>
+        private Border BuildShapeThumbCell(ImageSource thumb, string file)
+        {
+            Border cell = new Border();
+            cell.Width = 64;
+            cell.Height = 56;
+            cell.Margin = new Thickness(2);
+            cell.CornerRadius = new CornerRadius(4);
+            cell.Background = Brushes.Transparent;
+            cell.BorderThickness = new Thickness(1);
+            cell.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 128, 128, 128)); //淡灰描边让格子可见
+            cell.Cursor = Cursors.Hand;
+            cell.Tag = file;
+            cell.ToolTip = _libraryEditMode
+                ? "整理模式：点 × 删除此图形"
+                : "左键点击后到画布上落笔插入\n右键可删除此图形";
+            cell.MouseDown += Border_MouseDown; //复用按下记录，配合 MouseUp 判定同一次点击
+            cell.MouseUp += CustomShapeButton_MouseUp;
+            if (!_libraryEditMode) cell.ContextMenu = BuildCustomShapeContextMenu(file); //整理模式右键菜单多余，不挂
+
+            Image img = new Image();
+            img.Source = thumb;
+            img.Stretch = Stretch.Uniform; //填满格子显示全貌（渲染时已按 maxSize 等比缩放）
+            img.HorizontalAlignment = HorizontalAlignment.Center;
+            img.VerticalAlignment = VerticalAlignment.Center;
+
+            if (_libraryEditMode)
+            {
+                //× 角标：红底白字小圆，叠在格子右上角；点击即删（Handled 拦住冒泡，不触发插入）
+                Border badge = new Border();
+                badge.Width = 16;
+                badge.Height = 16;
+                badge.CornerRadius = new CornerRadius(8);
+                badge.Background = new SolidColorBrush(Color.FromRgb(229, 72, 77));
+                badge.HorizontalAlignment = HorizontalAlignment.Right;
+                badge.VerticalAlignment = VerticalAlignment.Top;
+                badge.Margin = new Thickness(0, 1, 1, 0);
+                badge.Cursor = Cursors.Hand;
+                badge.ToolTip = "删除此图形";
+                TextBlock x = new TextBlock();
+                x.Text = "×";
+                x.Foreground = Brushes.White;
+                x.FontSize = 11;
+                x.FontWeight = FontWeights.Bold;
+                x.HorizontalAlignment = HorizontalAlignment.Center;
+                x.VerticalAlignment = VerticalAlignment.Center;
+                badge.Child = x;
+                badge.MouseLeftButtonUp += (s, args) =>
+                {
+                    args.Handled = true; //不冒泡到格子本体（否则会触发插入逻辑）
+                    try
+                    {
+                        File.Delete(file);
+                        LoadCustomShapes(); //立即刷新（角标全重建）
+                        ShowToastNotification("已删除该图形");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("删除失败：" + ex.Message);
+                    }
+                };
+
+                //格子内容 = 缩略图 + 角标（Grid 一次挂载，不要先 cell.Child=img 再加 Grid——WPF 元素只能有一个父级）
+                Grid g = new Grid();
+                img.Margin = new Thickness(2); //留出角标空间
+                g.Children.Add(img);
+                g.Children.Add(badge);
+                cell.Child = g;
+            }
+            else
+            {
+                cell.Child = img;
+            }
+
+            return cell;
+        }
+
+        /// <summary>"整理"按钮：切换整理模式（iOS 桌面式——缩略图显示 × 角标，触摸屏删除入口）</summary>
+        private void BorderLibraryEdit_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            _libraryEditMode = !_libraryEditMode;
+            UpdateLibraryEditVisual();
+            LoadCustomShapes(); //重挂缩略图（生成/移除 × 角标）
+        }
+
+        /// <summary>整理按钮的视觉状态：开启 = 蓝底白字"完成"，关闭 = 透明"整理"</summary>
+        private void UpdateLibraryEditVisual()
+        {
+            TextBlockLibraryEdit.Text = _libraryEditMode ? "完成" : "整理";
+            BorderLibraryEdit.Background = _libraryEditMode
+                ? new SolidColorBrush(Color.FromArgb(140, 0, 136, 255))
+                : Brushes.Transparent;
         }
 
         /// <summary>缩略图右键菜单：删除自定义图形（带确认）</summary>
@@ -148,7 +254,7 @@ namespace Ink_Canvas
             return menu;
         }
 
-        /// <summary>渲染墨迹集合缩略图（DrawingVisual + Stroke.Draw → RenderTargetBitmap）</summary>
+        /// <summary>渲染墨迹集合缩略图：按 maxSize 等比缩放填满（小图形放大、大图形缩小，全貌一律可见）</summary>
         private ImageSource RenderShapeThumbnail(StrokeCollection strokes)
         {
             try
@@ -157,13 +263,13 @@ namespace Ink_Canvas
                 if (bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0) return null;
 
                 const double margin = 6;
-
-                //缩放系数：图形整体（含 margin）必须装进 120px 内，笔画绘制与位图尺寸同步缩放
-                //（bug 修复：此前只缩了位图尺寸没缩绘制内容，大于120px的图形只截到包围盒左上角空白区域，缩略图全空）
                 const int maxSize = 120;
+
+                //缩放系数：一律填满 maxSize（不设 1.0 上限——小图形也放大到满格，全貌可见且视觉一致；
+                //位图渲染 maxSize 显示在格子里相当于超采样，清晰度无损）
                 double rawW = bounds.Width + margin * 2;
                 double rawH = bounds.Height + margin * 2;
-                double k = Math.Min(1.0, Math.Min(maxSize / rawW, maxSize / rawH));
+                double k = Math.Min(maxSize / rawW, maxSize / rawH);
 
                 DrawingVisual dv = new DrawingVisual();
                 using (DrawingContext dc = dv.RenderOpen())
@@ -200,6 +306,8 @@ namespace Ink_Canvas
             //只响应左键：右键释放会先于 ContextMenu 弹出触发本事件，若不拦截会误入插入模式
             if (e.ChangedButton != MouseButton.Left) return;
             if (lastBorderMouseDownObject != sender) return;
+            //整理模式下点缩略图本体不进入插入模式（此时点击的意图是管理而非使用）
+            if (_libraryEditMode) return;
 
             string file = (sender as FrameworkElement)?.Tag as string;
             if (file == null || !File.Exists(file)) return;
@@ -255,19 +363,8 @@ namespace Ink_Canvas
 
             inkCanvas.Strokes.Add(strokes); //走 StrokesChanged 常规历史，Ctrl+Z 一步撤掉
 
-            //自动选中（屏蔽 SelectionChanged 的快照副作用，快照由插入后重新捕获）
-            isProgramChangeStrokeSelection = true;
-            try { inkCanvas.Select(strokes); } catch { }
-            isProgramChangeStrokeSelection = false;
-
-            //恢复笔输入
-            forceEraser = false;
-            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-
-            //显示选区遮罩与控制条（此时快照 = 插入状态）
-            GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
-            inkCanvas_SelectionChanged(inkCanvas, EventArgs.Empty);
-            updateBorderStrokeSelectionControlLocation();
+            //统一走图形管理入口（打标签 + 自动选中 + 控制条），与函数图像等行为一致
+            InsertGraphStrokes(strokes);
         }
 
         #endregion 插入

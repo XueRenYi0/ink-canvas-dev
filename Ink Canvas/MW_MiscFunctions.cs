@@ -42,16 +42,7 @@ namespace Ink_Canvas
         #region Functions
 
         /// <summary>
-        /// 悬浮条右键菜单：打开"手写公式识别测试"窗口（可行性验证用，验证完可删）
-        /// </summary>
-        private void MenuItemHandwritingTest_Click(object sender, RoutedEventArgs e)
-        {
-            var window = new HandwritingTestWindow();
-            window.Show();
-        }
-
-        /// <summary>
-        /// 传入域名返回对应的IP 
+        /// 传入域名返回对应的IP
         /// </summary>
         /// <param name="domainName">域名</param>
         /// <returns></returns>

@@ -57,9 +57,60 @@ namespace Ink_Canvas.MathGraph
                 case "-": return l - r;
                 case "*": return l * r;
                 case "/": return l / r;
-                case "^": return Math.Pow(l, r);
+                case "^": return Power(l, r);
                 default: throw new FormatException("未知运算符 " + _op);
             }
+        }
+
+        /// <summary>
+        /// 数学意义的幂运算（比 Math.Pow 多处理一个教学关键场景）
+        ///
+        /// 问题：Math.Pow(-8, 1.0/3) 返回 NaN 而不是 -2（.NET 遵循 IEEE 754，
+        /// 负底数的非整数指数没有定义）。但中学数学里 x^(1/3) 是奇函数、
+        /// 定义域全体实数——负半轴必须有图（第三象限那支）。
+        ///
+        /// 修复：负底数 + 指数是"1/奇整数"时，符号提出来单独算：
+        ///   (-8)^(1/3) = -( 8^(1/3) ) = -2
+        /// 指数是其他非整数（如 x^0.5 负底数）仍返回 NaN——那才是真的无定义。
+        /// </summary>
+        private static double Power(double baseVal, double exponent)
+        {
+            if (baseVal >= 0 || double.IsNaN(baseVal))
+                return Math.Pow(baseVal, exponent);
+
+            //负底数：判断指数是不是 1/奇整数（1/3、1/5、-1/3 都算）
+            if (IsReciprocalOfOddInteger(exponent, out int oddDenominator))
+            {
+                //符号提出来：先算正底数的幂，再补回负号
+                double positive = Math.Pow(-baseVal, exponent);
+                //奇数分母 → 结果变号（(-8)^(1/3) = -(8^(1/3))）
+                return oddDenominator % 2 == 1 ? -positive : positive;
+            }
+
+            //其他非整数指数（负底数）真的无定义，交给 NaN 让画图层断段
+            return Math.Pow(baseVal, exponent);
+        }
+
+        /// <summary>
+        /// 判断指数是否是 1/n 或 -1/n 形式且 n 是奇整数
+        /// 例：0.3333...（手写识别精度有限）也按 1/3 认。
+        /// </summary>
+        private static bool IsReciprocalOfOddInteger(double exponent, out int oddDenominator)
+        {
+            oddDenominator = 0;
+            double absExp = Math.Abs(exponent);
+            if (absExp < 1e-9 || absExp > 1.0 + 1e-9) return false; //指数绝对值不在 (0,1] 内直接排除
+
+            //先猜分母：1/|指数| 四舍五入
+            double denomDouble = 1.0 / absExp;
+            int denom = (int)Math.Round(denomDouble);
+            if (denom < 1 || denom > 101) return false; //超过 1/101 的分数不考虑（识别精度达不到）
+
+            //验证猜出来的分母能否还原出原指数（容差吸收识别/浮点误差）
+            if (Math.Abs(1.0 / denom - absExp) > 1e-6) return false;
+
+            oddDenominator = denom;
+            return denom % 2 == 1; //只认奇数分母（偶数分母的负底数真无定义）
         }
     }
 
@@ -86,6 +137,16 @@ namespace Ink_Canvas.MathGraph
         public override double Evaluate(double x)
         {
             double v = _arg.Evaluate(x);
+            //带底数的对数 log₂x：名字形如 "log@2"（@ 后是底数，见 TokenizeElement 的 msub 分支）
+            if (_name != null && _name.StartsWith("log@", StringComparison.Ordinal))
+            {
+                double logBase;
+                if (!double.TryParse(_name.Substring(4),
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out logBase) || logBase <= 0 || logBase == 1)
+                    throw new FormatException("对数的底数必须是正数且不等于 1");
+                return Math.Log(v, logBase); //Math.Log(值, 底) = 任意底对数
+            }
             switch (_name)
             {
                 case "sin": return Math.Sin(v);
@@ -290,11 +351,11 @@ namespace Ink_Canvas.MathGraph
                     var parts = el.Elements().ToList();
                     if (parts.Count != 2) throw new FormatException("分式结构不完整");
                     tokens.Add(MakeParen("("));
-                    foreach (var child in parts[0].Elements()) TokenizeElement(child, tokens);
+                    TokenizeElement(parts[0], tokens);
                     tokens.Add(MakeParen(")"));
                     tokens.Add(new Token { Type = TokenType.Operator, Text = "/" });
                     tokens.Add(MakeParen("("));
-                    foreach (var child in parts[1].Elements()) TokenizeElement(child, tokens);
+                    TokenizeElement(parts[1], tokens);
                     tokens.Add(MakeParen(")"));
                     break;
 
@@ -303,11 +364,11 @@ namespace Ink_Canvas.MathGraph
                     var supParts = el.Elements().ToList();
                     if (supParts.Count != 2) throw new FormatException("上标结构不完整");
                     tokens.Add(MakeParen("("));
-                    foreach (var child in supParts[0].Elements()) TokenizeElement(child, tokens);
+                    TokenizeElement(supParts[0], tokens);
                     tokens.Add(MakeParen(")"));
                     tokens.Add(new Token { Type = TokenType.Operator, Text = "^" });
                     tokens.Add(MakeParen("("));
-                    foreach (var child in supParts[1].Elements()) TokenizeElement(child, tokens);
+                    TokenizeElement(supParts[1], tokens);
                     tokens.Add(MakeParen(")"));
                     break;
 
@@ -324,13 +385,14 @@ namespace Ink_Canvas.MathGraph
                     var rootParts = el.Elements().ToList();
                     if (rootParts.Count != 2) throw new FormatException("根式结构不完整");
                     tokens.Add(MakeParen("("));
-                    foreach (var child in rootParts[0].Elements()) TokenizeElement(child, tokens);
+                    TokenizeElement(rootParts[0], tokens);
                     tokens.Add(MakeParen(")"));
                     tokens.Add(new Token { Type = TokenType.Operator, Text = "^" });
                     tokens.Add(MakeParen("("));
-                    foreach (var child in rootParts[1].Elements()) TokenizeElement(child, tokens);
-                    tokens.Add(new Token { Type = TokenType.Operator, Text = "/" });
+                    //被开方数^(1/次数)：必须是 1/次数。原实现顺序写反（次数/1），立方根被算成了立方
                     tokens.Add(new Token { Type = TokenType.Number, Text = "1", Value = 1 });
+                    tokens.Add(new Token { Type = TokenType.Operator, Text = "/" });
+                    TokenizeElement(rootParts[1], tokens);
                     tokens.Add(MakeParen(")"));
                     break;
 
@@ -356,6 +418,28 @@ namespace Ink_Canvas.MathGraph
                     break;
 
                 case "msub":
+                    {
+                        //下标特例：对数带底数 log₂x（高中最常用的写法之一）
+                        //MathML 结构：<msub><mi>log</mi><mn>2</mn></msub> 后面跟 x 或 (x)
+                        //转换思路：记号名用 "log@2"（@分隔函数名和底数），求值时按底数算
+                        var subParts = el.Elements().ToList();
+                        if (subParts.Count == 2 &&
+                            (subParts[0].Name.LocalName == "mi" && subParts[0].Value.Trim() == "log"
+                             || subParts[0].Name.LocalName == "lg"))
+                        {
+                            double baseNum;
+                            if (double.TryParse(subParts[1].Value.Trim(),
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture, out baseNum) && baseNum > 0 && baseNum != 1)
+                            {
+                                tokens.Add(new Token { Type = TokenType.Function, Text = "log@" + baseNum });
+                                break;
+                            }
+                            throw new FormatException("对数的底数必须是正数且不等于 1");
+                        }
+                        //其他下标（数列 a₁、参数等）仍然不支持
+                        throw new FormatException("暂不支持下标（可能包含参数或数列记号）");
+                    }
                 case "msubsup":
                     throw new FormatException("暂不支持下标（可能包含参数或数列记号）");
 
@@ -375,6 +459,10 @@ namespace Ink_Canvas.MathGraph
                 tokens.Add(new Token { Type = TokenType.Constant, Text = "π", Value = Math.PI });
             else if (text == "e")
                 tokens.Add(new Token { Type = TokenType.Constant, Text = "e", Value = Math.E });
+            else if (KnownFunctions.Contains(text))
+                //函数名也可能出现在 <mi> 里（微软识别器对 sin/cos/ln 常输出 <mi>sin</mi>）。
+                //原实现只在 <mo> 分支认函数名，导致三角函数一律报"暂不支持符号"。
+                tokens.Add(new Token { Type = TokenType.Function, Text = text });
             else if (text == "y" || text == "Y")
             {
                 //y 是因变量名，画图时不需要它——真正的"="记号来自 <mo>=</mo>

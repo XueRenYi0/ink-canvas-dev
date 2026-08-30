@@ -23,9 +23,11 @@ namespace Ink_Canvas.MathGraph
         /// <param name="pixelHeight">目标画布高度</param>
         /// <param name="strokes">成功时输出笔迹集合（坐标系+曲线）</param>
         /// <param name="message">成功时是公式文本，失败时是中文原因</param>
+        /// <param name="penAttrs">画笔属性（曲线颜色/粗细跟随主画板当前画笔）；不传则用模块默认蓝色</param>
         /// <returns>成功与否（失败不抛异常，方便调用方简单处理）</returns>
         public static bool TryBuildGraph(string mathml, double pixelWidth, double pixelHeight,
-            out StrokeCollection strokes, out string message)
+            out StrokeCollection strokes, out string message,
+            DrawingAttributes penAttrs = null)
         {
             strokes = null;
             try
@@ -35,7 +37,7 @@ namespace Ink_Canvas.MathGraph
 
                 //第二段：采样函数 → 坐标系 + 曲线笔迹
                 //含绝对值的函数（|x| 等）有关键的尖角，必须用直线连接，平滑会把角拽弯
-                strokes = GraphBuilder.BuildGraphStrokes(f, pixelWidth, pixelHeight, smooth: !hasAbs);
+                strokes = GraphBuilder.BuildGraphStrokes(f, pixelWidth, pixelHeight, smooth: !hasAbs, penAttrs: penAttrs);
 
                 message = "已绘制：" + MathMLParser.ToPlainText(mathml);
                 return true;

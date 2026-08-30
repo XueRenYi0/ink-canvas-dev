@@ -1007,31 +1007,31 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
-    <!-- 函数识别图标：手写体 f 加 x，表示"写公式出函数图像" -->
+    <!-- 函数识别图标：十字坐标轴 + 抛物线（数学课本"函数图像"的标准符号）。
+         设计说明：26px 小尺寸下箭头会糊成色块，所以只画干净的十字轴 + 一条粗抛物线；
+         构图居中对称，轴细曲线粗（主次分明），缩小后依然一眼认出是"函数图像" -->
     <DrawingImage x:Key="DrawShapeImageSource.FunctionRecognize">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V750 H750 V0 H0 Z">
-                <!-- f 的竖钩 + 横弯钩（两段贝塞尔画出手写体 f 的形态） -->
-                <GeometryDrawing Geometry="M560,150 C480,130 430,170 430,250 L430,600">
+                <!-- 设计语义：笔尖 + 正在画出的正弦曲线
+                     笔 = 手写输入，正弦曲线 = 函数图像，一笔牵出曲线表达"手写公式 → 生成图像" -->
+                <!-- 正弦曲线：从笔尖延伸向右下（表达"正在被画出来"） -->
+                <GeometryDrawing Geometry="M300,330 C370,180 440,180 510,330 C580,480 650,480 710,390">
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="44" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
                     </GeometryDrawing.Pen>
                 </GeometryDrawing>
-                <GeometryDrawing Geometry="M330,330 L620,330">
+                <!-- 笔杆：从笔尖向左上延伸的粗斜线（笔尖在曲线起点处） -->
+                <GeometryDrawing Geometry="M300,330 L520,90">
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="66" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
                     </GeometryDrawing.Pen>
                 </GeometryDrawing>
-                <!-- 右下角手写体 x（两条交叉弧线，比直线 x 更像手写的样子） -->
-                <GeometryDrawing Geometry="M160,520 C190,490 215,465 235,445 C255,465 280,490 310,520">
-                    <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
-                    </GeometryDrawing.Pen>
-                </GeometryDrawing>
-                <GeometryDrawing Geometry="M160,445 C190,475 215,500 235,520 C255,500 280,475 310,445">
-                    <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
-                    </GeometryDrawing.Pen>
+                <!-- 笔尖小三角：笔杆末端的收锋（对比色块，示意笔尖触纸） -->
+                <GeometryDrawing Geometry="M300,330 L262,352 L282,312 Z">
+                    <GeometryDrawing.Brush>
+                        <SolidColorBrush Color="#FF0088FF" />
+                    </GeometryDrawing.Brush>
                 </GeometryDrawing>
             </DrawingGroup>
         </DrawingImage.Drawing>

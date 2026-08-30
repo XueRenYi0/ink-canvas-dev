@@ -115,7 +115,7 @@ namespace Ink_Canvas
                 openFileDialog.InitialDirectory = defaultFolderPath;
             }
             openFileDialog.Title = "打开墨迹文件";
-            openFileDialog.Filter = "Ink Canvas Strokes File (*.icstk)|*.icstk";
+            openFileDialog.Filter = "Inkboard Strokes File (*.icstk)|*.icstk";
             if (openFileDialog.ShowDialog() == true)
             {
                 LogHelper.WriteLogToFile(string.Format("Strokes Insert: Name: {0}", openFileDialog.FileName), LogHelper.LogType.Event);

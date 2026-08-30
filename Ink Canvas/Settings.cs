@@ -23,6 +23,23 @@ namespace Ink_Canvas
         public Startup Startup { get; set; } = new Startup();
         [JsonProperty("shortcuts")]
         public ShortcutSettings Shortcuts { get; set; } = new ShortcutSettings();
+        [JsonProperty("mathPanel")]
+        public MathPanelSettings MathPanel { get; set; } = new MathPanelSettings();
+    }
+
+    /// <summary>
+    /// 数学输入面板（手写函数识别）的窗口位置记忆。
+    /// 用户拖到哪，下次打开就在哪（关闭/插入时保存坐标）；
+    /// 首次启动没有记忆时用默认位置（主窗口所在屏中央偏上）。
+    /// </summary>
+    public class MathPanelSettings
+    {
+        [JsonProperty("hasPosition")]
+        public bool HasPosition { get; set; } = false;
+        [JsonProperty("x")]
+        public double X { get; set; } = 0;
+        [JsonProperty("y")]
+        public double Y { get; set; } = 0;
     }
 
     /// <summary>

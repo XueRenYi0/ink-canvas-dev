@@ -535,6 +535,11 @@ namespace Ink_Canvas
                     EasingFunction = new PowerEase() { Power = 4, EasingMode = EasingMode.EaseOut },
                 });
                 BorderFloatingBarMainControls.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(isAnimated ? 100 : 0)));
+
+                //工具条收起成笑脸时，图形面板一并收起：面板已"解挂"到主窗口根层
+                //（方案B），不再是工具条的后代，不会随祖先缩放自动消失——不补这行
+                //会出现"工具条没了、面板还孤零零浮在屏幕上"的状态
+                try { BorderDrawShape.Visibility = Visibility.Collapsed; } catch { }
             }
             else
             {

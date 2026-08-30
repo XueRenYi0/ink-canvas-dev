@@ -101,6 +101,7 @@ namespace Ink_Canvas
             inkCanvas.EditingMode =
                 forcePointEraser ? InkCanvasEditingMode.EraseByPoint : InkCanvasEditingMode.EraseByStroke;
             drawingShapeMode = 0;
+            UpdateShapeIconHighlight(); //熄灭图形图标高亮 + 结束一次性选中（搭车收口，见 MW_GraphStrokes.cs）
             UpdateEraserIcon();
             ImageEraser.Visibility = Visibility.Collapsed;
             inkCanvas_EditingModeChanged(inkCanvas, null);
@@ -197,7 +198,6 @@ namespace Ink_Canvas
             {
                 BtnFingerDragMode_Click(BtnFingerDragMode, null);
             }
-            isLongPressSelected = false;
         }
 
         private void BtnHideControl_Click(object sender, RoutedEventArgs e)
@@ -529,11 +529,15 @@ namespace Ink_Canvas
             {
                 StackPanelCanvasControls.Visibility = Visibility.Collapsed;
                 StackPanelCanvacMain.Visibility = Visibility.Visible;
+                //鼠标模式：图形绘制按钮随工具组一起消失，图形面板已"解挂"到主窗口根层
+                //不会随祖先收起——必须同步收起，否则面板孤零零浮在屏幕上但已无入口可用
+                try { BorderDrawShape.Visibility = Visibility.Collapsed; } catch { }
             }
             else
             {
                 StackPanelCanvasControls.Visibility = Visibility.Visible;
                 StackPanelCanvacMain.Visibility = Visibility.Collapsed;
+                //切回画板模式：面板保持收起（不自动弹出），等用户再点"图形绘制"按钮打开
             }
         }
 
@@ -607,45 +611,45 @@ namespace Ink_Canvas
                     item.Value.Clear();
                 }
             }
-            else
-            {
-                inkCanvas.IsManipulationEnabled = true;
-                drawingShapeMode = 0;
-                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-                CancelSingleFingerDragMode();
-                forceEraser = false;
 
-                // 改变选中提示
-                ViewboxBtnColorBlackContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                ViewboxBtnColorBlueContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-                switch (inkColor)
-                {
-                    case 0:
-                        ViewboxBtnColorBlackContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                    case 1:
-                        ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                    case 2:
-                        ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                    case 3:
-                        ViewboxBtnColorBlueContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                    case 4:
-                        ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                    case 5:
-                        ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                        break;
-                }
+            //恢复笔模式：无条件执行（原来在 else 分支里，改色历史未提交时会被整个跳过，
+            //导致 EditingMode 残留在 Select/擦除——点颜色后笔尖划过去"画不出东西"的根因）
+            inkCanvas.IsManipulationEnabled = true;
+            drawingShapeMode = 0;
+            UpdateShapeIconHighlight(); //切回笔时熄灭图形图标高亮
+            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
+            CancelSingleFingerDragMode();
+            forceEraser = false;
+
+            // 改变选中提示
+            ViewboxBtnColorBlackContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            ViewboxBtnColorBlueContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
+            switch (inkColor)
+            {
+                case 0:
+                    ViewboxBtnColorBlackContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
+                case 1:
+                    ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
+                case 2:
+                    ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
+                case 3:
+                    ViewboxBtnColorBlueContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
+                case 4:
+                    ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
+                case 5:
+                    ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
+                    break;
             }
 
-            isLongPressSelected = false;
         }
 
         private void BtnColorBlack_Click(object sender, RoutedEventArgs e)

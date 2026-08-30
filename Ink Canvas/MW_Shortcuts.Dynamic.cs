@@ -43,7 +43,10 @@ namespace Ink_Canvas
                 new ShortcutAction { Id = "Select",    Name = "选择",       DefaultGesture = "F4",
                     Execute = () => KeyChangeToSelect(null, null) },
                 new ShortcutAction { Id = "Undo",      Name = "撤销",       DefaultGesture = "Ctrl+Z",
-                    Execute = () => back_HotKey(null, null) },
+                    //走和菜单栏/悬浮条完全相同的 BtnUndo_Click（TimeMachine 历史栈）。
+                    //原来的 back_HotKey 是上游遗留：绕过历史栈直接删最后一条笔迹，
+                    //删的动作又作为脏历史入栈，Ctrl+Y 重做的是这条脏记录——撤销/重做自此错乱
+                    Execute = () => BtnUndo_Click(BtnUndo, null) },
                 new ShortcutAction { Id = "Redo",      Name = "重做",       DefaultGesture = "Ctrl+Y",
                     Execute = () => BtnRedo_Click(BtnRedo, null) },
                 new ShortcutAction { Id = "Clear",     Name = "清空墨迹",   DefaultGesture = "Ctrl+Del",

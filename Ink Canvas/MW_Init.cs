@@ -51,6 +51,10 @@ namespace Ink_Canvas
             BorderDrawShape.Visibility = Visibility.Collapsed;
             GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
 
+            //图形面板"解挂"到主窗口根层：从悬浮条的吊挂改为自由拖动小窗口（方案B，
+            //详见 MW_ShapeDrawing.cs 里的原理注释；失败时自动降级回旧吊挂方式）
+            DetachShapePanelToRoot();
+
             if (App.StartArgs.Contains("-b")) //-b border
             {
                 AllowsTransparency = false;
@@ -85,6 +89,8 @@ namespace Ink_Canvas
             inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
             InitNoteScroll();
             InitCustomShapes();
+            InitGraphStrokeGroupErasing(); //图形笔迹整组擦除：橡皮碰到图形任意部分即整组消失（见 MW_GraphStrokes.cs）
+            InitShapeIconStyles(); //图形图标三态视觉：悬停浅灰 / 激活蓝色高亮（见 MW_ShapeDrawing.cs）
 
             //启动即收起悬浮工具栏，只留笑脸把手（XAML 初始 ScaleX=0；单击把手展开；PPT 放映仍会自动展开）
             //-o（old ui）保持老行为：启动即展开

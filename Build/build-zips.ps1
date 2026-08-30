@@ -3,8 +3,8 @@ $repo = Split-Path -Parent $PSScriptRoot
 $r = Join-Path $repo 'Releases'
 $src = Join-Path $repo 'Ink Canvas\bin\Release'
 
-if (-not (Test-Path -LiteralPath (Join-Path $src 'Ink Canvas.exe'))) {
-    Write-Host ('未找到编译产物: ' + $src + '\Ink Canvas.exe — 请先运行 rebuild-release-v5.ps1')
+if (-not (Test-Path -LiteralPath (Join-Path $src 'Inkboard.exe'))) {
+    Write-Host ('未找到编译产物: ' + $src + '\Inkboard.exe — 请先运行 rebuild-release-v5.ps1')
     exit 1
 }
 
@@ -15,15 +15,15 @@ Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Extension -eq '.zip' } |
     Write-Host ('del: ' + $_.Name)
 }
 
-# 版本号（与 csproj / InkCanvas.iss / README 保持一致，升级时四处同步改）
-$ver = '5.2.0'
+# 版本号（与 AssemblyInfo.cs / InkCanvas.iss / rebuild 脚本保持一致，升级时四处同步改）
+$ver = '6.0.0'
 
 # 暂存目录：从 bin\Release 拷贝，排除运行期用户数据与调试文件
-$stagedir = Join-Path $r ('stage-v5\Ink Canvas v' + $ver)
+$stagedir = Join-Path $r ('stage-v6\Inkboard v' + $ver)
 $stageRoot = Split-Path -Parent $stagedir
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
 New-Item -ItemType Directory -Path $stagedir -Force | Out-Null
-$exclude = @('Log.txt', 'Settings.json', 'Versions.ini', 'custom.json', 'Ink Canvas.pdb')
+$exclude = @('Log.txt', 'Settings.json', 'Versions.ini', 'custom.json', 'Inkboard.pdb', 'Ink Canvas.pdb')
 $excludeDirs = @('CustomShapes', 'StylusTest', 'AutoSavedStrokes', 'History Versions')
 Get-ChildItem -LiteralPath $src -Force | Where-Object {
     ($_.PSIsContainer -and $excludeDirs -notcontains $_.Name) -or
@@ -43,14 +43,14 @@ if (Test-Path -LiteralPath $readmeTpl) {
     Write-Host 'WARN: 未找到 Build\使用说明 README.txt'
 }
 
-$exe = Join-Path $stagedir 'Ink Canvas.exe'
+$exe = Join-Path $stagedir 'Inkboard.exe'
 $fvi = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
 $asm = [Reflection.AssemblyName]::GetAssemblyName($exe).Version
 $iniPath = Join-Path $stagedir 'VersionInfo.ini'
 Write-Host ('stage: Assembly=' + $asm + '  File=' + $fvi.FileVersion + '  ini=' + [IO.File]::ReadAllText($iniPath).Trim())
 
 # Portable zip（暂存目录整体打包，解压后得到同名文件夹）
-$zipP = Join-Path $r ('InkCanvas-v' + $ver + '-Portable.zip')
+$zipP = Join-Path $r ('Inkboard-v' + $ver + '-Portable.zip')
 if (Test-Path -LiteralPath $zipP) { Remove-Item -LiteralPath $zipP -Force }
 Compress-Archive -LiteralPath $stagedir -DestinationPath $zipP -CompressionLevel Optimal -Force
 Write-Host ('+ portable: ' + $zipP + '   ' + [math]::Round((Get-Item -LiteralPath $zipP).Length/1MB,2) + ' MB')
@@ -65,7 +65,7 @@ $iscc = @(
 
 if ($iscc) {
     $iss = Join-Path $PSScriptRoot 'InkCanvas.iss'
-    $setupExe = Join-Path $r ('InkCanvas-v' + $ver + '-Setup.exe')
+    $setupExe = Join-Path $r ('Inkboard-v' + $ver + '-Setup.exe')
     if (Test-Path -LiteralPath $setupExe) { Remove-Item -LiteralPath $setupExe -Force }
     & $iscc $iss | Out-Null
     if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $setupExe)) {

@@ -8,10 +8,11 @@ namespace Ink_Canvas.MathGraph
     /// 函数图像 → 画板笔迹（Stroke）生成器
     ///
     /// 输入：一个"给 x 算 y"的函数 + 画布像素尺寸
-    /// 输出：一组笔迹（灰色坐标系 + 蓝色函数曲线），可直接加进 InkCanvas
+    /// 输出：一组笔迹（函数曲线 + 原点圆点标记），可直接加进 InkCanvas
     ///
     /// 设计要点：
-    /// - 坐标系刻度取整数（1 单位固定像素宽），保证图像上的点能和刻度对上
+    /// - 不自带坐标系（避免画板上出现多套坐标系），只在 (0,0) 处画一个圆点标记，
+    ///   老师把圆点拖到自己坐标系的原点即可对齐；比例固定 1 单位 = 30 像素
     /// - 曲线遇到间断点（1/x、tan 的渐近线）自动断笔，不会画出竖线假象
     /// - 只依赖 WPF 基础类型，不依赖主窗口任何代码（保持模块独立）
     /// </summary>
@@ -30,8 +31,10 @@ namespace Ink_Canvas.MathGraph
         /// <param name="pixelWidth">目标画布宽度（像素）</param>
         /// <param name="pixelHeight">目标画布高度（像素）</param>
         /// <param name="smooth">true=曲线平滑（适合 sin 等弯曲函数）；false=直线连接（适合 |x| 等折线函数，平滑会把尖角拽弯）</param>
+        /// <param name="penAttrs">画笔属性（颜色/粗细跟随主画板当前画笔）；不传则用模块默认的蓝色曲线</param>
         public static StrokeCollection BuildGraphStrokes(Func<double, double> f,
-            double pixelWidth, double pixelHeight, bool smooth = true)
+            double pixelWidth, double pixelHeight, bool smooth = true,
+            DrawingAttributes penAttrs = null)
         {
             //画布尺寸异常时用兜底值（比如窗口还没渲染完就调用了）
             if (pixelWidth < 10) pixelWidth = 800;
@@ -39,81 +42,48 @@ namespace Ink_Canvas.MathGraph
 
             var result = new StrokeCollection();
 
-            //坐标系和曲线用不同的笔迹样式
-            var axisAttrs = new DrawingAttributes
+            //曲线样式：优先跟随调用方传入的画笔属性（与图形面板"选中什么笔画出什么样"的大原则一致），
+            //没传时用模块默认的主题蓝
+            DrawingAttributes curveAttrs;
+            if (penAttrs != null)
             {
-                Color = Color.FromRgb(0x99, 0x99, 0x99), //灰色
-                Width = 1.5,
-                Height = 1.5,
-                FitToCurve = false,
-                IsHighlighter = false
-            };
-            var curveAttrs = new DrawingAttributes
+                curveAttrs = penAttrs.Clone();
+            }
+            else
             {
-                Color = Color.FromRgb(0x00, 0x66, 0xBF), //主题蓝
-                Width = 2.5,
-                Height = 2.5,
-                //平滑开关：FitToCurve=true 时 WPF 会在采样点之间做贝塞尔过渡，
-                //|x| 的 V 字尖角会被"拽弯"，所以折线类函数要关掉平滑
-                FitToCurve = smooth
-            };
+                curveAttrs = new DrawingAttributes
+                {
+                    Color = Color.FromRgb(0x00, 0x66, 0xBF), //主题蓝
+                    Width = 2.5,
+                    Height = 2.5,
+                    IsHighlighter = false
+                };
+            }
+            //平滑开关始终由函数形状决定（|x| 的 V 字尖角不能被平滑拽弯），
+            //所以这里统一覆盖，不照抄画笔里的 FitToCurve 设置
+            curveAttrs.FitToCurve = smooth;
 
-            //第一步：坐标系（横轴、竖轴、刻度）
-            AddAxes(result, pixelWidth, pixelHeight, axisAttrs);
-
-            //第二步：函数曲线（可能被渐近线分成好几段）
+            //第一步：函数曲线（可能被渐近线分成好几段）
             AddCurve(result, f, pixelWidth, pixelHeight, curveAttrs);
+
+            //第二步：原点圆点标记（不画坐标系——老师黑板上有自己的坐标系，
+            //把圆点拖到自己坐标系的 (0,0) 上即可对齐；比例 1 单位 = 30 像素）
+            var dotAttrs = curveAttrs.Clone();
+            dotAttrs.Width = curveAttrs.Width * 1.8; //比曲线稍粗，在曲线旁清晰可见
+            dotAttrs.Height = curveAttrs.Height * 1.8;
+            dotAttrs.FitToCurve = false; //单个点，无需平滑
+            //注意：Stroke 构造时集合必须已含点（空集合连给 Stroke 会抛异常），
+            //所以先把点装进集合、再构造
+            var dotPoints = new System.Windows.Input.StylusPointCollection();
+            dotPoints.Add(new System.Windows.Input.StylusPoint(pixelWidth / 2, pixelHeight / 2));
+            var dot = new Stroke(dotPoints) { DrawingAttributes = dotAttrs };
+            result.Add(dot);
 
             return result;
         }
 
         /// <summary>世界坐标 → 画布像素坐标（原点在画布中心）</summary>
-        private static double WorldToPixelX(double x, double w) { return w / 2 + x * PixelsPerUnit; }
         private static double WorldToPixelY(double y, double h) { return h / 2 - y * PixelsPerUnit; } //y 轴朝上，像素朝下，所以要翻转
-
-        /// <summary>生成坐标轴和整刻度小线段</summary>
-        private static void AddAxes(StrokeCollection result, double w, double h, DrawingAttributes attrs)
-        {
-            double cx = w / 2, cy = h / 2; //原点在画布中心
-
-            //横轴：从左到右一条水平线
-            result.Add(MakeStroke(new[]
-            {
-                new System.Windows.Input.StylusPoint(0, cy),
-                new System.Windows.Input.StylusPoint(w, cy)
-            }, attrs));
-
-            //竖轴：从上到下一条垂直线
-            result.Add(MakeStroke(new[]
-            {
-                new System.Windows.Input.StylusPoint(cx, 0),
-                new System.Windows.Input.StylusPoint(cx, h)
-            }, attrs));
-
-            //刻度：每 1 单位一个小线段，轴两侧各出 4 像素
-            int maxUnitX = (int)(w / 2 / PixelsPerUnit);
-            for (int i = -maxUnitX; i <= maxUnitX; i++)
-            {
-                if (i == 0) continue; //原点不用画刻度
-                double px = WorldToPixelX(i, w);
-                result.Add(MakeStroke(new[]
-                {
-                    new System.Windows.Input.StylusPoint(px, cy - 4),
-                    new System.Windows.Input.StylusPoint(px, cy + 4)
-                }, attrs));
-            }
-            int maxUnitY = (int)(h / 2 / PixelsPerUnit);
-            for (int i = -maxUnitY; i <= maxUnitY; i++)
-            {
-                if (i == 0) continue;
-                double py = WorldToPixelY(i, h);
-                result.Add(MakeStroke(new[]
-                {
-                    new System.Windows.Input.StylusPoint(cx - 4, py),
-                    new System.Windows.Input.StylusPoint(cx + 4, py)
-                }, attrs));
-            }
-        }
 
         /// <summary>采样函数生成曲线笔迹（含间断点断段逻辑）</summary>
         private static void AddCurve(StrokeCollection result, Func<double, double> f,

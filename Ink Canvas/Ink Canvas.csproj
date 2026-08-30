@@ -3,6 +3,8 @@
 		<TargetFramework>net472</TargetFramework>
 		<RuntimeIdentifiers>win;win-x86;win-x64;win-arm64;win7;win7-x86;win7-x64</RuntimeIdentifiers>
 		<OutputType>WinExe</OutputType>
+		<!--软件名 v6.0.0 起改为 Inkboard（原 Ink Canvas）：输出 exe = Inkboard.exe-->
+		<AssemblyName>Inkboard</AssemblyName>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
 		<UseWPF>true</UseWPF>

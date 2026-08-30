@@ -1,5 +1,6 @@
 ========================================
-  Ink Canvas · 板书白板  v5.1.0
+  Inkboard · 板书白板  v6.0.0
+  （原 Ink Canvas，v6.0.0 起更名为 Inkboard）
   https://github.com/XueRenYi0/ink-canvas-dev
 ========================================
 
@@ -13,8 +14,8 @@
 -------------------
 （绿色版压缩包步骤）
 1. 把整个文件夹解压到任意位置，例如：
-   D:\Programs\Ink Canvas\
-2. 双击运行 "Ink Canvas.exe"。
+   D:\Programs\Inkboard\
+2. 双击运行 "Inkboard.exe"。
 3. 建议：在 exe 上 右键 → 发送到 → 桌面快捷方式，方便以后启动。
 
 如果启动后 PPT 放映相关功能提示失败：
@@ -25,12 +26,13 @@
 三、安装包版怎么用
 -------------------
 方式一（推荐，单文件）：
-1. 下载 InkCanvas-v5.1.0-Setup.exe（单个 exe，双击即装，无需解压）。
-2. 按向导下一步即可；安装后桌面、开始菜单出现 "Ink Canvas" 快捷方式。
+1. 下载 Inkboard-v6.0.0-Setup.exe（单个 exe，双击即装，无需解压）。
+2. 按向导下一步即可；安装后桌面、开始菜单出现 "Inkboard" 快捷方式。
+3. 从旧版 Ink Canvas（v5.x）升级：安装器会自动迁移 Settings.json、
+   自定义图库（CustomShapes）等数据，并清理旧版快捷方式，无需手动操作。
 方式二（zip 分发）：
-1. 解压 InkCanvas-v5.1.0-Setup.zip，双击 "Setup.exe"，按向导下一步即可。
-2. 安装后桌面、开始菜单中都会出现 "Ink Canvas" 快捷方式。
-3. 卸载：控制面板 → 程序和功能 → Ink Canvas → 卸载（不会删除你自己的图库和 Settings.json 配置）。
+1. 解压 Inkboard-v6.0.0-Portable.zip 到任意目录，双击 "Inkboard.exe" 即可运行。
+2. 卸载：控制面板 → 程序和功能 → Inkboard → 卸载（不会删除你自己的图库和 Settings.json 配置）。
 
 
 四、主界面 / 悬浮条图标说明
@@ -135,8 +137,8 @@ Q5. 双指为什么不能缩放 / 平移笔迹？
 
 十一、版本信息
 ----------------------------
-文件名版本：v5.1.0
-文件详情版本：5.1.2026.0829 （2026-08-29 更新）
+文件名版本：v6.0.0
+文件详情版本：6.0.2026.0830 （2026-08-30 更新）
 兼容系统：Windows 10 1809+ / Windows 11
 推荐 Office：Microsoft Office PowerPoint（需要 PPT 放映批注功能时）
 

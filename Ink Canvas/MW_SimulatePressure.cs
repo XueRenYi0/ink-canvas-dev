@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -356,7 +356,57 @@ namespace Ink_Canvas
                         }
                         catch { }
                     }
+                    //前后对比法拦截识别结果：识别过程若把"手写笔迹"替换成了"标准图形笔迹"
+                    //（圆/椭圆/三角/矩形分支都是先 Remove 原笔迹再 Add 新笔迹），
+                    //新增的那条就是要选中的图形。四个分支不用逐个改，这里统一接住。
+                    List<Stroke> strokesBefore = new List<Stroke>();
+                    foreach (Stroke s in inkCanvas.Strokes) strokesBefore.Add(s);
                     InkToShapeProcess();
+                    StrokeCollection recognizedGraph = null;
+                    foreach (Stroke s in inkCanvas.Strokes)
+                    {
+                        if (!strokesBefore.Contains(s))
+                        {
+                            if (recognizedGraph == null) recognizedGraph = new StrokeCollection();
+                            recognizedGraph.Add(s);
+                        }
+                    }
+                    if (recognizedGraph != null)
+                    {
+                        //手写识别成图 → 打标签 + 自动选中（统一入口，见 MW_GraphStrokes.cs）
+                        InsertGraphStrokes(recognizedGraph);
+                    }
+                }
+
+                // ============ 直线识别（ClassIn 式"停顿拉直"） ============
+                // 笔按住不动超过阈值 → 当前笔迹拉直成预览线 → 按住不放可拖着端点
+                // 以起笔点为轴心旋转/伸缩 → 抬笔定型（详见 region 内注释）。
+                // 不依赖 InkAnalyzer（其 Line 判定过宽，且整条链路被 !Is64BitProcess 限制），
+                // 纯几何 + 停顿手势，32/64 位都生效。
+                if (_lineAssistArmed)
+                {
+                    try
+                    {
+                        if (_lineAssistCommitted)
+                        {
+                            //LineAssistEnd 已定型提交：这条是切 None 前的残影笔迹（部分 WPF 版本
+                            //会在抬笔时补交），直接删掉防"两条线"复活
+                            SetNewBackupOfStroke();
+                            _currentCommitType = CommitReason.ShapeRecognition;
+                            inkCanvas.Strokes.Remove(e.Stroke);
+                            _currentCommitType = CommitReason.UserInput;
+                            //删除动作会把 ReplacedStroke 悬空挂上这条残影（StrokesOnStrokesChanged
+                            //的 ShapeRecognition 分支只赋值不提交），清掉防止污染下一次形状识别的历史配对
+                            ReplacedStroke = null;
+                        }
+                        else
+                        {
+                            //兜底路径：采集仍产出了笔迹（未切 None 的场景），正常定型
+                            CommitLineAssist(e.Stroke);
+                        }
+                    }
+                    catch { }
+                    finally { ResetLineAssist(); }
                 }
 
                 // 检查是否是压感笔书写
@@ -541,6 +591,308 @@ namespace Ink_Canvas
         {
             return Math.Sqrt((point1.X - point2.X) * (point1.X - point2.X) + (point1.Y - point2.Y) * (point1.Y - point2.Y));
         }
+
+        #region 直线识别（ClassIn 式"停顿拉直"：停顿→拉直→拖拽转向→抬笔定型）
+
+        // ---------- 触发参数 ----------
+        private const double LineAssistMinLen = 40.0;      // 最短长度：短笔画（标点/部首）不参与
+        private const int LineAssistHoldMs = 600;         // 停顿时长：按住笔尖不动 600ms 才触发。
+                                                          // 防"一、二、三"误伤依据：写字收笔顿笔后通常
+                                                          // 100~200ms 内即抬笔，够不到 600ms 门槛；
+                                                          // 刻意画线时会主动按住等待，两拨人天然分开。
+        private const double LineAssistMaxDevRatio = 0.12; // 触发时直度要求（宽松）：写字中途停顿的
+                                                          // 弯笔画（竖弯钩画一半发呆）不触发。
+        private const double LineAssistSnapDeg = 4.0;     // 定型时角度吸附：接近水平/垂直吸正（画坐标轴刚需）
+
+        // ---------- 运行状态（单笔生命周期） ----------
+        private bool _lineAssistTracking = false;    // 笔已按下，正在跟踪（计时开始）
+        private bool _lineAssistArmed = false;      // 停顿已触发：进入"拉直+拖拽转向"模式
+        private Point _lineAssistStart;            // 锚点（起笔位置 = 旋转轴心）
+        private Point _lineAssistLastPos;          // 最新笔尖位置
+        private DateTime _lineAssistLastMoveTime;  // 最后一次移动时刻（停顿检测基准）
+        private List<Point> _lineAssistPoints;     // 到目前为止的采样点（触发时直度检查用）
+        private DispatcherTimer _lineAssistTimer;  // 停顿检测定时器
+        private System.Windows.Shapes.Line _lineAssistPreviewLine; // 预览直线（覆盖层，不挡输入）
+        private InkCanvasEditingMode _lineAssistSavedMode = InkCanvasEditingMode.Ink; // 触发时的原模式（恢复用）
+        private bool _lineAssistCommitted = false;     // 本次拉直是否已定型提交（防双提交/双删除）
+
+        // ===== 输入事件入口（XAML 挂在 inkCanvas 上，笔/触摸/鼠标三路全覆盖） =====
+
+        // 数位笔/触摸走 Stylus 事件（触摸会提升为 Stylus）
+        private void inkCanvas_LineAssistStylusDown(object sender, StylusDownEventArgs e)
+        {
+            //输入落在画布上（选区覆盖层只覆盖选中框附近）→ 取消选中让当前这一笔直接写出，
+            //不用先点一下空白。必须在各 return 之前：否则笔迹跟踪不启动时选中也无人取消
+            DeselectStrokesForCanvasInput();
+            LineAssistBegin(e.GetPosition(inkCanvas));
+        }
+
+        private void inkCanvas_LineAssistStylusMove(object sender, StylusEventArgs e)
+        {
+            LineAssistMove(e.GetPosition(inkCanvas));
+        }
+
+        private void inkCanvas_LineAssistStylusUp(object sender, StylusEventArgs e)
+        {
+            LineAssistEnd();
+        }
+
+        // 纯鼠标走鼠标事件（e.StylusDevice != null 表示是数位笔提升的鼠标事件，跳过防重复）
+        private void inkCanvas_LineAssistMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.StylusDevice != null) return;
+            //框外鼠标落点：取消选中（同 stylus 路径，鼠标按住拖动即可直接画出这一笔）
+            DeselectStrokesForCanvasInput();
+            LineAssistBegin(e.GetPosition(inkCanvas));
+        }
+
+        private void inkCanvas_LineAssistMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.StylusDevice != null) return;
+            LineAssistMove(e.GetPosition(inkCanvas));
+        }
+
+        private void inkCanvas_LineAssistMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.StylusDevice != null) return;
+            LineAssistEnd();
+        }
+
+        // ===== 状态机 =====
+
+        /// <summary>笔落下：初始化跟踪状态并启动停顿检测定时器</summary>
+        private void LineAssistBegin(Point p)
+        {
+            try
+            {
+                // 仅画笔模式 + 墨迹识别开启 + 无多点触摸时启用
+                if (!Settings.InkToShape.IsInkToShapeEnabled) return;
+                if (inkCanvas.EditingMode != InkCanvasEditingMode.Ink) return;
+                if (dec.Count != 0) return;
+
+                _lineAssistTracking = true;
+                _lineAssistArmed = false;
+                _lineAssistCommitted = false;
+                _lineAssistStart = p;
+                _lineAssistLastPos = p;
+                _lineAssistLastMoveTime = DateTime.Now;
+                _lineAssistPoints = new List<Point> { p };
+
+                if (_lineAssistTimer == null)
+                {
+                    _lineAssistTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+                    _lineAssistTimer.Tick += LineAssistTimerTick;
+                }
+                _lineAssistTimer.Start();
+            }
+            catch { }
+        }
+
+        /// <summary>笔尖移动：刷新位置与时刻；已进入拉直模式时预览线终点实时跟随（旋转/伸缩）</summary>
+        private void LineAssistMove(Point p)
+        {
+            if (!_lineAssistTracking) return;
+            _lineAssistLastPos = p;
+            _lineAssistLastMoveTime = DateTime.Now;
+            _lineAssistPoints.Add(p);
+            if (_lineAssistArmed) UpdateLineAssistPreview();
+        }
+
+        /// <summary>定时检测：笔按住不动超时 → 直度检查通过 → 触发拉直</summary>
+        private void LineAssistTimerTick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!_lineAssistTracking || _lineAssistArmed) return;
+
+                //停顿时长不足则继续等
+                if ((DateTime.Now - _lineAssistLastMoveTime).TotalMilliseconds < LineAssistHoldMs) return;
+
+                //长度门槛
+                double len = GetDistance(_lineAssistStart, _lineAssistLastPos);
+                if (len < LineAssistMinLen) return;
+
+                //直度门槛：所有采样点到"首点-停顿点"连线的最大垂距（叉积法）
+                double ux = (_lineAssistLastPos.X - _lineAssistStart.X) / len;
+                double uy = (_lineAssistLastPos.Y - _lineAssistStart.Y) / len;
+                double maxDev = 0;
+                foreach (var pt in _lineAssistPoints)
+                {
+                    double d = Math.Abs((pt.X - _lineAssistStart.X) * uy - (pt.Y - _lineAssistStart.Y) * ux);
+                    if (d > maxDev) maxDev = d;
+                }
+                if (maxDev / len > LineAssistMaxDevRatio) return; //弯笔画（写字中途停顿）不触发
+
+                //触发拉直：停顿已确认，进入"拉直 + 拖拽转向"模式
+                _lineAssistArmed = true;
+
+                // 关键：临时停止墨迹采集，消灭"两条线"。
+                // 进入 armed 后笔还没抬，InkCanvas 仍在实时采集笔尖位置——拖动预览线
+                // 转向时笔尖后面会拖着一条歪歪扭扭的"尾巴墨迹"，和预览直线并存。
+                // 切到 None 让采集立即停止（歪线定格不再生长），抬笔定型后再恢复 Ink。
+                // 注：不能走 DynamicRenderer.Enabled（保护成员，外部无法访问），此为公开 API 等效方案。
+                try
+                {
+                    _lineAssistSavedMode = inkCanvas.EditingMode;   // 记住原模式（正常是 Ink）
+                    inkCanvas.EditingMode = InkCanvasEditingMode.None;
+                }
+                catch { }
+
+                //若停止采集时这条歪线已被中途提交进 Strokes（笔按了很久的场景），直接删掉——
+                //最终反正会被直线替换，留着只会双线并存。走备份恢复路径，Ctrl+Z 还能救回。
+                try
+                {
+                    List<Stroke> toRemove = null;
+                    foreach (Stroke s in inkCanvas.Strokes)
+                    {
+                        if (s.StylusPoints.Count > 0)
+                        {
+                            var first = s.StylusPoints[0].ToPoint();
+                            //起点吻合且是本次跟踪期间新增的笔迹（用首个点位置近似匹配）
+                            if (Math.Abs(first.X - _lineAssistStart.X) < 1.0 && Math.Abs(first.Y - _lineAssistStart.Y) < 1.0)
+                            {
+                                if (toRemove == null) toRemove = new List<Stroke>();
+                                toRemove.Add(s);
+                            }
+                        }
+                    }
+                    if (toRemove != null)
+                    {
+                        SetNewBackupOfStroke();
+                        _currentCommitType = CommitReason.ShapeRecognition;
+                        foreach (Stroke s in toRemove) inkCanvas.Strokes.Remove(s);
+                        _currentCommitType = CommitReason.UserInput;
+                    }
+                }
+                catch { }
+
+                ShowLineAssistPreview();
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 抬笔：停表 + 定型提交。
+        /// 注意：armed 后 EditingMode 已临时切 None，InkCanvas 大概率不再产出 StrokeCollected，
+        /// 所以提交必须在这里闭环（用实时跟踪点生成直线），不能依赖 StrokeCollected。
+        /// </summary>
+        private void LineAssistEnd()
+        {
+            if (!_lineAssistTracking) return;
+            _lineAssistTracking = false;
+            try { _lineAssistTimer?.Stop(); } catch { }
+
+            //armed 且未提交 → 抬笔即定型。暂不 ResetLineAssist：万一 StrokeCollected
+            //仍随后触发（残留笔迹被提交的场景），交给它清残影后再复位；
+            //若没触发（常态），由下方 ContextIdle 兜底复位，避免预览线残留。
+            if (_lineAssistArmed && !_lineAssistCommitted)
+            {
+                try { CommitLineAssist(null); }
+                catch { }
+            }
+
+            //等事件队列排空（StrokeCollected 处理完残影后）再兜底清一次
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, (Action)(() =>
+            {
+                if (!_lineAssistTracking && _lineAssistArmed) ResetLineAssist();
+            }));
+        }
+
+        /// <summary>显示预览直线（颜色/粗细跟随当前画笔）</summary>
+        private void ShowLineAssistPreview()
+        {
+            try
+            {
+                if (_lineAssistPreviewLine == null)
+                {
+                    _lineAssistPreviewLine = new System.Windows.Shapes.Line
+                    {
+                        IsHitTestVisible = false //纯显示，不挡任何输入
+                    };
+                    Panel.SetZIndex(_lineAssistPreviewLine, 9999); //盖在最上层
+                }
+                _lineAssistPreviewLine.StrokeThickness = inkCanvas.DefaultDrawingAttributes.Width;
+                _lineAssistPreviewLine.Stroke = new SolidColorBrush(inkCanvas.DefaultDrawingAttributes.Color);
+
+                if (!Main_Grid.Children.Contains(_lineAssistPreviewLine))
+                    Main_Grid.Children.Add(_lineAssistPreviewLine);
+                UpdateLineAssistPreview();
+            }
+            catch { }
+        }
+
+        /// <summary>预览线坐标换算：inkCanvas 坐标系 → 主 Grid 坐标系（二者可能有边距差）</summary>
+        private void UpdateLineAssistPreview()
+        {
+            if (_lineAssistPreviewLine == null) return;
+            try
+            {
+                var toGrid = inkCanvas.TransformToAncestor(Main_Grid);
+                var s = toGrid.Transform(_lineAssistStart);
+                var t = toGrid.Transform(_lineAssistLastPos);
+                _lineAssistPreviewLine.X1 = s.X; _lineAssistPreviewLine.Y1 = s.Y;
+                _lineAssistPreviewLine.X2 = t.X; _lineAssistPreviewLine.Y2 = t.Y;
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 抬笔定型：手绘笔迹 → 笔直的线。
+        /// 端点 = 起笔点 + 抬笔点（拖拽转向的最终位置），接近水平/垂直时吸正；
+        /// 走 ShapeRecognition 替换型历史（Ctrl+Z 撤回手绘原迹）；打组标签 + 自动选中。
+        /// rawStroke 可为 null：armed 后墨迹采集已停（EditingMode=None），常态下没有原迹可传。
+        /// </summary>
+        private void CommitLineAssist(Stroke rawStroke)
+        {
+            //端点必须用实时跟踪值：rawStroke（若存在）的末点停在触发时刻，
+            //不是拖拽转向后的最终位置——以 _lineAssistLastPos 为准，否则定型线与预览线不一致。
+            var start = _lineAssistStart;
+            var end = _lineAssistLastPos;
+
+            //角度吸附（与水平/垂直夹角 < 4° 时终点对齐吸正，起点不动）
+            double angle = Math.Atan2(Math.Abs(end.Y - start.Y), Math.Abs(end.X - start.X)) * 180.0 / Math.PI;
+            if (angle < LineAssistSnapDeg) end = new Point(end.X, start.Y);        //吸水平
+            else if (angle > 90 - LineAssistSnapDeg) end = new Point(start.X, end.Y); //吸垂直
+
+            //笔迹属性：优先取手绘原迹（颜色粗细跟手），无原迹时跟当前画笔（与预览线一致）
+            DrawingAttributes da = (rawStroke != null ? rawStroke.DrawingAttributes : inkCanvas.DefaultDrawingAttributes).Clone();
+
+            //生成两点直线笔迹
+            var straight = new Stroke(new StylusPointCollection(new List<Point> { start, end }))
+            {
+                DrawingAttributes = da
+            };
+
+            //替换（与圆/矩形识别同一套替换型历史，Ctrl+Z 可撤回手绘原迹）
+            SetNewBackupOfStroke();
+            _currentCommitType = CommitReason.ShapeRecognition;
+            if (rawStroke != null) inkCanvas.Strokes.Remove(rawStroke); //残影笔迹若已提交则删掉
+            inkCanvas.Strokes.Add(straight);
+            _currentCommitType = CommitReason.UserInput;
+
+            //拉直的线也是"图形"：打标签 + 自动选中，可整组拖动/撤销
+            InsertGraphStrokes(new StrokeCollection(new[] { straight }));
+
+            _lineAssistCommitted = true; //标记已提交，后续 StrokeCollected 兜底只清残影、不再重复提交
+        }
+
+        /// <summary>复位：停表、恢复采集模式（Ink）、移除预览线</summary>
+        private void ResetLineAssist()
+        {
+            _lineAssistTracking = false;
+            _lineAssistArmed = false;
+            try { _lineAssistTimer?.Stop(); } catch { }
+            //恢复触发前保存的采集模式（消除"两条线"时临时切的 None，异常路径也保证恢复）
+            try { if (inkCanvas.EditingMode == InkCanvasEditingMode.None) inkCanvas.EditingMode = _lineAssistSavedMode; } catch { }
+            try
+            {
+                if (_lineAssistPreviewLine != null && Main_Grid.Children.Contains(_lineAssistPreviewLine))
+                    Main_Grid.Children.Remove(_lineAssistPreviewLine);
+            }
+            catch { }
+        }
+
+        #endregion
 
         public double GetPointSpeed(Point point1, Point point2, Point point3)
         {
