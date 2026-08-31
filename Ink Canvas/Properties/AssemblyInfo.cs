@@ -53,6 +53,6 @@ using System.Windows;
 // MathGraph 函数绘图模块（MathML 解析 + 采样绘制 + sin 快捷按钮）、数学公式识别面板、
 // 停顿拉直（两条线修复）、选中框旋转手柄、框外直接书写、图形面板位置/图库高度优化、
 // 撤销/快捷键统一走 TimeMachine
-[assembly: AssemblyVersion("6.0.0.0")]
-[assembly: AssemblyFileVersion("6.0.2026.0830")]
-[assembly: AssemblyInformationalVersion("6.0.0")]
+[assembly: AssemblyVersion("6.0.1.0")]
+[assembly: AssemblyFileVersion("6.0.2026.0831")]
+[assembly: AssemblyInformationalVersion("6.0.1")]

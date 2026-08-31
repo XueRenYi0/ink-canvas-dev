@@ -16,7 +16,7 @@ Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Extension -eq '.zip' } |
 }
 
 # 版本号（与 AssemblyInfo.cs / InkCanvas.iss / rebuild 脚本保持一致，升级时四处同步改）
-$ver = '6.0.0'
+$ver = '6.0.1'
 
 # 暂存目录：从 bin\Release 拷贝，排除运行期用户数据与调试文件
 $stagedir = Join-Path $r ('stage-v6\Inkboard v' + $ver)
