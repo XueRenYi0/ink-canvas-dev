@@ -75,7 +75,7 @@ namespace Ink_Canvas
         [JsonProperty("inkWidth")]
         public double InkWidth { get; set; } = 2.5;
         [JsonProperty("isShowCursor")]
-        public bool IsShowCursor { get; set; } = false;
+        public bool IsShowCursor { get; set; } = true; //默认开（笔形光标）：教室大屏距离远，笔形比红点好找落点；偏好红点可在设置里关
         [JsonProperty("inkStyle")]
         public int InkStyle { get; set; } = 0;
         [JsonProperty("eraserSize")]

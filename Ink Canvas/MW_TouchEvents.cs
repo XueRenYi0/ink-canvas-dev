@@ -83,7 +83,8 @@ namespace Ink_Canvas
             double boundWidth = e.GetTouchPoint(null).Bounds.Width;
             if (boundWidth > 20)
             {
-                inkCanvas.EraserShape = new EllipseStylusShape(boundWidth, boundWidth);
+                //粗触摸 → 矩形橡皮（与单人模式/工具栏同款黄金比例竖矩形，用户偏好矩形）
+                inkCanvas.EraserShape = new RectangleStylusShape(boundWidth, boundWidth * 1.618);
                 TouchDownPointsList[e.TouchDevice.Id] = InkCanvasEditingMode.EraseByPoint;
                 inkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
             }
@@ -245,7 +246,10 @@ namespace Ink_Canvas
                             k = 1.8;
                             break;
                     }
-                    inkCanvas.EraserShape = new EllipseStylusShape(boundsWidth * 1.5 * k * eraserMultiplier, boundsWidth * 1.5 * k * eraserMultiplier);
+                    //大面积（手掌/手背）→ 大号矩形橡皮：与工具栏橡皮同款黄金比例竖矩形（用户偏好矩形）。
+                    //宽度随接触面积自适应（手掌大→橡皮大），并应用橡皮档位系数 k 与触摸倍率
+                    double w = boundsWidth * 1.5 * k * eraserMultiplier;
+                    inkCanvas.EraserShape = new RectangleStylusShape(w, w * 1.618);
                     inkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
                 }
                 else
@@ -262,7 +266,8 @@ namespace Ink_Canvas
                         //inkCanvas.EraserShape = forcePointEraser ? new EllipseStylusShape(50, 50) : new EllipseStylusShape(5, 5); //last
                         //inkCanvas.EraserShape = new EllipseStylusShape(boundsWidth * 1.5, boundsWidth * 1.5); //old old
                         //inkCanvas.EditingMode = forcePointEraser ? InkCanvasEditingMode.EraseByPoint : InkCanvasEditingMode.EraseByStroke; //last
-                        inkCanvas.EraserShape = new EllipseStylusShape(5, 5);
+                        //指背等中等接触 → 按笔画擦：形状统一走 CreateEraserShape（笔画擦无轮廓，形状无视觉影响）
+                        inkCanvas.EraserShape = CreateEraserShape(false);
                         inkCanvas.EditingMode = InkCanvasEditingMode.EraseByStroke;
                     }
                 }

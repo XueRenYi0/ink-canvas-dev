@@ -1070,7 +1070,7 @@
                                 <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
                             </local:ClickSensitiveGrid>
                             <ui:SymbolIcon Symbol="Setting" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSettings_Click" ToolTip="设置"/>
-                            <ui:SymbolIcon Symbol="Refresh" FontSize="16" Foreground="{DynamicResource FloatBarForeground}" MouseUp="BtnRestart_Click" ToolTip="重启画板"/>
+                            <ui:SymbolIcon Symbol="Refresh" FontSize="16" Foreground="{DynamicResource FloatBarForeground}" MouseUp="BtnRestart_Click" ToolTip="重启画板（自动保存并恢复墨迹）"/>
                             <!-- 退出：圆圈+叉（经典关闭语义）。圆直径17（占位24高的~71%），与
                                  重启 Refresh 字形视觉平衡；粗细复用 IconStroke 与全栏 Path 图标统一。 -->
                             <Grid Height="24" Width="20" Background="Transparent" MouseUp="BtnExit_Click" ToolTip="退出">

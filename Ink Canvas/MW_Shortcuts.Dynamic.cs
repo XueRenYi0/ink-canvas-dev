@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas
 {
@@ -58,17 +59,7 @@ namespace Ink_Canvas
                 new ShortcutAction { Id = "Settings",  Name = "设置",       DefaultGesture = "F10",
                     Execute = () => SymbolIconSettings_Click(null, null) },
                 new ShortcutAction { Id = "Restart",   Name = "重启画板",   DefaultGesture = "Ctrl+Shift+R",
-                    Execute = () =>
-                    {
-                        // 有墨迹时先确认，防误触丢板书（复用现有确认逻辑风格）
-                        if (inkCanvas.Strokes.Count > 0)
-                        {
-                            var r = MessageBox.Show($"画布上有 {inkCanvas.Strokes.Count} 笔墨迹，重启将丢失。\n确定重启画板？",
-                                "重启画板", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                            if (r != MessageBoxResult.Yes) return;
-                        }
-                        BtnRestart_Click(null, null);
-                    } },
+                    Execute = () => RestartApp() }, // 安全重启：自动保存并恢复墨迹，无需确认
                 new ShortcutAction { Id = "Exit",      Name = "结束放映/退出", DefaultGesture = "Shift+Esc",
                     Execute = () => KeyExit(null, null) },
                 new ShortcutAction { Id = "ScaleUp",   Name = "放大批注",   DefaultGesture = "Ctrl+=",
@@ -245,6 +236,8 @@ namespace Ink_Canvas
             foreach (var (id, name, gesture) in all)
                 sb.AppendLine($"  {name,-8} {gesture}");
             sb.AppendLine();
+            sb.AppendLine("  重启画板（全局） Ctrl+Alt+Shift+R  ← 无需窗口焦点，任何界面按都有效");
+            sb.AppendLine();
             sb.AppendLine("修改方式：设置 → 快捷键（后续开放自定义界面）");
             sb.AppendLine("           或直接编辑 Settings.json 中 shortcuts.bindings");
             MessageBox.Show(sb.ToString(), "快捷键一览", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -262,6 +255,48 @@ namespace Ink_Canvas
             RebindAllShortcuts();
             ShowToastNotification("已恢复默认快捷键");
         }
+
+        #region 全局逃生热键
+
+        /// <summary>
+        /// 注册全局热键 Ctrl+Alt+Shift+R：安全重启（保存墨迹→重启→自动恢复）。
+        /// 为什么用全局热键（RegisterHotKey）而非窗口 KeyBinding：
+        /// 手写板卡死场景下 WPF 的 Stylus 输入线程已死，鼠标点击全灭、窗口焦点不可靠，
+        /// 但键盘通道独立、始终活着——全局热键只依赖系统消息队列，必定能触发。
+        /// 不提供自定义：逃生通道必须保证永远可用，用户自定义出冲突反而坏事。
+        /// </summary>
+        private void InitGlobalEscapeHotkey()
+        {
+            try
+            {
+                bool ok = Hotkey.Regist(this,
+                    HotkeyModifiers.MOD_CONTROL | HotkeyModifiers.MOD_ALT | HotkeyModifiers.MOD_SHIFT,
+                    Key.R, SafeRestartFromGlobalHotkey);
+                if (ok)
+                {
+                    LogHelper.WriteLogToFile("[EscapeHotkey] 全局逃生热键 Ctrl+Alt+Shift+R 注册成功", LogHelper.LogType.Event);
+                }
+                else
+                {
+                    //被其他软件占用：写日志 + Toast 提示一次，不弹窗打断
+                    LogHelper.WriteLogToFile("[EscapeHotkey] 全局热键注册失败（可能被其他软件占用）", LogHelper.LogType.Error);
+                    ShowToastNotification("全局逃生热键 Ctrl+Alt+Shift+R 注册失败，可能被其他软件占用");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLogToFile($"[EscapeHotkey] 注册异常: {ex.Message}", LogHelper.LogType.Error);
+            }
+        }
+
+        /// <summary>全局热键回调：直接安全重启（零交互，见 RestartApp 注释）</summary>
+        private void SafeRestartFromGlobalHotkey()
+        {
+            LogHelper.WriteLogToFile("[EscapeHotkey] 全局逃生热键触发，执行安全重启", LogHelper.LogType.Event);
+            RestartApp();
+        }
+
+        #endregion
 
         #endregion
     }

@@ -153,6 +153,12 @@ namespace Ink_Canvas
             // 初始化动态快捷键（此时窗口句柄已就绪，避免上次 bc673dd 在构造函数注册全局热键崩溃的坑）
             InitDynamicShortcuts();
 
+            // 注册全局逃生热键 Ctrl+Alt+Shift+R（手写板卡死时鼠标/触摸全灭，键盘是唯一活通道）
+            InitGlobalEscapeHotkey();
+
+            // 安全重启的墨迹恢复（-restore 参数 + recovery.icstk 存在时自动加载）
+            TryRestoreStrokesOnStartup();
+
             if (Environment.Is64BitProcess)
             {
                 GroupBoxInkRecognition.Visibility = Visibility.Collapsed;

@@ -603,6 +603,10 @@ namespace Ink_Canvas
         private const double LineAssistMaxDevRatio = 0.12; // 触发时直度要求（宽松）：写字中途停顿的
                                                           // 弯笔画（竖弯钩画一半发呆）不触发。
         private const double LineAssistSnapDeg = 4.0;     // 定型时角度吸附：接近水平/垂直吸正（画坐标轴刚需）
+        private const double LineAssistJitterPx = 2.0;   // 位移死区（DIP）：手写板/触摸屏静止接触时
+                                                          // 仍持续上报亚像素~1px 抖动（鼠标静止则不再
+                                                          // 发事件）。小于该值的"移动"视为手在抖/停顿
+                                                          // 中，不刷新停顿计时——否则停顿永远检测不到。
 
         // ---------- 运行状态（单笔生命周期） ----------
         private bool _lineAssistTracking = false;    // 笔已按下，正在跟踪（计时开始）
@@ -665,10 +669,13 @@ namespace Ink_Canvas
         {
             try
             {
-                // 仅画笔模式 + 墨迹识别开启 + 无多点触摸时启用
+                // 仅画笔模式 + 墨迹识别开启 + 非多指手势时启用
                 if (!Settings.InkToShape.IsInkToShapeEnabled) return;
                 if (inkCanvas.EditingMode != InkCanvasEditingMode.Ink) return;
-                if (dec.Count != 0) return;
+                //注意：单指触摸书写时 dec.Count == 1（PreviewTouchDown 已登记），
+                //必须放行——只有双指及以上的手势（dec.Count > 1）才排除。
+                //原写法 dec.Count != 0 会把所有触摸/手写板书写全部拒之门外（鼠标不触发 Touch 事件所以没事）
+                if (dec.Count > 1) return;
 
                 _lineAssistTracking = true;
                 _lineAssistArmed = false;
@@ -692,10 +699,25 @@ namespace Ink_Canvas
         private void LineAssistMove(Point p)
         {
             if (!_lineAssistTracking) return;
-            _lineAssistLastPos = p;
-            _lineAssistLastMoveTime = DateTime.Now;
-            _lineAssistPoints.Add(p);
-            if (_lineAssistArmed) UpdateLineAssistPreview();
+
+            //已触发拉直：笔尖实时拖动预览线（此时笔必然在动，无需死区判断）
+            if (_lineAssistArmed)
+            {
+                _lineAssistLastPos = p;
+                UpdateLineAssistPreview();
+                return;
+            }
+
+            //位移死区（防手写板/触摸屏微抖导致停顿检测失效）：
+            //相对上次"有效位置"的位移小于阈值 → 视为静止（手在抖或停顿中），
+            //不刷新停顿计时、不记采样点；累计位移一旦超过阈值即视为真实移动。
+            //（缓慢书写的鼠标也安全：位移相对"上次有效点"累计，慢移每几个事件就会被记一次）
+            if (GetDistance(_lineAssistLastPos, p) >= LineAssistJitterPx)
+            {
+                _lineAssistLastPos = p;
+                _lineAssistLastMoveTime = DateTime.Now;
+                _lineAssistPoints.Add(p);
+            }
         }
 
         /// <summary>定时检测：笔按住不动超时 → 直度检查通过 → 触发拉直</summary>

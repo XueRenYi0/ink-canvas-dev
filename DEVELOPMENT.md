@@ -43,6 +43,44 @@
 - **AI API 识别函数**：设想 = 框选笔迹 → RenderTargetBitmap 转图 → 视觉大模型
   返回表达式 → 现成 MathGraph 解析出图。设置页加 API 配置（OpenAI 兼容格式 +
   自填地址通吃各家）。体积零增长（HttpClient 自带），未动工。
+- **手写板/触摸屏热移除后"点不动"（2026-08-31 新增）**：
+  **症状**（Win10 学校机 + Win11 本机均复现）：批注状态下关闭手写板再重开 →
+  笔/触摸"悬停有光标、按下无反应"，点菜单也点不动；**鼠标、键盘正常**；
+  笔在别的软件正常；时好时坏（写久更易触发）。
+  **最终根因（查证确认，非本项目代码）**：WPF/.NET Framework 框架级 bug——
+  WPF 用两条线程处理输入：主线程（鼠标/键盘）+ **Stylus 输入线程**（`PenThreadWorker`
+  → COM `PenIMC`/RealTimeStylus）。设备插拔时该后台线程以一定概率死锁或误判"无设备"
+  （空句柄传入 `GetPenEventMultiple` 无限等待 / `WorkerOperationGetTabletsInfo` 抛
+  COMException 被 catch 吞掉返回空数组），导致笔的 Down 事件从此不再产生。
+  鼠标/键盘走独立通道不受影响，完美解释全部症状。.NET 4.5.1~4.8.1 均存在。
+  **决策：走"方案 A"——切换 WM_Pointer 消息栈**：App.config 加
+  `<AppContextSwitchOverrides value="Switch.System.Windows.Input.Stylus.EnablePointerSupport=true" />`
+  让 WPF 绕开有 bug 的 RealTimeStylus/PenThreadWorker 线程，改走 WM_Pointer。
+  本项 net472 满足 4.7+ 门槛（配置文件方式，启动即生效，零时序风险）。
+  **待实测**：①插拔手写板后笔是否恢复；②EnablePointerSupport 开启后压感/停顿拉直/
+  触摸三级分级是否仍正常（副作用：StylusPlugIns 失效，本项目未实际使用，仅死代码）。
+  **遗留（方向错的两刀，暂时保留未删）**：MW_Init.cs 的"设备插拔监听"（WM_DEVICECHANGE
+  → RefreshStylusDevices 反射 + ResetInputAfterDeviceChange）。其中的 `dec.Clear()`、
+  `ResetLineAssist()` 是对自有代码真实隐患（触摸脏ID、拉直悬死态）的修复，值得留；
+  `RefreshStylusDevices()` 反射部分对框架 bug 无效，`EnablePointerSupport` 若生效可考虑移除。
+  **✅ 最终解（2026-08-31 用户实测确认）**：关闭 Wacom 驱动里的"使用 Windows Ink"开关。
+  原理：开关关闭后手写板不再注册为 Windows 笔设备，WPF wisp 栈（wisptis/PenThreadWorker）
+  根本不接管它——笔输入全部走鼠标通道（主线程，健康），死锁线程与该设备再无关联。
+  本质是"方案 B 的驱动级精准版"：只影响手写板，触摸屏不受影响（优于框架级开关）。
+  代码层验证过的副作用：停顿拉直双通道设计（Stylus + Mouse，MainWindow.xaml
+  PreviewStylus* 与 PreviewMouse* 都挂了），鼠标路径仍工作 ✓；压感本就是模拟的 ✓；
+  笔的橡皮头端会退化成右键（可接受）。**注意：此开关是驱动/机器级设置，学校电脑
+  需同样设置。**
+  **已落地保留的兜底**：全局热键 Ctrl+Alt+Shift+R 安全重启（存墨迹→重启→自动恢复，
+  MW_Shortcuts.Dynamic.cs + MW_RightPanel.cs RestartApp/TryRestoreStrokesOnStartup），
+  键盘是卡死时唯一活通道，此兜底长期保留。
+  **看门狗方案（设备探测超时→自动重启）**：随根因解决而搁置，不再实施。
+- **触摸三级分级与双指滚动统一（2026-08-31 新增，未动工）**：
+  ① 三级分级：手指=书写、指背/并拢指尖=按笔画擦、手掌手背=大矩形橡皮（面积擦）。
+  现有骨架在 MW_TouchEvents.cs（BoundsWidth 与 ×2.5 两道坎），待加：级间迟滞
+  （防边界抖动）、ClassIn 式大面积接触确认延迟（防衣袖误触）。
+  ② 双指垂直拖动改为驱动 ScrollNote（与滚动胶囊位置同步刷新）；水平方向保持
+  手势平移语义，方向判定阈值 ±45°。
 
 ## 代码结构（MainWindow 已拆分为分部类）
 

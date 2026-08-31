@@ -50,11 +50,79 @@ namespace Ink_Canvas
 
         private void BtnRestart_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(System.Windows.Forms.Application.ExecutablePath, "-m");
+            RestartApp();
+        }
+
+        #region 安全重启（逃生舱核心）
+
+        /// <summary>恢复文件路径：与 Settings.json 同级的数据目录下的 recovery.icstk</summary>
+        private static string RecoveryFilePath =>
+            System.IO.Path.Combine(App.RootPath, "recovery.icstk");
+
+        /// <summary>
+        /// 安全重启：有墨迹时先静默存恢复文件，新实例带 -restore 参数启动后自动恢复。
+        /// 全程零交互（无弹窗）——这是硬要求：手写板卡死时鼠标/触摸全灭，任何弹窗都点不了。
+        /// </summary>
+        private void RestartApp()
+        {
+            try
+            {
+                //有墨迹才写恢复文件；空画布直接重启，不留垃圾文件
+                if (inkCanvas.Strokes.Count > 0)
+                {
+                    using (var fs = new System.IO.FileStream(RecoveryFilePath,
+                        System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                    {
+                        inkCanvas.Strokes.Save(fs); //存为 .icstk 格式（ISF），和手动保存同款
+                    }
+                    LogHelper.WriteLogToFile($"[Restart] 已保存恢复墨迹（{inkCanvas.Strokes.Count} 笔）→ {RecoveryFilePath}", LogHelper.LogType.Event);
+                }
+            }
+            catch (Exception ex)
+            {
+                //恢复文件写失败不阻断重启（宁可丢墨迹也不能让逃生舱失效）
+                LogHelper.WriteLogToFile($"[Restart] 恢复文件保存失败: {ex.Message}", LogHelper.LogType.Error);
+            }
+
+            //带 -m（允许多实例共存）+ -restore（启动时自动恢复墨迹）
+            Process.Start(System.Windows.Forms.Application.ExecutablePath, "-m -restore");
 
             CloseIsFromButton = true;
             Application.Current.Shutdown();
         }
+
+        /// <summary>
+        /// 启动时检查并恢复墨迹（MainWindow_Loaded 后调用）。
+        /// 只认 -restore 参数 + 恢复文件存在：正常启动/崩溃残留都不会误恢复。
+        /// 恢复成功即删文件，避免下次正常启动时"旧墨迹诈尸"。
+        /// </summary>
+        private void TryRestoreStrokesOnStartup()
+        {
+            try
+            {
+                if (!App.StartArgs.Contains("-restore")) return;
+                if (!File.Exists(RecoveryFilePath)) return;
+
+                using (var fs = new System.IO.FileStream(RecoveryFilePath,
+                    System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                {
+                    var strokes = new StrokeCollection(fs);
+                    if (strokes.Count > 0)
+                    {
+                        inkCanvas.Strokes.Add(strokes);
+                        ShowToastNotification($"已恢复重启前的 {strokes.Count} 笔墨迹");
+                    }
+                }
+                File.Delete(RecoveryFilePath); //恢复完就删，防止重复恢复
+                LogHelper.WriteLogToFile("[Restart] 恢复墨迹完成，恢复文件已删除", LogHelper.LogType.Event);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLogToFile($"[Restart] 恢复墨迹失败: {ex.Message}", LogHelper.LogType.Error);
+            }
+        }
+
+        #endregion
 
         private async void BtnSettings_Click(object sender, RoutedEventArgs e)
         {
