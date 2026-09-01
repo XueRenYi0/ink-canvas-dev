@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -192,6 +192,9 @@ namespace Ink_Canvas
         private void UpdateIndexInfoDisplay()
         {
             TextBlockWhiteBoardIndexInfo.Text = string.Format("{0} / {1}", CurrentWhiteboardIndex, WhiteboardTotalCount);
+
+            //换页后同步图片层可见性（图片按白板页存储、常驻不销毁，只切换显隐；见 MW_ImageLayer.cs）
+            ImageLayer_RefreshVisibility();
 
             if (CurrentWhiteboardIndex == 1)
             {

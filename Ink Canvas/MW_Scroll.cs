@@ -83,6 +83,10 @@ namespace Ink_Canvas
             _noteScrollVisibilityTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
             _noteScrollVisibilityTimer.Tick += (s, e) =>
             {
+                //图片层显隐低频兜底：模式切换点分散（白板/注释/隐藏画板），
+                //换页已有即时刷新，其余切换点由这里兜底同步（内部有缓存，无谓遍历零开销）
+                ImageLayer_RefreshVisibility();
+
                 //左右对称双胶囊同步显隐：两侧入口控制同一视图（共享 _noteScrollOffsetY）
                 var visibility = IsNoteScrollActive ? Visibility.Visible : Visibility.Collapsed;
                 GridNoteScrollControls.Visibility = visibility;
@@ -182,6 +186,8 @@ namespace Ink_Canvas
             // 向下滚动 actual>0，墨迹整体上移（Y 减小）
             var matrix = new Matrix(1, 0, 0, 1, 0, -actual);
             inkCanvas.Strokes.Transform(matrix, true);
+            // 图片层同向同量平移（墨迹滚走图片钉原地=不同步 bug，见 MW_ImageLayer.cs）
+            ImageLayer_OnScrolled(actual);
             _noteScrollOffsetY = target;
 
             UpdateScrollIndicators(); // 滚动即时刷新位置指示与禁用态
@@ -195,8 +201,21 @@ namespace Ink_Canvas
         private double GetMaxScroll()
         {
             var bounds = inkCanvas.Strokes.GetBounds();
-            if (bounds.IsEmpty) return 0;
-            double contentBottom = bounds.Bottom + _noteScrollOffsetY;
+            // 图片底边也计入内容深度（纯图片页没写字也能滚，否则长图下半截永远看不到）
+            double imgBottom = ImageLayer_GetContentBottom();
+            double contentBottom;
+            if (bounds.IsEmpty)
+            {
+                if (double.IsNaN(imgBottom)) return 0;
+                contentBottom = imgBottom;
+            }
+            else
+            {
+                contentBottom = bounds.Bottom;
+                if (!double.IsNaN(imgBottom) && imgBottom > contentBottom) contentBottom = imgBottom;
+            }
+            // 墨迹为物化坐标（滚动时已平移），还原为虚拟画布坐标
+            contentBottom += _noteScrollOffsetY;
             return Math.Max(0, contentBottom - SystemParameters.WorkArea.Height + 160); // 留书写余量
         }
 

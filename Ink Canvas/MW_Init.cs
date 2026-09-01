@@ -88,6 +88,9 @@ namespace Ink_Canvas
             timeMachine.OnUndoStateChanged += TimeMachine_OnUndoStateChanged;
             inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
             InitNoteScroll();
+            InitImageLayer(); //页面图片层：截图/本地图片按白板页存储（见 MW_ImageLayer.cs）
+            InitSystemScreenshotHook(); //系统截图对接：剪贴板监听（ms-screenclip: 框选完自动存入白板，见 MW_Capture.cs）
+            PreviewMouseDown += ImageLayer_MenuCloseOnOutsideClick; //截图菜单：点窗口任意位置自动关闭
             InitCustomShapes();
             InitGraphStrokeGroupErasing(); //图形笔迹整组擦除：橡皮碰到图形任意部分即整组消失（见 MW_GraphStrokes.cs）
             InitShapeIconStyles(); //图形图标三态视觉：悬停浅灰 / 激活蓝色高亮（见 MW_ShapeDrawing.cs）

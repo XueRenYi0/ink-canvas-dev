@@ -71,6 +71,7 @@ namespace Ink_Canvas
                 //Stylus/Touch 自定义多笔路径通过 e.Handled 防止双写，切后鼠标无需再点颜色就能写。
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Children.Clear();
+                ImageLayer_EnsureHost(); //图片层宿主被上面的 Clear 一并清掉，此处自愈挂回
                 isInMultiTouchMode = true;
                 //开启多指书写：显示双人像（左前大人 + 右后小孩，错位布局）
                 PathPersonSingle.Visibility = Visibility.Collapsed;
@@ -99,6 +100,9 @@ namespace Ink_Canvas
 
         private void MainWindow_StylusDown(object sender, StylusDownEventArgs e)
         {
+            //用户回到画布落笔 = 放弃系统截图等待（防止之后自己复制的图被误插进白板）
+            CancelAwaitingSystemScreenshot();
+
             TouchDownPointsList[e.StylusDevice.Id] = InkCanvasEditingMode.None;
             e.Handled = true; //阻止 Stylus 再进入 Ink 原生通道，避免与多笔自定义路径双写
         }
@@ -124,6 +128,7 @@ namespace Ink_Canvas
                 if (StrokeVisualList.Count == 0 || VisualCanvasList.Count == 0 || TouchDownPointsList.Count == 0)
                 {
                     inkCanvas.Children.Clear();
+                    ImageLayer_EnsureHost(); //图片层宿主被上面的 Clear 一并清掉，此处自愈挂回
                     StrokeVisualList.Clear();
                     VisualCanvasList.Clear();
                     TouchDownPointsList.Clear();

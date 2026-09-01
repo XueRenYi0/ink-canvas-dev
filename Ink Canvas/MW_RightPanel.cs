@@ -245,6 +245,7 @@ namespace Ink_Canvas
 
             ClearStrokes(false);
             inkCanvas.Children.Clear();
+            ImageLayer_EnsureHost(); //清屏只清墨迹与临时书写视觉，图片层自愈挂回（素材防误删）
 
             CancelSingleFingerDragMode();
         }
