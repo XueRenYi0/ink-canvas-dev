@@ -81,6 +81,10 @@ namespace Ink_Canvas
 
         private void MainWindow_TouchDown(object sender, TouchEventArgs e)
         {
+            //选择工具下放行原生通道：图片/墨迹的选中拖动靠 InkCanvas 原生处理，
+            //此处 e.Handled 拦截会导致"图片中央拖不动"（只碰得到边缘手柄）
+            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select) return;
+
             double boundWidth = e.GetTouchPoint(null).Bounds.Width;
             if (boundWidth > 20)
             {
@@ -102,6 +106,10 @@ namespace Ink_Canvas
         {
             //用户回到画布落笔 = 放弃系统截图等待（防止之后自己复制的图被误插进白板）
             CancelAwaitingSystemScreenshot();
+
+            //选择工具下放行原生通道：图片/墨迹的选中拖动靠 InkCanvas 原生处理
+            //（此处 e.Handled 拦截会导致"图片中央拖不动"）；StylusUp 有 try/catch 兜底未登记设备
+            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select) return;
 
             TouchDownPointsList[e.StylusDevice.Id] = InkCanvasEditingMode.None;
             e.Handled = true; //阻止 Stylus 再进入 Ink 原生通道，避免与多笔自定义路径双写

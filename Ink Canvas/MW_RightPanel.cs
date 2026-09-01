@@ -245,7 +245,8 @@ namespace Ink_Canvas
 
             ClearStrokes(false);
             inkCanvas.Children.Clear();
-            ImageLayer_EnsureHost(); //清屏只清墨迹与临时书写视觉，图片层自愈挂回（素材防误删）
+            //清屏对图片的处理（用户定稿）：白板模式=本页图片一并清掉；注释模式=图片不在桌面层，自愈挂回
+            ImageLayer_OnClearScreen();
 
             CancelSingleFingerDragMode();
         }

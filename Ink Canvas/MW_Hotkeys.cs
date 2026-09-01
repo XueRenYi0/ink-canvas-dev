@@ -74,6 +74,11 @@ namespace Ink_Canvas
             {
                 KeyExit(null, null);
             }
+            // Delete 键删除选中的图片（选择工具下点选图片后按 Delete；墨迹删除走操作条按钮）
+            if (e.Key == Key.Delete)
+            {
+                ImageLayer_DeleteSelectedImages();
+            }
         }
 
         private void CommandBinding_CanExecute(object sender, CanExecuteRoutedEventArgs e)

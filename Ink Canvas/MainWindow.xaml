@@ -1404,20 +1404,20 @@
                                 <!-- 相机图标：截图功能入口，点击弹出菜单（系统截图/隐藏界面截图/打开本地图片）。
                                      弹出菜单用负 Margin 的 Grid 浮层方案锚定（Popup 在 Viewbox 内不可靠，实测结论） -->
                                 <Grid x:Name="GridImageMenuEntry" Width="20" Background="Transparent" ToolTip="截图：点击弹出菜单——系统截图、隐藏界面截图、打开本地图片">
-                                    <ui:SymbolIcon Margin="0,0,0,0" Symbol="Camera" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconScreenshot_MenuToggle"/>
+                                    <ui:SymbolIcon Margin="0,0,0,0" Symbol="Cut" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconScreenshot_MenuToggle"/>
                                     <Border x:Name="BorderImageMenu" Visibility="Collapsed" Background="White" BorderBrush="#0066BF" BorderThickness="1"
-                                            CornerRadius="5" Margin="-40,-124,-40,20">
+                                            CornerRadius="5" Margin="-38,-106,-38,14">
                                         <StackPanel>
-                                            <Button x:Name="BtnFloatShotRegion" Content="系统截图" FontFamily="Microsoft YaHei UI"
-                                                    Width="86" Height="32" Margin="3,2" Background="Transparent" Foreground="#444444"
+                                            <Button x:Name="BtnFloatShotRegion" Content="系统截图" FontFamily="Microsoft YaHei UI" FontSize="12"
+                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
                                                     Click="BtnMenuShotRegion_Click"
                                                     ToolTip="系统截图：调出 Windows 系统截图（Win+Shift+S 同款），支持矩形/窗口/全屏，截图自动存入白板当前页"/>
-                                            <Button x:Name="BtnFloatShotHidden" Content="隐藏界面截图" FontFamily="Microsoft YaHei UI"
-                                                    Width="86" Height="32" Margin="3,2" Background="Transparent" Foreground="#444444"
+                                            <Button x:Name="BtnFloatShotHidden" Content="隐藏界面截图" FontFamily="Microsoft YaHei UI" FontSize="12"
+                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
                                                     Click="BtnMenuShotHidden_Click"
                                                     ToolTip="隐藏界面截图：先隐藏本软件界面（含悬浮条和墨迹）再调出系统截图，可截取被挡住的内容；截完自动恢复窗口"/>
-                                            <Button x:Name="BtnFloatImportImage" Content="打开本地图片" FontFamily="Microsoft YaHei UI"
-                                                    Width="86" Height="32" Margin="3,2" Background="Transparent" Foreground="#444444"
+                                            <Button x:Name="BtnFloatImportImage" Content="打开本地图片" FontFamily="Microsoft YaHei UI" FontSize="12"
+                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
                                                     Click="BtnMenuImportImage_Click"
                                                     ToolTip="打开本地图片：从电脑选择 PNG/JPG 等图片文件，插入白板当前页"/>
                                         </StackPanel>

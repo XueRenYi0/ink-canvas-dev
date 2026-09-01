@@ -37,12 +37,58 @@ namespace Ink_Canvas
         int _lastImageVisibleKey = -2; // -2 = 未初始化；-1 = 注释模式（无可见图片）
 
         /// <summary>
-        /// 初始化图片层（MainWindow 构造流程调用）：目前无需事件挂接，
-        /// 保留方法便于后期扩展（如选择工具命中切换）。
+        /// 初始化图片层（MainWindow 构造流程调用）：
+        /// 挂 EditingModeChanged——只有"选择工具"激活时图片才可被点选/拖动，
+        /// 笔/橡皮等模式下图片完全不参与命中（书写擦除零干扰）。
         /// </summary>
         private void InitImageLayer()
         {
-            try { }
+            try
+            {
+                inkCanvas.EditingModeChanged += (s, e) => ImageLayer_UpdateHitTest();
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 删除当前选中的图片（Delete 键调用）。
+        /// 原生选中的元素通过 GetSelectedElements 拿到，再逐个从页表与画布移除。
+        /// </summary>
+        internal void ImageLayer_DeleteSelectedImages()
+        {
+            try
+            {
+                var selected = inkCanvas.GetSelectedElements()
+                    .OfType<Image>()
+                    .Where(img => _imagePageKey.ContainsKey(img))
+                    .ToList();
+                if (selected.Count == 0) return;
+
+                foreach (var img in selected)
+                {
+                    int key = _imagePageKey[img];
+                    _imagePageKey.Remove(img);
+                    if (_pageImages.TryGetValue(key, out var list))
+                    {
+                        list.Remove(img);
+                        if (list.Count == 0) _pageImages.Remove(key);
+                    }
+                    inkCanvas.Children.Remove(img);
+                }
+                _lastImageVisibleKey = -2; // 强制下次刷新重新同步
+            }
+            catch { }
+        }
+
+        /// <summary>同步所有图片的命中开关：选择模式=可选中可拖，其他模式=完全穿透</summary>
+        private void ImageLayer_UpdateHitTest()
+        {
+            try
+            {
+                bool selectable = inkCanvas.EditingMode == InkCanvasEditingMode.Select;
+                foreach (var img in _imagePageKey.Keys)
+                    img.IsHitTestVisible = selectable;
+            }
             catch { }
         }
 
@@ -69,8 +115,8 @@ namespace Ink_Canvas
                     Width = source.PixelWidth * scale,
                     Height = source.PixelHeight * scale,
                     Stretch = Stretch.Fill,
-                    // 只读展示：不参与命中测试，书写/擦除完全不受影响
-                    IsHitTestVisible = false
+                    // 默认不参与命中（书写穿透）；选择工具激活时由 ImageLayer_UpdateHitTest 打开
+                    IsHitTestVisible = inkCanvas.EditingMode == InkCanvasEditingMode.Select
                 };
 
                 // 居中放置（画布尺寸未就绪时退回工作区尺寸估算）
@@ -126,7 +172,40 @@ namespace Ink_Canvas
         }
 
         /// <summary>
-        /// 图片自愈：清屏（BtnClear）/ 多人书写模式切换等处会 inkCanvas.Children.Clear()
+        /// 清屏时处理图片（BtnClear 调用，用户定稿的规则）：
+        /// - 白板模式：清屏 = 清墨迹 + 清本页图片（图片与墨迹同生共死，清屏就是"全部清掉"）；
+        /// - 注释模式：图片不在桌面层显示（都存在白板抽屉），只需自愈挂回，不删任何图。
+        /// </summary>
+        internal void ImageLayer_OnClearScreen()
+        {
+            try
+            {
+                if (currentMode != 0)
+                {
+                    int key = CurrentWhiteboardIndex;
+                    if (_pageImages.TryGetValue(key, out var list))
+                    {
+                        foreach (var img in list)
+                        {
+                            _imagePageKey.Remove(img);
+                            inkCanvas.Children.Remove(img);
+                        }
+                        _pageImages.Remove(key);
+                    }
+                }
+                else
+                {
+                    // 注释模式：Children.Clear 后自愈挂回
+                    ImageLayer_EnsureHost();
+                    return;
+                }
+                _lastImageVisibleKey = -2; // 强制下次刷新重新同步
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 图片自愈：多人书写模式切换等处会 inkCanvas.Children.Clear()
         /// 把图片一并清掉，在这些调用点之后调用本方法把所有页的图片重新挂回
         /// （位置存在图片自身属性上，不丢失）。
         /// </summary>
