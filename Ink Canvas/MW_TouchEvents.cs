@@ -204,6 +204,36 @@ namespace Ink_Canvas
         private bool forcePointEraser = true;
         private bool _lockSmith = false; //临时停用双指手势
 
+        // ===== 任务4：触摸分级防误触（大面积接触时长过滤）=====
+        // 大面积触摸（手掌/手背）按下时刻（TickCount 毫秒），用于判定"极快抬起 = 衣袖扫过类误触"
+        private int _largeTouchDownTickCount = 0;
+        // 当前触摸序列中是否出现过大面积接触（抬起时才做时长过滤判定，避免普通手指书写受影响）
+        private bool _largeTouchActive = false;
+        // 大面积接触误触判定阈值：接触后 120ms 内抬起视为无意扫过（有意手掌擦除通常持续更久）
+        private const int LargeTouchAccidentalMs = 120;
+
+        // ===== 任务5：双指手势轴锁定（垂直滚动 / 水平平移分流）=====
+        // 轴锁定状态：0=未锁定（意图不明，累计观察中） 1=垂直（滚动笔记） 2=其他（平移/缩放/旋转走原逻辑）
+        private int _twoFingerAxisLock = 0;
+        // 双指手势累计位移（用于判定主方向）
+        private Vector _twoFingerTotalTranslation = new Vector();
+        // 双指手势累计缩放（乘积；两指不平行滑动会产生缩放噪声，需要门限过滤）
+        private double _twoFingerTotalScale = 1.0;
+        // 双指手势累计旋转角度（度；用于区分旋转手势与垂直滚动）
+        private double _twoFingerTotalRotation = 0;
+
+        /// <summary>
+        /// 重置双指手势轴锁定状态（手势完全结束时调用：
+        /// inkCanvas_PreviewTouchUp 全部手指抬起 / ManipulationCompleted 双保险）
+        /// </summary>
+        private void ResetTwoFingerAxisLock()
+        {
+            _twoFingerAxisLock = 0;
+            _twoFingerTotalTranslation = new Vector();
+            _twoFingerTotalScale = 1.0;
+            _twoFingerTotalRotation = 0;
+        }
+
         private void Main_Grid_TouchDown(object sender, TouchEventArgs e)
         {
             BorderClearInDelete.Visibility = Visibility.Collapsed;
@@ -230,6 +260,11 @@ namespace Ink_Canvas
                 if (drawingShapeMode == 0 && forceEraser) return;
                 if (boundsWidth > BoundsWidth * 2.5)
                 {
+                    //任务4：记录大面积接触按下时刻——若 120ms 内抬起且墨迹被擦，
+                    //判定为衣袖/手掌快速扫过类误触，抬起时撤销误擦（恢复墨迹快照）
+                    _largeTouchDownTickCount = Environment.TickCount;
+                    _largeTouchActive = true;
+
                     double k = 1;
                     switch (Settings.Canvas.EraserSize)
                     {
@@ -339,6 +374,23 @@ namespace Ink_Canvas
             inkCanvas.Opacity = 1;
             if (dec.Count == 0)
             {
+                //任务5：全部手指抬起 = 双指手势结束，重置轴锁定状态（下次手势重新判定意图）
+                ResetTwoFingerAxisLock();
+
+                //任务4：大面积接触时长过滤——手掌/手背级接触在 120ms 内抬起且墨迹被擦，
+                //判定为衣袖扫过类误触，恢复按下时的墨迹快照直接撤销误擦（显示与数据同步还原）。
+                //有意的手掌擦除通常持续按压超过 120ms，不受影响。
+                if (_largeTouchActive)
+                {
+                    _largeTouchActive = false;
+                    if (Environment.TickCount - _largeTouchDownTickCount < LargeTouchAccidentalMs &&
+                        lastTouchDownStrokeCollection.Count != inkCanvas.Strokes.Count)
+                    {
+                        //Clone 恢复：画布与备份各持一份，避免后续单方修改互相牵连
+                        inkCanvas.Strokes = lastTouchDownStrokeCollection.Clone();
+                    }
+                }
+
                 if (lastTouchDownStrokeCollection.Count() != inkCanvas.Strokes.Count() &&
                     !(drawingShapeMode == 9 && !isFirstTouchCuboid))
                 {
@@ -365,6 +417,9 @@ namespace Ink_Canvas
         {
             if (e.Manipulators.Count() == 0)
             {
+                //任务5：手势完全结束（所有触点抬起），重置轴锁定（与 PreviewTouchUp 双保险，
+                //覆盖个别设备 TouchUp 事件时序异常导致未重置的情况）
+                ResetTwoFingerAxisLock();
                 if (forceEraser) return;
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             }
@@ -379,6 +434,57 @@ namespace Ink_Canvas
                 Vector trans = md.Translation;  // 获得位移矢量
                 double rotate = md.Rotation;  // 获得旋转角度
                 Vector scale = md.Scale;  // 获得缩放倍数
+
+                // ===== 任务5：双指手势轴锁定与分流 =====
+                // 目标：双指垂直滑动 → 笔记滚动（与滚轮/滚动胶囊一致，符合触摸屏"内容跟手"惯例）；
+                //       水平滑动/捏合缩放/旋转 → 保持原有平移缩放逻辑。
+                // 做法：手势初期先累计位移/缩放/旋转观察意图，主方向明确（超过锁定阈值）后
+                //       锁定该轴直到手势结束，防止斜向拖动时"既滚又移"互相打架。
+                if (!isSingleFingerDragMode && IsNoteScrollActive && Settings.Gesture.IsEnableTwoFingerTranslate)
+                {
+                    _twoFingerTotalTranslation += trans;   // 累计位移（含判定期内的所有增量）
+                    _twoFingerTotalScale *= scale.X;       // 累计缩放（乘积）
+                    _twoFingerTotalRotation += rotate;    // 累计旋转角
+
+                    if (_twoFingerAxisLock == 0)
+                    {
+                        // 缩放噪声门限：两指不严格平行滑动时会持续上报约 1.0x 附近的微小缩放，
+                        // 累计偏离超过 8% 才认定为有意的捏合手势（走原缩放逻辑）
+                        bool isPinch = Math.Abs(_twoFingerTotalScale - 1.0) > 0.08;
+                        // 旋转判定：累计转角超过 5° 视为有意旋转（走原旋转逻辑）
+                        bool isRotate = Math.Abs(_twoFingerTotalRotation) > 5.0;
+
+                        if (isPinch || isRotate)
+                        {
+                            _twoFingerAxisLock = 2; // 捏合/旋转 → 锁定为原手势通道
+                        }
+                        else
+                        {
+                            // 轴判定：主轴位移超过 15px 且明显大于副轴（1.5 倍）才锁定方向，
+                            // 判定期内的微小位移不应用（避免手势开始时产生意外平移）
+                            double ax = Math.Abs(_twoFingerTotalTranslation.X);
+                            double ay = Math.Abs(_twoFingerTotalTranslation.Y);
+                            if (ay > 15 && ay > ax * 1.5)
+                                _twoFingerAxisLock = 1; // 垂直 → 滚动笔记
+                            else if (ax > 15 && ax > ay * 1.5)
+                                _twoFingerAxisLock = 2; // 水平 → 原平移逻辑
+                            else
+                                return; // 意图尚不明确：本次增量不应用，继续观察
+                        }
+                    }
+
+                    if (_twoFingerAxisLock == 1)
+                    {
+                        // 垂直滑动 → ScrollNote 滚动（内容跟随手指）：
+                        // 手指上滑（trans.Y < 0）→ delta > 0 → 向下滚动，历史墨迹上移，露出下方空白；
+                        // 手指下滑（trans.Y > 0）→ delta < 0 → 回看上方历史（顶部夹取为 0 由 ScrollNote 内部处理）。
+                        // 滚动即时同步滚动胶囊指示；锁定后本 delta 不再叠加平移/缩放。
+                        ScrollNote(-trans.Y);
+                        return;
+                    }
+                    // 锁定为 2（水平平移/捏合/旋转）或单指拖动模式：落入下方原有手势逻辑
+                }
+                // ===== 任务5 结束 =====
 
                 Matrix m = new Matrix();
 
