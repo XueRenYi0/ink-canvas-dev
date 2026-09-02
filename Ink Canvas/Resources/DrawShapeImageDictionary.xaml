@@ -5,7 +5,7 @@
             <DrawingGroup ClipGeometry="M0,0 V825 H825 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry RadiusX="387.5" RadiusY="387.5" Center="412.5,412.5" />
@@ -13,7 +13,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="150" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="84" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="412.45,412.55" EndPoint="412.55,412.45" />
@@ -27,9 +27,9 @@
             <DrawingGroup ClipGeometry="M0,0 V825 H825 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="2.029 2.029" />
+                                <DashStyle Offset="0" Dashes="3.62 3.62" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -39,7 +39,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="150" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="84" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="412.45,412.55" EndPoint="412.55,412.45" />
@@ -53,7 +53,7 @@
             <DrawingGroup ClipGeometry="M0,0 V798.2 H801.77 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25.23,224.28" EndPoint="572.99,224.67" />
@@ -61,7 +61,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25.23,772.23" EndPoint="25.23,224.47" />
@@ -69,7 +69,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="575.5,772.79" EndPoint="575.5,225.03" />
@@ -77,7 +77,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="26.01,772.23" EndPoint="573.77,772.62" />
@@ -85,7 +85,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,225" EndPoint="225,25" />
@@ -93,7 +93,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="575.75,225.25" EndPoint="775.75,25.25" />
@@ -101,7 +101,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="224.5,25.5" EndPoint="775.5,25.5" />
@@ -109,7 +109,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="576.77,773.2" EndPoint="776.77,573.2" />
@@ -117,7 +117,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="775.75,25.5" EndPoint="776.25,573.5" />
@@ -125,7 +125,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="223.77,573.08" EndPoint="223.77,523.08" />
@@ -133,9 +133,9 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="1.791 1.791" />
+                                <DashStyle Offset="0" Dashes="3.2 3.2" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -145,7 +145,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="223.77,75.32" EndPoint="223.77,25.32" />
@@ -153,7 +153,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25.77,772.2" EndPoint="61.12,736.85" />
@@ -161,9 +161,9 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="1.219 1.219" />
+                                <DashStyle Offset="0" Dashes="2.18 2.18" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -173,7 +173,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="190.41,607.56" EndPoint="225.77,572.2" />
@@ -181,7 +181,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="223.89,572.01" EndPoint="273.89,572.04" />
@@ -189,9 +189,9 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="1.791 1.791" />
+                                <DashStyle Offset="0" Dashes="3.2 3.2" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -201,7 +201,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="721.65,572.36" EndPoint="771.65,572.4" />
@@ -216,23 +216,23 @@
                 <DrawingGroup Transform="1,0,0,1,-210,-175">
                     <GeometryDrawing Geometry="F1 M579.5,750z M0,0z M764.5,800C764.5,855.23 646.08,900 500,900 353.92,900 235.5,855.23 235.5,800">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-210,-175">
                     <GeometryDrawing Geometry="F1 M579.5,750z M0,0z M235.5,800C235.5,785,244.17,770.87,259.72,758.14">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-210,-175">
                     <GeometryDrawing Geometry="F1 M579.5,750z M0,0z M350.75,717.43C393.23,706.43 444.63,700 500,700 578.18,700 648.44,712.82 696.87,733.21">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                                 <Pen.DashStyle>
-                                    <DashStyle Offset="0" Dashes="2.0084 2.0084" />
+                                    <DashStyle Offset="0" Dashes="3.59 3.59" />
                                 </Pen.DashStyle>
                             </Pen>
                         </GeometryDrawing.Pen>
@@ -241,13 +241,13 @@
                 <DrawingGroup Transform="1,0,0,1,-210,-175">
                     <GeometryDrawing Geometry="F1 M579.5,750z M0,0z M740.28,758.14C755.83,770.87,764.5,785.05,764.5,800">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="290,25" EndPoint="554,625" />
@@ -255,7 +255,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,625" EndPoint="290,25" />
@@ -269,7 +269,7 @@
             <DrawingGroup ClipGeometry="M0,0 V850 H579.5 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry RadiusX="264.5" RadiusY="100" Center="290,125" />
@@ -278,23 +278,23 @@
                 <DrawingGroup Transform="1,0,0,1,-210,-75">
                     <GeometryDrawing Geometry="F1 M579.5,850z M0,0z M764.5,800C764.5,855.23 646.08,900 500,900 353.92,900 235.5,855.23 235.5,800">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-210,-75">
                     <GeometryDrawing Geometry="F1 M579.5,850z M0,0z M235.5,800C235.5,785,244.17,770.87,259.72,758.14">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-210,-75">
                     <GeometryDrawing Geometry="F1 M579.5,850z M0,0z M350.75,717.43C393.23,706.43 444.63,700 500,700 578.18,700 648.44,712.82 696.87,733.21">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                                 <Pen.DashStyle>
-                                    <DashStyle Offset="0" Dashes="2.0084 2.0084" />
+                                    <DashStyle Offset="0" Dashes="3.59 3.59" />
                                 </Pen.DashStyle>
                             </Pen>
                         </GeometryDrawing.Pen>
@@ -303,13 +303,13 @@
                 <DrawingGroup Transform="1,0,0,1,-210,-75">
                     <GeometryDrawing Geometry="F1 M579.5,850z M0,0z M740.28,758.14C755.83,770.87,764.5,785.05,764.5,800">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,125" EndPoint="25,725" />
@@ -317,7 +317,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="554,125" EndPoint="554,725" />
@@ -331,7 +331,7 @@
             <DrawingGroup ClipGeometry="M0,0 V750.75 H750.75 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,725.75" EndPoint="725.75,25" />
@@ -345,7 +345,7 @@
             <DrawingGroup ClipGeometry="M0,0 V698.08 H755.38 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25.42,25" EndPoint="726.79,25" />
@@ -353,7 +353,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,241.08" EndPoint="726.38,241.08" />
@@ -361,7 +361,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="29,673.08" EndPoint="730.38,673.08" />
@@ -369,7 +369,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,457.08" EndPoint="726.38,457.08" />
@@ -383,7 +383,7 @@
             <DrawingGroup ClipGeometry="M0,0 V750.75 H750.75 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,725.75" EndPoint="60.36,690.39" />
@@ -391,9 +391,9 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="1.98 1.98" />
+                                <DashStyle Offset="0" Dashes="3.54 3.54" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -403,7 +403,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="690.39,60.36" EndPoint="725.75,25" />
@@ -417,7 +417,7 @@
             <DrawingGroup ClipGeometry="M0,0 V751.14 H753.64 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,726.14" EndPoint="725.75,25.39" />
@@ -425,7 +425,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="725.62,25" EndPoint="375.38,132.77" />
@@ -433,7 +433,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="615.38,375.77" EndPoint="728.64,25.47" />
@@ -447,7 +447,7 @@
             <DrawingGroup ClipGeometry="M0,0 V750.96 H753.21 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,25" EndPoint="725,25.5" />
@@ -455,7 +455,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,725.25" EndPoint="25,25.25" />
@@ -463,7 +463,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="728.21,725.96" EndPoint="728.21,25.96" />
@@ -471,7 +471,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="26,725.25" EndPoint="726,725.75" />
@@ -485,7 +485,7 @@
             <DrawingGroup ClipGeometry="M0,0 V825 H825 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry RadiusX="387.5" RadiusY="387.5" Center="412.5,412.5" />
@@ -494,28 +494,28 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
+    <!-- 图形绘制入口图标：仿微软 Fluent「Shapes」设计（圆 + 圆角方块，MIT 开源图标设计），
+         纯描边细线风格，与工具栏其他自绘图标（选择框/手势锁等）视觉统一；
+         替换旧版"实心三角+描边圆+实心方"混搭风格 -->
     <DrawingImage x:Key="DrawShapeImageSource.DrawShapeIcon">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V24 H24 V0 H0 Z">
-                <!-- 三角形（实心） -->
-                <GeometryDrawing Brush="{DynamicResource FloatBarForeground}">
-                    <GeometryDrawing.Geometry>
-                        <PathGeometry Figures="M9.5,2.5 L14.5,10 L4.5,10 Z"/>
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-                <!-- 圆形（描边） -->
+                <!-- 左上圆 -->
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="2"/>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="1.5" StartLineCap="Round" EndLineCap="Round" LineJoin="Round"/>
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
-                        <EllipseGeometry Center="6.5,15.5" RadiusX="4.6" RadiusY="4.6"/>
+                        <EllipseGeometry Center="8.2,8.2" RadiusX="5.2" RadiusY="5.2"/>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>
-                <!-- 正方形（实心，圆角） -->
-                <GeometryDrawing Brush="{DynamicResource FloatBarForeground}">
+                <!-- 右下圆角方块（与圆轻微交叠，经典 Shapes 构图） -->
+                <GeometryDrawing>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="1.5" StartLineCap="Round" EndLineCap="Round" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
-                        <RectangleGeometry Rect="13.5,11.5,8.5,9.5" RadiusX="1" RadiusY="1"/>
+                        <RectangleGeometry Rect="11.2,11.2,7.6,7.6" RadiusX="1.2" RadiusY="1.2"/>
                     </GeometryDrawing.Geometry>
                 </GeometryDrawing>
             </DrawingGroup>
@@ -526,7 +526,7 @@
             <DrawingGroup ClipGeometry="M0,0 V813.58 H813.58 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,457.61" EndPoint="787.05,457.61" />
@@ -534,7 +534,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="787.64,457.15" EndPoint="618.33,367.52" />
@@ -542,7 +542,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="617.22,546.06" EndPoint="788.58,458.44" />
@@ -550,7 +550,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="357.61,788.58" EndPoint="357.61,26.53" />
@@ -558,7 +558,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="357.15,25.94" EndPoint="267.52,195.25" />
@@ -566,7 +566,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="446.06,196.36" EndPoint="358.44,25" />
@@ -580,7 +580,7 @@
             <DrawingGroup ClipGeometry="M0,0 V813.58 H813.58 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,457.61" EndPoint="787.05,457.61" />
@@ -588,7 +588,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="787.64,457.15" EndPoint="618.33,367.52" />
@@ -596,7 +596,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="617.22,546.06" EndPoint="788.58,458.44" />
@@ -604,7 +604,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="157.61,788.58" EndPoint="157.61,26.53" />
@@ -612,7 +612,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="157.15,25.94" EndPoint="67.52,195.25" />
@@ -620,7 +620,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="246.06,196.36" EndPoint="158.44,25" />
@@ -634,7 +634,7 @@
             <DrawingGroup ClipGeometry="M0,0 V813.58 H813.58 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,657.61" EndPoint="787.05,657.61" />
@@ -642,7 +642,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="787.64,657.15" EndPoint="618.33,567.52" />
@@ -650,7 +650,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="617.22,746.06" EndPoint="788.58,658.44" />
@@ -658,7 +658,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="357.61,788.58" EndPoint="357.61,26.53" />
@@ -666,7 +666,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="357.15,25.94" EndPoint="267.52,195.25" />
@@ -674,7 +674,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="446.06,196.36" EndPoint="358.44,25" />
@@ -688,7 +688,7 @@
             <DrawingGroup ClipGeometry="M0,0 V813.58 H813.58 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,657.61" EndPoint="787.05,657.61" />
@@ -696,7 +696,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="787.64,657.15" EndPoint="618.33,567.52" />
@@ -704,7 +704,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="617.22,746.06" EndPoint="788.58,658.44" />
@@ -712,7 +712,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="157.61,788.58" EndPoint="157.61,26.53" />
@@ -720,7 +720,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="157.15,25.94" EndPoint="67.52,195.25" />
@@ -728,7 +728,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="246.06,196.36" EndPoint="158.44,25" />
@@ -742,7 +742,7 @@
             <DrawingGroup ClipGeometry="M0,0 V764.7 H724 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="457,739.29" EndPoint="457,25" />
@@ -750,7 +750,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,539" EndPoint="455.27,739.12" />
@@ -758,7 +758,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="458.27,739.7" EndPoint="699,539" />
@@ -766,7 +766,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="457,25" EndPoint="699,539" />
@@ -774,7 +774,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,539" EndPoint="457,25" />
@@ -782,7 +782,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,538.9" EndPoint="75,538.9" />
@@ -790,9 +790,9 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="2.296 2.296" />
+                                <DashStyle Offset="0" Dashes="4.13 4.13" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -802,7 +802,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="45" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="649,538.9" EndPoint="699,538.9" />
@@ -816,7 +816,7 @@
             <DrawingGroup ClipGeometry="M0,0 V798.42 H796.54 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="290.48,508.88" EndPoint="770.01,508.88" />
@@ -824,7 +824,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="770.6,508.42" EndPoint="601.29,418.79" />
@@ -832,7 +832,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="600.18,597.33" EndPoint="771.54,509.71" />
@@ -840,7 +840,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="290.3,509.06" EndPoint="290.3,26.53" />
@@ -848,7 +848,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="289.84,25.94" EndPoint="200.21,195.25" />
@@ -856,7 +856,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="378.75,196.36" EndPoint="291.13,25" />
@@ -864,7 +864,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="290.39,508.97" EndPoint="26.67,772.68" />
@@ -872,7 +872,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="26.58,773.42" EndPoint="209.68,717.08" />
@@ -880,7 +880,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="84.21,590.05" EndPoint="25,773.18" />
@@ -894,7 +894,7 @@
             <DrawingGroup ClipGeometry="M0,0 V750.96 H753.21 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,25" EndPoint="725,25.5" />
@@ -902,7 +902,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="25,725.25" EndPoint="25,25.25" />
@@ -910,7 +910,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="728.21,725.96" EndPoint="728.21,25.96" />
@@ -918,7 +918,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="26,725.25" EndPoint="726,725.75" />
@@ -926,7 +926,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="150" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="84" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="376.56,375.53" EndPoint="376.66,375.43" />
@@ -940,7 +940,7 @@
             <DrawingGroup ClipGeometry="M0,0 V649.3 H825 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry RadiusX="387.5" RadiusY="299.65" Center="412.5,324.65" />
@@ -948,7 +948,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="150" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="84" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="412.45,324.7" EndPoint="412.55,324.6" />
@@ -962,9 +962,9 @@
             <DrawingGroup ClipGeometry="M0,0 V749.84 H749.84 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="60" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Miter">
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="34" StartLineCap="Round" EndLineCap="Round" DashCap="Round" LineJoin="Round">
                             <Pen.DashStyle>
-                                <DashStyle Offset="0" Dashes="0.0166666666666667 2" />
+                                <DashStyle Offset="0" Dashes="0.03 3.53" />
                             </Pen.DashStyle>
                         </Pen>
                     </GeometryDrawing.Pen>
@@ -981,14 +981,14 @@
                 <DrawingGroup Transform="1,0,0,1,-157.87,-182.4">
                     <GeometryDrawing Geometry="F1 M684.27,635.2z M0,0z M182.87,207.4C191.75,296.78 210.54,423.16 252.87,553.03 260.15,575.33 290.28,665.09 352.09,727.67 378.68,754.59 401.88,767.11 413.96,772.86A203.34,203.34,0,0,0,496.84,792.4">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-157.87,-182.4">
                     <GeometryDrawing Geometry="F1 M684.27,635.2z M0,0z M817.13,207.6C808.25,296.98 789.46,423.36 747.13,553.23 739.85,575.53 709.72,665.29 647.91,727.87 621.32,754.79 598.12,767.31 586.04,773.06A203.34,203.34,0,0,1,503.16,792.6">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
@@ -1001,7 +1001,7 @@
             <DrawingGroup ClipGeometry="M0,0 V750 H750 V0 H0 Z">
                 <GeometryDrawing Geometry="M25,375 C80,195 145,175 200,175 C255,175 320,195 375,375 C430,555 495,575 550,575 C605,575 670,555 725,375">
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                 </GeometryDrawing>
             </DrawingGroup>
@@ -1018,13 +1018,13 @@
                 <!-- 正弦曲线：从笔尖延伸向右下（表达"正在被画出来"） -->
                 <GeometryDrawing Geometry="M300,330 C370,180 440,180 510,330 C580,480 650,480 710,390">
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="44" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="25" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                 </GeometryDrawing>
                 <!-- 笔杆：从笔尖向左上延伸的粗斜线（笔尖在曲线起点处） -->
                 <GeometryDrawing Geometry="M300,330 L520,90">
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="66" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="37" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                 </GeometryDrawing>
                 <!-- 笔尖小三角：笔杆末端的收锋（对比色块，示意笔尖触纸） -->
@@ -1042,13 +1042,13 @@
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M136.54,861.37A395.1,395.1,0,0,0,216.54,814.37C254.61,785.46,277.79,756.9,284.54,748.37A351.08,351.08,0,0,0,330.54,672.37C345.4,638.21,350.64,610.37,355.54,583.37A523.22,523.22,0,0,0,363.85,500.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="85" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="48" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="108.8,386.42" EndPoint="108.9,386.32" />
@@ -1057,27 +1057,27 @@
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M136.15,138.63A395.1,395.1,0,0,1,216.15,185.63C254.22,214.54,277.41,243.1,284.15,251.63A350.65,350.65,0,0,1,330.15,327.63C345.01,361.79,350.25,389.63,355.15,416.63A522,522,0,0,1,363.46,499.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M863.46,861.37A395.1,395.1,0,0,1,783.46,814.37C745.39,785.46,722.21,756.9,715.46,748.37A351.08,351.08,0,0,1,669.46,672.37C654.6,638.21,649.36,610.37,644.46,583.37A523.22,523.22,0,0,1,636.15,500.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M863.85,138.63A395.1,395.1,0,0,0,783.85,185.63C745.78,214.54,722.59,243.1,715.85,251.63A350.65,350.65,0,0,0,669.85,327.63C654.99,361.79,649.75,389.63,644.85,416.63A522,522,0,0,0,636.54,499.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="85" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="48" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="668.8,386.42" EndPoint="668.9,386.32" />
@@ -1092,20 +1092,20 @@
                 <DrawingGroup Transform="1,0,0,1,-157.87,-182.4">
                     <GeometryDrawing Geometry="F1 M684.27,635.2z M0,0z M182.87,207.4C191.75,296.78 210.54,423.16 252.87,553.03 260.15,575.33 290.28,665.09 352.09,727.67 378.68,754.59 401.88,767.11 413.96,772.86A203.34,203.34,0,0,0,496.84,792.4">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-157.87,-182.4">
                     <GeometryDrawing Geometry="F1 M684.27,635.2z M0,0z M817.13,207.6C808.25,296.98 789.46,423.36 747.13,553.23 739.85,575.53 709.72,665.29 647.91,727.87 621.32,754.79 598.12,767.31 586.04,773.06A203.34,203.34,0,0,1,503.16,792.6">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="75" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="42" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="342.08,417.65" EndPoint="342.18,417.55" />
@@ -1119,7 +1119,7 @@
             <DrawingGroup ClipGeometry="M0,0 V649.3 H825 V0 H0 Z">
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="50" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="28" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry RadiusX="387.5" RadiusY="299.65" Center="412.5,324.65" />
@@ -1127,7 +1127,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="150" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="84" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="412.45,324.7" EndPoint="412.55,324.6" />
@@ -1135,7 +1135,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="75" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="42" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="212.45,324.7" EndPoint="212.55,324.6" />
@@ -1143,7 +1143,7 @@
                 </GeometryDrawing>
                 <GeometryDrawing>
                     <GeometryDrawing.Pen>
-                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="75" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                        <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="42" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                     </GeometryDrawing.Pen>
                     <GeometryDrawing.Geometry>
                         <LineGeometry StartPoint="612.45,324.7" EndPoint="612.55,324.6" />
@@ -1158,28 +1158,28 @@
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M136.54,861.37A395.1,395.1,0,0,0,216.54,814.37C254.61,785.46,277.79,756.9,284.54,748.37A351.08,351.08,0,0,0,330.54,672.37C345.4,638.21,350.64,610.37,355.54,583.37A523.22,523.22,0,0,0,363.85,500.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M136.15,138.63A395.1,395.1,0,0,1,216.15,185.63C254.22,214.54,277.41,243.1,284.15,251.63A350.65,350.65,0,0,1,330.15,327.63C345.01,361.79,350.25,389.63,355.15,416.63A522,522,0,0,1,363.46,499.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M863.46,861.37A395.1,395.1,0,0,1,783.46,814.37C745.39,785.46,722.21,756.9,715.46,748.37A351.08,351.08,0,0,1,669.46,672.37C654.6,638.21,649.36,610.37,644.46,583.37A523.22,523.22,0,0,1,636.15,500.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>
                 <DrawingGroup Transform="1,0,0,1,-111.15,-113.63">
                     <GeometryDrawing Geometry="F1 M777.7,772.73z M0,0z M863.85,138.63A395.1,395.1,0,0,0,783.85,185.63C745.78,214.54,722.59,243.1,715.85,251.63A350.65,350.65,0,0,0,669.85,327.63C654.99,361.79,649.75,389.63,644.85,416.63A522,522,0,0,0,636.54,499.5">
                         <GeometryDrawing.Pen>
-                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="57" StartLineCap="Round" EndLineCap="Round" LineJoin="Miter" />
+                            <Pen Brush="{DynamicResource FloatBarForeground}" Thickness="32" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
                         </GeometryDrawing.Pen>
                     </GeometryDrawing>
                 </DrawingGroup>

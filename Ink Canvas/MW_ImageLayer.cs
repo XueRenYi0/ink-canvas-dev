@@ -92,21 +92,26 @@ namespace Ink_Canvas
             catch { }
         }
 
+        /// <summary>级联偏移计数器：连续插入的多张图错开摆放（每张右下偏移 24px，5 张一轮），避免完全叠死</summary>
+        int _imageCascadeCounter = 0;
+
         /// <summary>
-        /// 插入一张图片到白板当前页（自动按工作区适配缩小、居中放置）。
+        /// 插入一张图片到白板当前页（自动按画布适配缩小、落画布左上角）。
         /// 无论当前是注释模式还是白板模式，图片都挂在 CurrentWhiteboardIndex 页
         /// （"上次看的那一页"），等切到白板就能看到。
+        /// cascade=true 时应用级联偏移（连续插入多张不完全叠死）。
         /// </summary>
-        private void ImageLayer_AddImage(BitmapSource source)
+        private Image ImageLayer_AddImage(BitmapSource source, bool cascade = false)
         {
             try
             {
-                if (source == null || source.PixelWidth < 1) return;
+                if (source == null || source.PixelWidth < 1) return null;
 
-                // 适配缩放：显示尺寸不超过工作区 90% 宽 / 85% 高；小图不放大（保持原尺寸清晰）
-                double maxW = SystemParameters.WorkArea.Width * 0.9;
-                double maxH = SystemParameters.WorkArea.Height * 0.85;
-                double scale = Math.Min(maxW / source.PixelWidth, maxH / source.PixelHeight);
+                // 适配缩放：显示尺寸不超过画布 80%；小图不放大（保持原尺寸清晰）
+                double hostW = inkCanvas.ActualWidth, hostH = inkCanvas.ActualHeight;
+                if (hostW <= 0) hostW = SystemParameters.WorkArea.Width;
+                if (hostH <= 0) hostH = SystemParameters.WorkArea.Height;
+                double scale = Math.Min(hostW * 0.8 / source.PixelWidth, hostH * 0.8 / source.PixelHeight);
                 if (scale > 1) scale = 1;
 
                 var img = new Image
@@ -119,12 +124,17 @@ namespace Ink_Canvas
                     IsHitTestVisible = inkCanvas.EditingMode == InkCanvasEditingMode.Select
                 };
 
-                // 居中放置（画布尺寸未就绪时退回工作区尺寸估算）
-                double hostW = inkCanvas.ActualWidth, hostH = inkCanvas.ActualHeight;
-                if (hostW <= 0) hostW = SystemParameters.WorkArea.Width;
-                if (hostH <= 0) hostH = SystemParameters.WorkArea.Height;
-                InkCanvas.SetLeft(img, Math.Max(0, (hostW - img.Width) / 2));
-                InkCanvas.SetTop(img, Math.Max(0, (hostH - img.Height) / 2));
+                // 落画布左上角（留 20px 边距，保证图片边缘可被抓取拖动）；
+                // 级联时每张右下错开 24px（一轮 5 张，超出画布自动收边）
+                double left = 20, top = 20;
+                if (cascade)
+                {
+                    double off = (_imageCascadeCounter++ % 5) * 24;
+                    left = Math.Min(20 + off, Math.Max(0, hostW - img.Width));
+                    top = Math.Min(20 + off, Math.Max(0, hostH - img.Height));
+                }
+                InkCanvas.SetLeft(img, left);
+                InkCanvas.SetTop(img, top);
 
                 // 登记到页表（InkCanvas 继承自 Canvas，子元素用 Left/Top 绝对定位）
                 int key = CurrentWhiteboardIndex;
@@ -142,10 +152,12 @@ namespace Ink_Canvas
                     ? Visibility.Visible : Visibility.Collapsed;
 
                 _lastImageVisibleKey = -2; // 强制下次 RefreshVisibility 重新同步
+                return img;
             }
             catch (Exception ex)
             {
                 ShowNotification("插入图片失败：" + ex.Message);
+                return null;
             }
         }
 
@@ -180,6 +192,13 @@ namespace Ink_Canvas
         {
             try
             {
+                // ===== 诊断日志：定位"只有图片无墨迹时清屏不清图"bug =====
+                // 打印当前模式/页号/字典内全部页号和每页图片数，以及视觉树上还挂着几张图
+                Helpers.LogHelper.NewLog($"[清图诊断] OnClearScreen 进入: currentMode={currentMode}, " +
+                    $"CurrentWhiteboardIndex={CurrentWhiteboardIndex}, " +
+                    $"页表=[{string.Join(",", _pageImages.Select(kv => $"{kv.Key}页×{kv.Value.Count}张"))}], " +
+                    $"视觉树图片数={inkCanvas.Children.OfType<Image>().Count()}");
+
                 if (currentMode != 0)
                 {
                     int key = CurrentWhiteboardIndex;
@@ -191,17 +210,23 @@ namespace Ink_Canvas
                             inkCanvas.Children.Remove(img);
                         }
                         _pageImages.Remove(key);
+                        Helpers.LogHelper.NewLog($"[清图诊断] 已删除第 {key} 页的 {list.Count} 张图片（数据+视觉树）");
+                    }
+                    else
+                    {
+                        Helpers.LogHelper.NewLog($"[清图诊断] 第 {key} 页在页表中无记录！（图片可能挂在别的页号上）");
                     }
                 }
                 else
                 {
+                    Helpers.LogHelper.NewLog("[清图诊断] 注释模式：不删图，走自愈挂回");
                     // 注释模式：Children.Clear 后自愈挂回
                     ImageLayer_EnsureHost();
                     return;
                 }
                 _lastImageVisibleKey = -2; // 强制下次刷新重新同步
             }
-            catch { }
+            catch (Exception ex) { Helpers.LogHelper.NewLog($"[清图诊断] OnClearScreen 异常: {ex.Message}"); }
         }
 
         /// <summary>
@@ -214,6 +239,11 @@ namespace Ink_Canvas
             try
             {
                 int key = currentMode != 0 ? CurrentWhiteboardIndex : -1;
+                // ===== 诊断日志：若发生"挂回"，说明有调用点在清屏删图之后又把图救活 =====
+                var missing = _pageImages.SelectMany(kv => kv.Value).Where(img => !inkCanvas.Children.Contains(img)).ToList();
+                if (missing.Count > 0)
+                    Helpers.LogHelper.NewLog($"[清图诊断] EnsureHost 挂回 {missing.Count} 张图（调用堆栈将随异常栈打印）, 堆栈: {Environment.StackTrace}");
+
                 foreach (var kv in _pageImages)
                 {
                     var visible = kv.Key == key ? Visibility.Visible : Visibility.Collapsed;

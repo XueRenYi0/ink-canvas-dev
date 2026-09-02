@@ -56,6 +56,11 @@ namespace Ink_Canvas
 
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Gesture += InkCanvas_Gesture;
+
+                //初始化悬浮条画笔区：笔图标颜色/高亮 + 6 色点选中描边（默认红笔）
+                UpdatePenIconColor();
+                UpdatePenIconHighlight();
+                UpdateFloatBarColorDots();
             }
             catch { }
         }
@@ -118,6 +123,9 @@ namespace Ink_Canvas
             {
                 SetSelectToolColor(FloatBarForegroundColor);
             }
+
+            // 悬浮条笔图标高亮同步：画笔模式亮、橡皮/选择等熄灭（图形模式由 drawingShapeMode 判断）
+            UpdatePenIconHighlight();
         }
 
         /// <summary>更新选择图标的颜色（虚线框描边 + 箭头填充共用同一画刷）</summary>

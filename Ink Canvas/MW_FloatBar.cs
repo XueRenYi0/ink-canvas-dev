@@ -45,6 +45,7 @@ namespace Ink_Canvas
         {
             BorderClearInDelete.Visibility = Visibility.Collapsed;
             BorderTools.Visibility = Visibility.Collapsed;
+            BorderPenWidth.Visibility = Visibility.Collapsed;
         }
 
 
@@ -85,6 +86,119 @@ namespace Ink_Canvas
             ColorSwitchCheck();
             HideSubPanels();
         }
+
+        #region 画笔图标 + 笔粗细面板
+
+        // 笔粗细三档对应的实际笔宽（设置页滑条值 = 笔宽 × 2，范围 0.5~10）
+        private const double PenWidthThin = 1.5;
+        private const double PenWidthMedium = 3;
+        private const double PenWidthThick = 6;
+
+        // 工具选中高亮色：与选择工具高亮一致的项目蓝（#0088FF）
+        private static readonly SolidColorBrush PenToolHighlightBrush = new SolidColorBrush(Color.FromRgb(0, 136, 255));
+        // 淡蓝选中底（约 15% 不透明度），用于笔图标高亮底和粗细档位选中底
+        private static readonly SolidColorBrush PenToolHighlightSoftBrush = new SolidColorBrush(Color.FromArgb(38, 0, 136, 255));
+
+        /// <summary>笔图标单击：切回画笔模式 + 展开/收起笔粗细面板</summary>
+        private void PenIcon_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            // 非画笔状态（橡皮/选择/图形）时先切回画笔：
+            // ColorSwitchCheck 会无条件恢复 Ink 模式、熄灭图形图标高亮，并刷新笔图标状态
+            if (inkCanvas.EditingMode != InkCanvasEditingMode.Ink || drawingShapeMode != 0)
+                ColorSwitchCheck();
+
+            if (BorderPenWidth.Visibility == Visibility.Visible)
+            {
+                BorderPenWidth.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                // 打开面板时按当前笔宽刷新档位高亮（设置页滑条可能调出介于两档之间的值）
+                UpdatePenWidthDots();
+                BorderPenWidth.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void BorderPenWidthThin_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            SetPenWidth(PenWidthThin);
+        }
+
+        private void BorderPenWidthMedium_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            SetPenWidth(PenWidthMedium);
+        }
+
+        private void BorderPenWidthThick_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            SetPenWidth(PenWidthThick);
+        }
+
+        /// <summary>设置笔粗细：直接更新画笔属性，并同步设置页滑条（滑条事件里会自动保存到配置）</summary>
+        private void SetPenWidth(double width)
+        {
+            if (drawingAttributes != null)
+            {
+                drawingAttributes.Width = width;
+                drawingAttributes.Height = width;
+            }
+            // 滑条值 = 笔宽 × 2；赋值会触发 InkWidthSlider_ValueChanged 完成保存
+            InkWidthSlider.Value = width * 2;
+
+            UpdatePenWidthDots();
+            // 选完即收面板，符合课堂"点选即走"的操作节奏
+            BorderPenWidth.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>按当前笔宽就近点亮一档粗细（三档圆点直径直观对应笔迹粗细）</summary>
+        private void UpdatePenWidthDots()
+        {
+            double w = drawingAttributes != null ? drawingAttributes.Width : PenWidthMedium;
+            double dThin = Math.Abs(w - PenWidthThin);
+            double dMedium = Math.Abs(w - PenWidthMedium);
+            double dThick = Math.Abs(w - PenWidthThick);
+
+            BorderPenWidthThin.Background = (dThin <= dMedium && dThin <= dThick) ? PenToolHighlightSoftBrush : Brushes.Transparent;
+            BorderPenWidthMedium.Background = (dMedium < dThin && dMedium <= dThick) ? PenToolHighlightSoftBrush : Brushes.Transparent;
+            BorderPenWidthThick.Background = (dThick < dThin && dThick < dMedium) ? PenToolHighlightSoftBrush : Brushes.Transparent;
+        }
+
+        /// <summary>更新笔图标的笔身颜色，使其始终显示当前笔颜色</summary>
+        private void UpdatePenIconColor()
+        {
+            Brush brush;
+            switch (inkColor)
+            {
+                case 0: brush = BtnColorBlack.Background; break;
+                case 2: brush = BtnColorGreen.Background; break;
+                case 3: brush = BtnColorBlue.Background; break;
+                case 4: brush = BtnColorYellow.Background; break;
+                case 5: brush = new SolidColorBrush(StringToColor("#FFFEFEFE")); break;
+                default: brush = BtnColorRed.Background; break; // inkColor == 1（红色，默认）
+            }
+            PathPenIconBody.Fill = brush;
+        }
+
+        /// <summary>画笔模式时给笔图标加淡蓝底+蓝边高亮，其他工具（橡皮/选择/图形）时熄灭</summary>
+        private void UpdatePenIconHighlight()
+        {
+            bool isPenActive = inkCanvas.EditingMode == InkCanvasEditingMode.Ink && drawingShapeMode == 0;
+            BorderPenIconHighlight.Background = isPenActive ? PenToolHighlightSoftBrush : Brushes.Transparent;
+            BorderPenIconHighlight.BorderBrush = isPenActive ? PenToolHighlightBrush : Brushes.Transparent;
+        }
+
+        /// <summary>更新悬浮条 6 色点的选中态：当前色点中心显示细蓝环，其余隐藏</summary>
+        private void UpdateFloatBarColorDots()
+        {
+            EllipsePenColorBlack.Visibility = inkColor == 0 ? Visibility.Visible : Visibility.Collapsed;
+            EllipsePenColorRed.Visibility = inkColor == 1 ? Visibility.Visible : Visibility.Collapsed;
+            EllipsePenColorGreen.Visibility = inkColor == 2 ? Visibility.Visible : Visibility.Collapsed;
+            EllipsePenColorBlue.Visibility = inkColor == 3 ? Visibility.Visible : Visibility.Collapsed;
+            EllipsePenColorYellow.Visibility = inkColor == 4 ? Visibility.Visible : Visibility.Collapsed;
+            EllipsePenColorWhite.Visibility = inkColor == 5 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        #endregion
 
         private void SymbolIconUndo_MouseUp(object sender, MouseButtonEventArgs e)
         {
@@ -129,8 +243,13 @@ namespace Ink_Canvas
                 inkCanvas.Strokes.Remove(inkCanvas.GetSelectedStrokes());
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
             }
-            else if (inkCanvas.Strokes.Count > 0)
+            else if (inkCanvas.Strokes.Count > 0
+                     || (currentMode != 0
+                         && _pageImages.TryGetValue(CurrentWhiteboardIndex, out var pageImgs)
+                         && pageImgs.Count > 0))
             {
+                // 触发条件：有墨迹，或当前白板页有图片（纯图片页也要能清屏——
+                // 原条件只看墨迹导致"只有图片时点清屏无反应"，用户实测发现的 bug）
                 if (Settings.Automation.IsAutoSaveStrokesAtClear && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
                 {
                     if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
@@ -165,7 +284,6 @@ namespace Ink_Canvas
             ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-            ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
 
             HideSubPanels();
         }
@@ -257,7 +375,6 @@ namespace Ink_Canvas
             ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-            ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
 
             HideSubPanels();
         }
@@ -540,6 +657,8 @@ namespace Ink_Canvas
                 //（方案B），不再是工具条的后代，不会随祖先缩放自动消失——不补这行
                 //会出现"工具条没了、面板还孤零零浮在屏幕上"的状态
                 try { BorderDrawShape.Visibility = Visibility.Collapsed; } catch { }
+                //笔粗细面板是工具条后代，理论上随缩放消失，这里显式收起保险（同清屏确认框逻辑）
+                try { BorderPenWidth.Visibility = Visibility.Collapsed; } catch { }
             }
             else
             {

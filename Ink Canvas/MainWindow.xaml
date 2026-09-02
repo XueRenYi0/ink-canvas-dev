@@ -1084,44 +1084,79 @@
                             <local:ClickSensitiveGrid Click="SymbolIconCursor_Click" ToolTip="鼠标模式（隐藏画板，点击穿透）">
                                 <ui:SymbolIcon Symbol="TouchPointer" Foreground="{DynamicResource FloatBarForeground}"/>
                             </local:ClickSensitiveGrid>
-                            <ui:SimpleStackPanel Orientation="{Binding ElementName=StackPanelFloatingBar, Path=Orientation}" Spacing="8" Margin="0,1">
-                                <Border Name="BorderPenColorBlack" Background="{Binding ElementName=BtnColorBlack, Path=Background}" MouseUp="BorderPenColorBlack_MouseUp" CornerRadius="100"
-                                    Width="{Binding ElementName=BorderPenColorBlack, Path=ActualHeight}" ToolTip="画笔颜色：黑色">
-                                    <Viewbox Opacity="{Binding ElementName=ViewboxBtnColorBlackContent, Path=Opacity}" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="White"/>
-                                    </Viewbox>
+                            <!-- ====== 画笔区：笔图标 + 6 色点（两排三列）+ 笔粗细弹出面板 ====== -->
+                            <!-- 笔图标：笔身颜色跟随当前笔颜色；单击 = 切回画笔模式 + 展开/收起笔粗细面板 -->
+                            <Grid Width="20" Height="26" Background="Transparent" MouseUp="PenIcon_MouseUp" ToolTip="画笔&#10;单击：切回画笔模式，展开/收起笔粗细面板">
+                                <!-- 选中态高亮底：画笔模式时淡蓝底+蓝边（与选择工具高亮同色），其他工具时透明 -->
+                                <Border x:Name="BorderPenIconHighlight" CornerRadius="4" Margin="-4,-1"
+                                        Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
+                                <!-- 笔身：Fill 由代码按当前笔颜色更新（UpdatePenIconColor） -->
+                                <Path x:Name="PathPenIconBody" Data="M4.5,19.5 L5.8,14.9 L15.8,4.9 A2.2,2.2 0 0 1 18.9,8 L8.9,18 Z"
+                                      Fill="#FFFF0000" Stroke="#80FFFFFF" StrokeThickness="0.5"/>
+                                <!-- 笔尖（固定深灰，不随颜色变） -->
+                                <Path Data="M4.5,19.5 L5.8,14.9 L8.4,17.5 Z" Fill="#FF52525B"/>
+                                <!-- 笔粗细弹出面板：负 Margin 向上弹出（Viewbox 内 Popup 不可用，与清屏确认框同方案） -->
+                                <Border x:Name="BorderPenWidth" Width="88" Height="40" Visibility="Collapsed" CornerRadius="5"
+                                        Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
+                                        Margin="-34,-52,-34,38">
+                                    <ui:SimpleStackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <Border x:Name="BorderPenWidthThin" Width="24" Height="24" CornerRadius="4" Background="Transparent"
+                                                MouseUp="BorderPenWidthThin_MouseUp" ToolTip="笔粗细：细">
+                                            <Ellipse Width="4" Height="4" Fill="{DynamicResource FloatBarForeground}"/>
+                                        </Border>
+                                        <Border x:Name="BorderPenWidthMedium" Width="24" Height="24" CornerRadius="4" Background="Transparent"
+                                                MouseUp="BorderPenWidthMedium_MouseUp" ToolTip="笔粗细：中">
+                                            <Ellipse Width="8" Height="8" Fill="{DynamicResource FloatBarForeground}"/>
+                                        </Border>
+                                        <Border x:Name="BorderPenWidthThick" Width="24" Height="24" CornerRadius="4" Background="Transparent"
+                                                MouseUp="BorderPenWidthThick_MouseUp" ToolTip="笔粗细：粗">
+                                            <Ellipse Width="12" Height="12" Fill="{DynamicResource FloatBarForeground}"/>
+                                        </Border>
+                                    </ui:SimpleStackPanel>
                                 </Border>
-                                <Border Name="BorderPenColorRed" Background="{Binding ElementName=BtnColorRed, Path=Background}" MouseUp="BorderPenColorRed_MouseUp" CornerRadius="100"
-                                    Width="{Binding ElementName=BorderPenColorRed, Path=ActualHeight}" ToolTip="画笔颜色：红色">
-                                    <Viewbox Opacity="{Binding ElementName=ViewboxBtnColorRedContent, Path=Opacity}" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="White"/>
-                                    </Viewbox>
-                                </Border>
-                                <Border Name="BorderPenColorGreen" Background="{Binding ElementName=BtnColorGreen, Path=Background}" MouseUp="BorderPenColorGreen_MouseUp" CornerRadius="100"
-                                    Width="{Binding ElementName=BorderPenColorGreen, Path=ActualHeight}" ToolTip="画笔颜色：绿色">
-                                    <Viewbox Opacity="{Binding ElementName=ViewboxBtnColorGreenContent, Path=Opacity}" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="White"/>
-                                    </Viewbox>
-                                </Border>
-                                <Border Name="BorderPenColorBlue" Background="{Binding ElementName=BtnColorBlue, Path=Background}" MouseUp="BorderPenColorBlue_MouseUp" CornerRadius="100"
-                                    Width="{Binding ElementName=BorderPenColorBlue, Path=ActualHeight}" ToolTip="画笔颜色：蓝色">
-                                    <Viewbox Opacity="{Binding ElementName=ViewboxBtnColorBlueContent, Path=Opacity}" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="White"/>
-                                    </Viewbox>
-                                </Border>
-                                <Border Name="BorderPenColorYellow" Background="{Binding ElementName=BtnColorYellow, Path=Background}" MouseUp="BorderPenColorYellow_MouseUp" CornerRadius="100"
-                                    Width="{Binding ElementName=BorderPenColorYellow, Path=ActualHeight}" ToolTip="画笔颜色：黄色">
-                                    <Viewbox Opacity="{Binding ElementName=ViewboxBtnColorYellowContent, Path=Opacity}" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="White"/>
-                                    </Viewbox>
-                                </Border>
-                                <Border Name="BorderPenColorWhite" Background="White" CornerRadius="100" MouseUp="BorderPenColorWhite_MouseUp"
-                                    Width="{Binding ElementName=BorderPenColorYellow, Path=ActualHeight}" ToolTip="画笔颜色：白色">
-                                    <Viewbox Name="ViewboxBtnColorWhiteContent" Opacity="0" Margin="6">
-                                        <ui:SymbolIcon Symbol="Accept" Foreground="Black"/>
-                                    </Viewbox>
-                                </Border>
-                            </ui:SimpleStackPanel>
+                            </Grid>
+                            <!-- 6 色点：两排三列（上排黑红绿 / 下排蓝黄白），单击 = 换色并回到画笔模式 -->
+                            <!-- 颜色仍绑定右侧面板色块（支持 Colors\*.ini 自定义配色） -->
+                            <!-- 选中态 = 中心细蓝环（Ellipse，代码控制 Visibility），不再加外描边，避免色点显粗 -->
+                            <UniformGrid Rows="2" Columns="3" Margin="0,1">
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorBlack_MouseUp" ToolTip="画笔颜色：黑色">
+                                    <Ellipse Name="BorderPenColorBlack" Fill="{Binding ElementName=BtnColorBlack, Path=Background}"/>
+                                    <Ellipse Name="EllipsePenColorBlack" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorRed_MouseUp" ToolTip="画笔颜色：红色">
+                                    <Ellipse Name="BorderPenColorRed" Fill="{Binding ElementName=BtnColorRed, Path=Background}"/>
+                                    <Ellipse Name="EllipsePenColorRed" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorGreen_MouseUp" ToolTip="画笔颜色：绿色">
+                                    <Ellipse Name="BorderPenColorGreen" Fill="{Binding ElementName=BtnColorGreen, Path=Background}"/>
+                                    <Ellipse Name="EllipsePenColorGreen" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorBlue_MouseUp" ToolTip="画笔颜色：蓝色">
+                                    <Ellipse Name="BorderPenColorBlue" Fill="{Binding ElementName=BtnColorBlue, Path=Background}"/>
+                                    <Ellipse Name="EllipsePenColorBlue" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorYellow_MouseUp" ToolTip="画笔颜色：黄色">
+                                    <Ellipse Name="BorderPenColorYellow" Fill="{Binding ElementName=BtnColorYellow, Path=Background}"/>
+                                    <Ellipse Name="EllipsePenColorYellow" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                                <Grid Width="10" Height="10" Background="Transparent"
+                                      MouseUp="BorderPenColorWhite_MouseUp" ToolTip="画笔颜色：白色">
+                                    <!-- 白点加细灰描边，浅色工具栏上不隐身 -->
+                                    <Ellipse Name="BorderPenColorWhite" Fill="White" Stroke="#80808080" StrokeThickness="1"/>
+                                    <Ellipse Name="EllipsePenColorWhite" Visibility="Collapsed" Width="6" Height="6"
+                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                </Grid>
+                            </UniformGrid>
                             <Grid x:Name="EraserContainer" Width="21" Height="24" Margin="0,1.5,-2,0" MouseDown="Border_MouseDown" MouseUp="ImageEraser_MouseUp" Visibility="{Binding ElementName=BtnErase, Path=Visibility}" ToolTip="橡皮擦（点击切换：面积擦 / 笔画擦）">
                                 <Image Name="ImageEraser" Margin="0,-4,-1,-2" Source="{DynamicResource ImageSource.RubberNormal}" RenderTransformOrigin="0.5,0.5"/>
                                 <!-- 选中态图标：形状与 ImageEraser 保持一致，颜色改为蓝/橙；通过 UpdateEraserIcon 同步切换 Source -->
@@ -1179,61 +1214,61 @@
                                              高度可拖：多出的高度喂给本 ScrollViewer，可视行数变多 -->
                                         <ScrollViewer Grid.Row="1" Name="ShapeIconScroll" MaxHeight="216" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="6,0,6,0">
                                             <WrapPanel>
-                                                <Border Name="BorderShapeIcon_1" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="直线（拖拽绘制，两点定线）">
+                                                <Border Name="BorderShapeIcon_1" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="直线（拖拽绘制，两点定线）">
                                                     <Image Name="ImageDrawLine" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawLine_Click" Source="{DynamicResource DrawShapeImageSource.Line}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_8" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="虚线（拖拽绘制，两点定线）">
+                                                <Border Name="BorderShapeIcon_8" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="虚线（拖拽绘制，两点定线）">
                                                     <Image Name="ImageDrawDashedLine" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawDashedLine_Click" Source="{DynamicResource DrawShapeImageSource.DashedLine}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_18" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="点线（拖拽绘制，两点定线）">
+                                                <Border Name="BorderShapeIcon_18" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="点线（拖拽绘制，两点定线）">
                                                     <Image Name="ImageDrawDotLine" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawDotLine_Click" Source="{DynamicResource DrawShapeImageSource.DotLine}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_2" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="箭头（拖拽绘制，起点到终点）">
+                                                <Border Name="BorderShapeIcon_2" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="箭头（拖拽绘制，起点到终点）">
                                                     <Image Name="ImageDrawArrow" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawArrow_Click" Source="{DynamicResource DrawShapeImageSource.ArrowLine}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_15" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="平行线（拖拽绘制，两条平行线）">
+                                                <Border Name="BorderShapeIcon_15" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="平行线（拖拽绘制，两条平行线）">
                                                     <Image Name="ImageDrawParallelLine" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawParallelLine_Click" Source="{DynamicResource DrawShapeImageSource.ParallelLine}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_11" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系1（拖拽绘制，标准十字坐标系）">
+                                                <Border Name="BorderShapeIcon_11" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系1（拖拽绘制，标准十字坐标系）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCoordinate1_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate1}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_12" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系2（拖拽绘制，带箭头标注）">
+                                                <Border Name="BorderShapeIcon_12" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系2（拖拽绘制，带箭头标注）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCoordinate2_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate2}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_13" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系3（拖拽绘制，带网格样式）">
+                                                <Border Name="BorderShapeIcon_13" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系3（拖拽绘制，带网格样式）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCoordinate3_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate3}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_14" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系4（拖拽绘制，带刻度样式）">
+                                                <Border Name="BorderShapeIcon_14" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系4（拖拽绘制，带刻度样式）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCoordinate4_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate4}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_17" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系5（拖拽绘制，象限标注样式）">
+                                                <Border Name="BorderShapeIcon_17" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="坐标系5（拖拽绘制，象限标注样式）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCoordinate5_Click" Source="{DynamicResource DrawShapeImageSource.Coordinate5}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_19" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="中心矩形（从中心拖拽绘制矩形）">
+                                                <Border Name="BorderShapeIcon_19" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="中心矩形（从中心拖拽绘制矩形）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawRectangleCenter_Click" Source="{DynamicResource DrawShapeImageSource.RectangleCenter}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_5" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="圆（拖拽绘制：按下点为圆心，拖到半径松手）">
+                                                <Border Name="BorderShapeIcon_5" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="圆（拖拽绘制：按下点为圆心，拖到半径松手）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCircle_Click" Source="{DynamicResource DrawShapeImageSource.Circle}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_10" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="虚线圆（拖拽绘制虚线样式的圆）">
+                                                <Border Name="BorderShapeIcon_10" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="虚线圆（拖拽绘制虚线样式的圆）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawDashedCircle_Click" Source="{DynamicResource DrawShapeImageSource.DashedCircle}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_16" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="中心椭圆（拖拽绘制：按下点为中心，带中心点标记）">
+                                                <Border Name="BorderShapeIcon_16" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="中心椭圆（拖拽绘制：按下点为中心，带中心点标记）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCenterEllipse_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenter}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_23" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="中心椭圆带焦点（拖拽绘制，带两个焦点标记）">
+                                                <Border Name="BorderShapeIcon_23" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="中心椭圆带焦点（拖拽绘制，带两个焦点标记）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCenterEllipseWithFocalPoint_Click" Source="{DynamicResource DrawShapeImageSource.EllipseCenterWithFocalPoint}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_24" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="双曲线（两步：第一步画渐近线，第二步画双曲线本体）">
+                                                <Border Name="BorderShapeIcon_24" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="双曲线（两步：第一步画渐近线，第二步画双曲线本体）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawHyperbola_Click" Source="{DynamicResource DrawShapeImageSource.Hyperbola}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_25" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="双曲线带焦点（两步：先画渐近线，再画曲线，自动标焦点）">
+                                                <Border Name="BorderShapeIcon_25" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="双曲线带焦点（两步：先画渐近线，再画曲线，自动标焦点）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawHyperbolaWithFocalPoint_Click" Source="{DynamicResource DrawShapeImageSource.HyperbolaWithFocalPoint}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_20" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线（拖拽绘制：按下点为顶点，拖出开口方向和宽度）">
+                                                <Border Name="BorderShapeIcon_20" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线（拖拽绘制：按下点为顶点，拖出开口方向和宽度）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawParabola1_Click" Source="{DynamicResource DrawShapeImageSource.Parabola}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_22" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线带焦点（拖拽绘制，自动标出焦点）">
+                                                <Border Name="BorderShapeIcon_22" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线带焦点（拖拽绘制，自动标出焦点）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawParabolaWithFocalPoint_Click" Source="{DynamicResource DrawShapeImageSource.ParabolaWithFocalPoint}" RenderTransformOrigin="0.5,0.5">
                                                         <Image.RenderTransform>
                                                             <TransformGroup>
@@ -1245,7 +1280,7 @@
                                                         </Image.RenderTransform>
                                                     </Image>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_21" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线（横向：开口向左或右的抛物线）">
+                                                <Border Name="BorderShapeIcon_21" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="抛物线（横向：开口向左或右的抛物线）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawParabola2_Click" Source="{DynamicResource DrawShapeImageSource.Parabola}" RenderTransformOrigin="0.5,0.5">
                                                         <Image.RenderTransform>
                                                             <TransformGroup>
@@ -1257,19 +1292,19 @@
                                                         </Image.RenderTransform>
                                                     </Image>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_26" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="正弦曲线（拖拽绘制：横向=一个周期，纵向=振幅）">
+                                                <Border Name="BorderShapeIcon_26" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="正弦曲线（拖拽绘制：横向=一个周期，纵向=振幅）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawSin_Click" Source="{DynamicResource DrawShapeImageSource.SinCurve}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_3" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="矩形（拖拽绘制，对角线定矩形）">
+                                                <Border Name="BorderShapeIcon_3" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="矩形（拖拽绘制，对角线定矩形）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawRectangle_Click" Source="{DynamicResource DrawShapeImageSource.Rectangle}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_6" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="圆柱（拖拽绘制：先画侧面，再画上下底面椭圆）">
+                                                <Border Name="BorderShapeIcon_6" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="圆柱（拖拽绘制：先画侧面，再画上下底面椭圆）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCylinder_Click" Source="{DynamicResource DrawShapeImageSource.Cylinder}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_7" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="圆锥（拖拽绘制，自动生成圆锥体图形）">
+                                                <Border Name="BorderShapeIcon_7" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="圆锥（拖拽绘制，自动生成圆锥体图形）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCone_Click" Source="{DynamicResource DrawShapeImageSource.Cone}"/>
                                                 </Border>
-                                                <Border Name="BorderShapeIcon_9" Width="48" Height="48" Margin="3" CornerRadius="4" Background="Transparent" ToolTip="长方体（两步：先画正面矩形，再拖出深度）">
+                                                <Border Name="BorderShapeIcon_9" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="长方体（两步：先画正面矩形，再拖出深度）">
                                                     <Image Stretch="Uniform" MouseUp="BtnDrawCuboid_Click" Source="{DynamicResource DrawShapeImageSource.Cuboid}"/>
                                                 </Border>
                                                 <Viewbox Width="48" Height="48" Margin="3">
@@ -1316,6 +1351,101 @@
                                             <Path Data="M14,2 L2,14 M14,8 L8,14" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.6"/>
                                         </Grid>
                                     </Grid>
+                                </Border>
+                            </Grid>
+                            <!-- ===== 截图入口（含三项目弹出菜单）：紧随图形绘制之后 ===== -->
+                            <Grid x:Name="GridImageMenuEntry" Width="20" Height="24" Background="Transparent" ToolTip="截图：点击弹出菜单——快速截图、隐藏界面截图、上传本地图片">
+                                <ui:SymbolIcon Margin="0,0,0,0" Symbol="Cut" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconScreenshot_MenuToggle"/>
+                                <!-- 截图三项目菜单：与悬浮条同款亚克力半透明底 + 主题动态色，
+                                     每项 = 自绘细线图标 + 文字行，悬停高亮。
+                                     定位：Top 对齐 + 顶边距 -60 = 菜单底边停在图标格上方 2px（格高24 + 间隙2 + 内容高58 反推），
+                                     与清屏确认框 BorderClearInDelete 同款模式（负顶边距向上弹出，已在 Viewbox 环境验证可靠）；
+                                     高度由内容撑，不遮挡工具栏任何图标 -->
+                                <Border x:Name="BorderImageMenu" Visibility="Collapsed" Background="{DynamicResource FloatBarBackground}"
+                                        BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
+                                        VerticalAlignment="Top" CornerRadius="7"
+                                        Margin="-57,-60,-30,0" Padding="2,2.5">
+                                    <Border.Resources>
+                                        <!-- 菜单项样式：无边框透明按钮，悬停时半透明高亮圆角块 -->
+                                        <Style x:Key="ScreenshotMenuItemStyle" TargetType="Button">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource FloatBarForeground}"/>
+                                            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+                                            <Setter Property="FontSize" Value="9"/>
+                                            <Setter Property="Padding" Value="5,2.5"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <!-- 悬停高亮：半透明白/灰，深浅主题下都自然 -->
+                                                                <Setter TargetName="Bd" Property="Background" Value="#26FFFFFF"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Border.Resources>
+                                    <StackPanel>
+                                        <Button x:Name="BtnFloatShotRegion" Style="{StaticResource ScreenshotMenuItemStyle}"
+                                                Click="BtnMenuShotRegion_Click"
+                                                ToolTip="快速截图：屏幕变暗后拖动框选区域，松手完成（Esc/右键取消）；截图自动插入白板并复制到剪贴板">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- 框选截图图标：虚线四角（不完整框 = "框选"），比实心框更轻 -->
+                                                <Canvas Width="10" Height="10" Margin="0,0,5,0">
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.1"
+                                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" Fill="Transparent"
+                                                          Data="M3,0.5 L0.5,0.5 L0.5,3 M7,0.5 L9.5,0.5 L9.5,3 M9.5,7 L9.5,9.5 L7,9.5 M3,9.5 L0.5,9.5 L0.5,7"/>
+                                                </Canvas>
+                                                <TextBlock Text="快速截图" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="BtnFloatShotHidden" Style="{StaticResource ScreenshotMenuItemStyle}"
+                                                Click="BtnMenuShotHidden_Click"
+                                                ToolTip="隐藏界面截图：掀开白板并隐藏本软件界面后框选，可截取被挡住的桌面内容；截完或取消后白板和板书原样恢复">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- 隐藏界面截图图标：前板掀起右上角 + 后层虚线板 = "掀板看底下" -->
+                                                <Canvas Width="10" Height="10" Margin="0,0,5,0">
+                                                    <!-- 后层（被盖住的桌面）：虚线轮廓 -->
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1"
+                                                          StrokeDashArray="1.5,1.5" Fill="Transparent"
+                                                          Data="M2.5,1.5 H9.5 V8.5 H2.5 Z"/>
+                                                    <!-- 前层（白板）：实心小角掀起 -->
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.1"
+                                                          StrokeLineJoin="Round" Fill="Transparent"
+                                                          Data="M1,9.5 L1,1 L8,1 M1,9.5 H7 L8,4 M8,1 L8,4"/>
+                                                </Canvas>
+                                                <TextBlock Text="隐藏界面截图" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="BtnFloatImportImage" Style="{StaticResource ScreenshotMenuItemStyle}"
+                                                Click="BtnMenuImportImage_Click"
+                                                ToolTip="上传本地图片：从电脑选择 PNG/JPG 等图片文件（可多选），插入白板当前页">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- 上传本地图片图标：经典"风景相框"（圆角框 + 山 + 太阳），小尺寸下也一眼能认出 -->
+                                                <Canvas Width="10" Height="10" Margin="0,0,5,0">
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.1"
+                                                          StrokeLineJoin="Round" Fill="Transparent"
+                                                          Data="M2,0.5 H8 Q9.5,0.5 9.5,2 V8 Q9.5,9.5 8,9.5 H2 Q0.5,9.5 0.5,8 V2 Q0.5,0.5 2,0.5 Z"/>
+                                                    <Ellipse Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1" Fill="Transparent"
+                                                             Canvas.Left="2.5" Canvas.Top="2" Width="1.8" Height="1.8"/>
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1"
+                                                          StrokeLineJoin="Round" StrokeStartLineCap="Round" Fill="Transparent"
+                                                          Data="M1.5,8.5 L4,5.5 L5.5,7 L7.5,4.5 L9.5,7"/>
+                                                </Canvas>
+                                                <TextBlock Text="上传本地图片" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
                                 </Border>
                             </Grid>
                             <ui:SymbolIcon Symbol="Undo" Foreground="{DynamicResource FloatBarForeground}" Margin="0,0,-2,0" ToolTip="撤销"
@@ -1401,28 +1531,6 @@
                                 </Grid>
                             </Grid>
                             <ui:SimpleStackPanel Margin="0,5,10,5" Spacing="10" Orientation="{Binding ElementName=StackPanelFloatingBar, Path=Orientation}">
-                                <!-- 相机图标：截图功能入口，点击弹出菜单（系统截图/隐藏界面截图/打开本地图片）。
-                                     弹出菜单用负 Margin 的 Grid 浮层方案锚定（Popup 在 Viewbox 内不可靠，实测结论） -->
-                                <Grid x:Name="GridImageMenuEntry" Width="20" Background="Transparent" ToolTip="截图：点击弹出菜单——系统截图、隐藏界面截图、打开本地图片">
-                                    <ui:SymbolIcon Margin="0,0,0,0" Symbol="Cut" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconScreenshot_MenuToggle"/>
-                                    <Border x:Name="BorderImageMenu" Visibility="Collapsed" Background="White" BorderBrush="#0066BF" BorderThickness="1"
-                                            CornerRadius="5" Margin="-38,-106,-38,14">
-                                        <StackPanel>
-                                            <Button x:Name="BtnFloatShotRegion" Content="系统截图" FontFamily="Microsoft YaHei UI" FontSize="12"
-                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
-                                                    Click="BtnMenuShotRegion_Click"
-                                                    ToolTip="系统截图：调出 Windows 系统截图（Win+Shift+S 同款），支持矩形/窗口/全屏，截图自动存入白板当前页"/>
-                                            <Button x:Name="BtnFloatShotHidden" Content="隐藏界面截图" FontFamily="Microsoft YaHei UI" FontSize="12"
-                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
-                                                    Click="BtnMenuShotHidden_Click"
-                                                    ToolTip="隐藏界面截图：先隐藏本软件界面（含悬浮条和墨迹）再调出系统截图，可截取被挡住的内容；截完自动恢复窗口"/>
-                                            <Button x:Name="BtnFloatImportImage" Content="打开本地图片" FontFamily="Microsoft YaHei UI" FontSize="12"
-                                                    Width="76" Height="27" Margin="2,1.5" Background="Transparent" Foreground="#444444"
-                                                    Click="BtnMenuImportImage_Click"
-                                                    ToolTip="打开本地图片：从电脑选择 PNG/JPG 等图片文件，插入白板当前页"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
                                 <Grid Height="24" Width="20" ToolTip="快捷设置（画笔粗细、墨迹识别、手指模式等）">
                                     <!-- 三滑杆图标；粗细用 IconStroke 资源；事件挂在内层Grid，避免BorderTools弹出面板内的点击冒泡误关面板 -->
                                     <Grid Background="Transparent" MouseDown="Border_MouseDown" MouseUp="SymbolIconTools_MouseUp">

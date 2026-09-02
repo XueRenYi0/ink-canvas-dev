@@ -270,6 +270,10 @@ namespace Ink_Canvas
                     BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFF38B00"));
                 }
             }
+
+            //换色后 BtnColorX.Background 是新 Brush 对象，笔图标 Fill 仍指旧引用——
+            //在这里同步刷新，保证笔身颜色始终等于当前笔颜色（含 ini 自定义配色）
+            UpdatePenIconColor();
         }
 
         #endregion Whiteboard Controls

@@ -217,21 +217,7 @@ namespace Ink_Canvas
             forceEraser = false;
             BorderClearInDelete.Visibility = Visibility.Collapsed;
 
-            if (currentMode == 0)
-            {
-                BorderPenColorRed_MouseUp(BorderPenColorRed, null);
-            }
-            else
-            {
-                if (Settings.Canvas.UsingWhiteboard)
-                {
-                    BorderPenColorBlack_MouseUp(BorderPenColorBlack, null);
-                }
-                else
-                {
-                    BorderPenColorWhite_MouseUp(BorderPenColorWhite, null);
-                }
-            }
+            //清屏不再重置笔颜色：只清墨迹，保留用户当前笔色/粗细（原版会强制重置为红/黑/白）
             if (inkCanvas.Strokes.Count != 0)
             {
                 int whiteboardIndex = CurrentWhiteboardIndex;
@@ -697,7 +683,6 @@ namespace Ink_Canvas
             ViewboxBtnColorGreenContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
-            ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             switch (inkColor)
             {
                 case 0:
@@ -716,9 +701,13 @@ namespace Ink_Canvas
                     ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
                     break;
                 case 5:
-                    ViewboxBtnColorWhiteContent.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOn)));
-                    break;
+                    break; // 白色：悬浮条色点改为描边选中态（见下方 UpdateFloatBarColorDots），右面板无白点打勾
             }
+
+            // 悬浮条画笔区同步：笔图标颜色/高亮 + 6 色点选中描边
+            UpdatePenIconColor();
+            UpdatePenIconHighlight();
+            UpdateFloatBarColorDots();
 
         }
 

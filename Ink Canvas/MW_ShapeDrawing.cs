@@ -75,8 +75,13 @@ namespace Ink_Canvas
         private Size? _shapePanelSessionSize = null;
 
         //面板默认尺寸 / 限制（角柄：宽=每行图标数，高=图标区可视行数）
-        private const double ShapePanelDefaultW = 420;
-        private const double ShapePanelDefaultH = 400;
+        //默认尺寸随屏幕工作区自适应：小屏（老投影）收窄防溢出，大屏（4K 一体机）放宽多显几行
+        //基线 400 = 面板"自然内容高度"（标题+默认滚动区+函数条+图库），默认高度不得低于它，否则内部出空档
+        private const double ShapePanelBaseH = 400;
+        private static readonly double ShapePanelDefaultW =
+            Math.Min(480, Math.Max(360, SystemParameters.WorkArea.Width * 0.22));
+        private static readonly double ShapePanelDefaultH =
+            Math.Max(ShapePanelBaseH, Math.Min(560, SystemParameters.WorkArea.Height * 0.52));
         private const double ShapePanelMinW = 340;
         private const double ShapePanelMinH = 280;
 
@@ -121,7 +126,8 @@ namespace Ink_Canvas
         /// </summary>
         private void ApplyShapePanelScrollHeights(double panelHeight)
         {
-            double extra = Math.Max(0, panelHeight - ShapePanelDefaultH);
+            //以固定基线（而非自适应默认值）计算增量：面板比自然高度多出多少，就分给两个滚动区
+            double extra = Math.Max(0, panelHeight - ShapePanelBaseH);
             ShapeIconScroll.MaxHeight = ShapeIconScrollDefaultMax + extra * 0.6;
             LibraryScroll.MaxHeight = LibraryScrollDefaultMax + extra * 0.4;
         }
@@ -397,6 +403,10 @@ namespace Ink_Canvas
                 if (border == null) continue; //该编号没有对应图标
                 border.Tag = (mode == activeMode) ? "Active" : null;
             }
+
+            //搭车同步悬浮条笔图标高亮：本方法被全部工具激活点调用，
+            //图形模式（drawingShapeMode != 0）不触发 EditingModeChanged，需在此处补同步
+            UpdatePenIconHighlight();
         }
 
         private void BtnDrawLine_Click(object sender, EventArgs e)
