@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$msb = 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe',
     [string]$csproj = '',
     [string]$releases = ''
@@ -15,7 +15,7 @@ Write-Host ('--- MSBuild Rebuild Release (AnyCPU 32位首选，与 VS Debug 配�
 Write-Host ('MSBuild exit: ' + $LASTEXITCODE)
 
 # 版本号（与 AssemblyInfo.cs / InkCanvas.iss / build-zips.ps1 保持一致，升级时四处同步改）
-$ver = '6.0.1'
+$ver = '6.0.2'
 
 # 版本 README 刷新
 $readme = Join-Path $out '使用说明 README.txt'
