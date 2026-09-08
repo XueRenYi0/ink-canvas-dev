@@ -1,4 +1,4 @@
-﻿<Application x:Class="Ink_Canvas.App"
+<Application x:Class="Ink_Canvas.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Ink_Canvas"
@@ -31,7 +31,9 @@
                 <ResourceDictionary Source="Resources/DrawShapeImageDictionary.xaml"/>
                 <ResourceDictionary Source="Resources/IconImageDictionary.xaml"/>
                 <ResourceDictionary Source="Resources/Styles/Light.xaml"/>
-                
+                <!-- 界面规范资源字典：图标厚度/圆角/间距/功能色统一收口（重构第一步） -->
+                <ResourceDictionary Source="Resources/Styles/InkSpec.xaml"/>
+
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

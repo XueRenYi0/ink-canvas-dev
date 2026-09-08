@@ -242,9 +242,10 @@ namespace Ink_Canvas
                 }
                 else
                 {
-                    BtnColorRed.Background = new SolidColorBrush(StringToColor("#FFFF3333"));
-                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF1ED760"));
-                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF239AD6"));
+                    // 白板（白底）默认 = 纯色网格、亮度适配白底：红纯红、绿/蓝降亮度保证对比度
+                    BtnColorRed.Background = new SolidColorBrush(StringToColor("#FFFF0000"));
+                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF00C000"));
+                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF0055E0"));
                     BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFFFC000"));
                 }
             }
@@ -264,10 +265,12 @@ namespace Ink_Canvas
                 }
                 else
                 {
-                    BtnColorRed.Background = new SolidColorBrush(Colors.Red);
-                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF169141"));
-                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF239AD6"));
-                    BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFF38B00"));
+                    // 黑板（黑底）默认 = 纯色网格、亮度适配黑底：黄绿青用纯色（黑底上鲜艳），
+                    // 蓝提亮（纯蓝 #0000FF 在黑底上对比不足）、红微提亮
+                    BtnColorRed.Background = new SolidColorBrush(StringToColor("#FFFF3333"));
+                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF00E000"));
+                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF3D7BFF"));
+                    BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFFFFF00"));
                 }
             }
 

@@ -385,7 +385,7 @@ namespace Ink_Canvas
                 ClearStrokes(true);
 
                 SetBorderFloatingBarMainControlsVisibility(true, false);
-                BorderPenColorRed_MouseUp(BorderPenColorRed, null);
+                BorderPenColorRed_MouseUp(null, null);
 
                 if (Settings.PowerPointSettings.IsShowCanvasAtNewSlideShow == false)
                 {

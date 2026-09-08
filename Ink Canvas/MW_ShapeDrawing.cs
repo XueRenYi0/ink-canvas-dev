@@ -75,14 +75,14 @@ namespace Ink_Canvas
         private Size? _shapePanelSessionSize = null;
 
         //面板默认尺寸 / 限制（角柄：宽=每行图标数，高=图标区可视行数）
-        //默认尺寸随屏幕工作区自适应：小屏（老投影）收窄防溢出，大屏（4K 一体机）放宽多显几行
-        //基线 400 = 面板"自然内容高度"（标题+默认滚动区+函数条+图库），默认高度不得低于它，否则内部出空档
-        private const double ShapePanelBaseH = 400;
-        private static readonly double ShapePanelDefaultW =
-            Math.Min(480, Math.Max(360, SystemParameters.WorkArea.Width * 0.22));
-        private static readonly double ShapePanelDefaultH =
-            Math.Max(ShapePanelBaseH, Math.Min(560, SystemParameters.WorkArea.Height * 0.52));
-        private const double ShapePanelMinW = 340;
+        //默认宽 304 = 每行正好 5 个图标（5×54 图标格 + 12 边距 + 2 描边 + 滚动条预留）——
+        //25 个图标排成 5×5 整齐方阵，无残行；此前随屏幕 0.22 自适应（约 422px）每行挤 7 个，末行 4 个残缺难看
+        private const double ShapePanelDefaultW = 304;
+        //默认高固定为自然高度（标题 31 + Tab 条 30 + 图标区 5 行 270 + 描边 2 + 余量），不多不少——
+        //此前 0.52 屏高自适应（1080p 约 541px）比内容高出 250px，底部一大截空白；想更高拖角柄（会话记忆）
+        private const double ShapePanelBaseH = 336;
+        private static readonly double ShapePanelDefaultH = ShapePanelBaseH;
+        private const double ShapePanelMinW = 284; // 5 图标/行的最小宽度（再窄换行成 4 个）
         private const double ShapePanelMinH = 280;
 
         private bool _isDraggingShapePanel = false;      // 是否正在拖动面板
@@ -92,10 +92,10 @@ namespace Ink_Canvas
         private bool _isResizingShapePanel = false;      // 是否正在调整面板大小
         private Point _resizeStartMousePos;              // 调整开始时鼠标位置
         private Size _resizeStartSize;                   // 调整开始时面板尺寸
-        //图标区默认可视高度（48 格 + 6 间距 = 每行 54；4 行 = 216）
-        private const double ShapeIconScrollDefaultMax = 216;
-        //图库区默认可视高度（与 XAML 中 LibraryScroll 的 MaxHeight="88" 对应）
-        private const double LibraryScrollDefaultMax = 88;
+        //图标区默认可视高度（48 格 + 6 间距 = 每行 54；5 列布局 25 图标 = 5 行整 = 270，无滚动条）
+        private const double ShapeIconScrollDefaultMax = 270;
+        //图库区默认可视高度（64×56 格 + 边距 = 每行 60；默认 4 行整 = 240）
+        private const double LibraryScrollDefaultMax = 240;
 
         /// <summary>
         /// 把图形面板从悬浮条视觉树"解挂"到主窗口根层（构造函数里调用一次）。
@@ -120,16 +120,57 @@ namespace Ink_Canvas
         }
 
         /// <summary>
-        /// 把面板相对默认高度多出的部分分配给两个内部滚动区：
-        /// 图标区拿 60%（内置图形多、查找频率高），图库区拿 40%（存的自定义图形也要能多看几行）。
-        /// 之前只喂图标区，图库固定 88px——面板拉得再高图库也只能上下滚动，不符合直觉。
+        /// 把面板相对默认高度多出的部分分配给内部滚动区。
+        /// Tab 化后同屏只有一个滚动区（图形 Tab 的图标区 / 图库 Tab 的图库区），
+        /// 增量直接全给两个滚动区（未显示的吃了也不可见），切换 Tab 无需重算。
         /// </summary>
         private void ApplyShapePanelScrollHeights(double panelHeight)
         {
-            //以固定基线（而非自适应默认值）计算增量：面板比自然高度多出多少，就分给两个滚动区
+            //以固定基线（而非自适应默认值）计算增量：面板比自然高度多出多少，就分给滚动区
             double extra = Math.Max(0, panelHeight - ShapePanelBaseH);
-            ShapeIconScroll.MaxHeight = ShapeIconScrollDefaultMax + extra * 0.6;
-            LibraryScroll.MaxHeight = LibraryScrollDefaultMax + extra * 0.4;
+            ShapeIconScroll.MaxHeight = ShapeIconScrollDefaultMax + extra;
+            LibraryScroll.MaxHeight = LibraryScrollDefaultMax + extra;
+        }
+
+        // ---------- Tab 切换（图形 / 函数 / 图库） ----------
+
+        /// <summary>当前 Tab 索引（会话内记忆；0=图形 1=函数 2=图库，重启回图形）</summary>
+        private int _shapePanelTab = 0;
+
+        /// <summary>Tab 单击入口（三个 Tab Border 共用，按 sender 分发）</summary>
+        private void ShapeTab_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender == BorderShapeTabShapes) SetShapePanelTab(0);
+            else if (sender == BorderShapeTabFunction) SetShapePanelTab(1);
+            else if (sender == BorderShapeTabLibrary) SetShapePanelTab(2);
+        }
+
+        /// <summary>切换到指定 Tab：三个内容容器互斥显示 + Tab 高亮同步</summary>
+        private void SetShapePanelTab(int index)
+        {
+            _shapePanelTab = index;
+            GridShapeTabShapes.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+            GridShapeTabFunction.Visibility = index == 1 ? Visibility.Visible : Visibility.Collapsed;
+            GridShapeTabLibrary.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
+
+            SetShapeTabHighlight(BorderShapeTabShapes, index == 0);
+            SetShapeTabHighlight(BorderShapeTabFunction, index == 1);
+            SetShapeTabHighlight(BorderShapeTabLibrary, index == 2);
+        }
+
+        /// <summary>Tab 高亮：选中淡蓝底+蓝边，未选中透明（与笔/橡皮面板高亮同款规范）</summary>
+        private void SetShapeTabHighlight(Border tab, bool active)
+        {
+            if (active)
+            {
+                tab.Background = new SolidColorBrush(Color.FromArgb(0x26, 0x00, 0x88, 0xFF)); //15% 蓝
+                tab.BorderBrush = TryFindResource("HighlightBrush") as Brush ?? Brushes.DodgerBlue;
+            }
+            else
+            {
+                tab.Background = Brushes.Transparent;
+                tab.BorderBrush = Brushes.Transparent;
+            }
         }
 
         /// <summary>显示图形面板的统一入口：先恢复大小（会话记忆 → 默认值）和位置再显示</summary>
@@ -173,7 +214,8 @@ namespace Ink_Canvas
                 //面板高度用代码设置的显式值（ShowShapePanel 里已先设好），不用 ActualHeight——
                 //首次显示时布局未跑完 ActualHeight 可能为 0
                 double h = BorderDrawShape.Height > 0 ? BorderDrawShape.Height : ShapePanelDefaultH;
-                SetShapePanelPosition(iconLocal.X - 100, iconLocal.Y - h - 12);
+                //水平以图形图标为中心（(面板宽-图标宽)/2 偏移；旧值 -100 是按 420 宽面板算的偏左）
+                SetShapePanelPosition(iconLocal.X - (ShapePanelDefaultW - 20) / 2, iconLocal.Y - h - 12);
             }
             catch
             {
@@ -328,6 +370,7 @@ namespace Ink_Canvas
         {
             forceEraser = false;
             drawingShapeMode = 0;
+            CancelActiveSelection(); //激活笔 = 书写新意图：旧选中清场（选中是临时上下文原则）
             inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             inkCanvas.IsManipulationEnabled = true;
             CancelSingleFingerDragMode();
@@ -382,6 +425,9 @@ namespace Ink_Canvas
                 border.ClearValue(Border.BackgroundProperty);
                 border.Style = style;
             }
+
+            //Tab 化初始高亮（内容可见性 XAML 已按默认 Tab=图形 设好，这里补 Tab 高亮）
+            SetShapePanelTab(_shapePanelTab);
         }
 
         private void UpdateShapeIconHighlight()
@@ -393,6 +439,20 @@ namespace Ink_Canvas
             //在这里统一结束"插入后一次性选中"，保证激活任何工具时画布遮罩立即收起。
             //（否则选区遮罩会吃掉第一笔的鼠标事件，图形画不出来）
             EndOneShotSelectionNow();
+
+            //搭车收口2（手动选中同样清场）：激活图形绘制工具时，用户手动选中的
+            //墨迹/图片也要取消——选中遮罩持续吃事件，否则在选中区域上方落笔画不出图形。
+            //只在真正进入图形模式时清（drawingShapeMode!=0）；选择工具（mode=0）本身就是
+            //选中态的操作入口，不清。笔模式的清理由各自入口显式调用（笔不影响：遮罩
+            //会在落笔时被 PreviewMouseDown 判"框外"放行——但为口径统一也在入口清）
+            if (drawingShapeMode != 0) CancelActiveSelection();
+
+            //搭车同步笔种类属性（MW_PenSettings.cs）：
+            //进图形模式 → 剥离激光/荧光笔专属属性（否则 Clone() 会把它们带给图形笔迹，
+            //图形会渐隐消失、不进撤销栈、或变半透明宽笔迹）；
+            //回笔/橡皮/选择（mode=0）→ 恢复笔种类属性，保证下次落笔即正确。
+            if (drawingShapeMode != 0) NormalizeAttributesForShapeMode();
+            else ApplyPenTypeToDrawingAttributes();
 
             int activeMode = drawingShapeMode;
             //只遍历 1~26（绘制工具）。27 号 fx 按钮的激活蓝表示"面板开着"，

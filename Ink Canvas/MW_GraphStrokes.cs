@@ -62,9 +62,10 @@ namespace Ink_Canvas
                 //（笔/橡皮形态互切的 hack），一并记住恢复，防止橡皮形态被意外互换
                 bool eraserShapeBefore = forcePointEraser;
 
-                //与空白处单击取消选中的路径完全一致（屏蔽 SelectionChanged 快照副作用）
+                //与空白处单击取消选中的路径完全一致（屏蔽 SelectionChanged 快照副作用）；
+                //双参清空：图片选中一并取消（切橡皮等模式时不残留）
                 isProgramChangeStrokeSelection = true;
-                inkCanvas.Select(new StrokeCollection());
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
                 isProgramChangeStrokeSelection = false;
 
                 //取消选中后把模式恢复回去（Select 已经把它改成了 Select）
@@ -82,13 +83,56 @@ namespace Ink_Canvas
         }
 
         /// <summary>
+        /// 取消当前选中（不管来源是手动选择还是插入即选中）。
+        /// 【设计原则】选中是"临时上下文"：任何与选中无关的新操作（截图/激活笔/橡皮/
+        /// 图形绘制工具等）出现时，旧选中立即清场——与 PPT/Figma 行业惯例一致。
+        /// 骨架与 EndOneShotSelectionNow 同款（Select() 偷切 Select 模式、
+        /// forcePointEraser 翻转等坑已在彼处趟平），区别：本方法无条件清选中、
+        /// 不恢复笔模式（调用方即将激活的新工具就是目标模式）。
+        /// 幂等：无选中时调用零成本。操作条按钮/手柄/选择工具自身不调用本方法。
+        /// </summary>
+        private void CancelActiveSelection()
+        {
+            try
+            {
+                //快速出口：没选中就什么都不做
+                if (inkCanvas.GetSelectedStrokes().Count == 0 && inkCanvas.GetSelectedElements().Count == 0)
+                    return;
+
+                //记住当前模式：Select() 会把 EditingMode 强切为 Select 且不恢复（WPF 文档行为），
+                //不记的话取消选中后模式会错乱（详见 EndOneShotSelectionNow 同段注释）
+                var modeBefore = inkCanvas.EditingMode;
+                bool eraserShapeBefore = forcePointEraser;
+
+                //双参清空：墨迹+图片选中一起取消（屏蔽 SelectionChanged 快照副作用）
+                isProgramChangeStrokeSelection = true;
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
+                isProgramChangeStrokeSelection = false;
+
+                //模式恢复回去（Select 已经把它改成了 Select）
+                if (modeBefore != InkCanvasEditingMode.Select)
+                    inkCanvas.EditingMode = modeBefore;
+                forcePointEraser = eraserShapeBefore;
+                UpdateEraserIcon();
+
+                GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLogToFile("[选中管理] 取消选中失败 " + ex, LogHelper.LogType.Error);
+            }
+        }
+
+        /// <summary>
         /// 一次性选中的收尾：若当前选中来自图形插入且已被取消，恢复笔模式。
         /// 各取消选中的路径（鼠标/触摸/事件驱动）统一调它，逻辑只此一份。
         /// </summary>
         private void TryEndOneShotSelection()
         {
             if (!_isOneShotGraphSelection) return;
-            if (inkCanvas.GetSelectedStrokes().Count > 0) return; //选中还在（拖动/调整中），不动
+            //选中还在（拖动/调整中）就不动。判定含图片：图片插入即选中是同一机制，
+            //纯图片选中时墨迹数为 0，不补这条会被误判"没选中"而错误恢复笔模式
+            if (inkCanvas.GetSelectedStrokes().Count > 0 || inkCanvas.GetSelectedElements().Count > 0) return;
             _isOneShotGraphSelection = false;
             if (drawingShapeMode != 0) return; //防御：用户已激活图形工具时不恢复笔（会杀掉刚选的图形模式）
 

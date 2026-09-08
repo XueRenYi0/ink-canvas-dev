@@ -246,7 +246,6 @@ namespace Ink_Canvas
 
         private void Main_Grid_TouchDown(object sender, TouchEventArgs e)
         {
-            BorderClearInDelete.Visibility = Visibility.Collapsed;
             if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
             {
                 BorderDrawShape.Visibility = Visibility.Collapsed;

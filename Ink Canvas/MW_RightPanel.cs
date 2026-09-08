@@ -155,7 +155,8 @@ namespace Ink_Canvas
         private void BtnErase_Click(object sender, RoutedEventArgs e)
         {
             forceEraser = true;
-            forcePointEraser = !forcePointEraser;
+            // 进入"上次的擦除方式"（原为每次点击 toggle 面积擦/笔画擦——不可见、易误切，已废弃；
+            // 方式切换只走橡皮设置面板。EraserType：0=记住上次 1=强制面积 2=强制笔画）
             switch (Settings.Canvas.EraserType)
             {
                 case 1:
@@ -169,6 +170,7 @@ namespace Ink_Canvas
             inkCanvas.EditingMode =
                 forcePointEraser ? InkCanvasEditingMode.EraseByPoint : InkCanvasEditingMode.EraseByStroke;
             drawingShapeMode = 0;
+            CancelActiveSelection(); //激活橡皮 = 擦除新意图：旧选中清场（选中是临时上下文原则）
             UpdateShapeIconHighlight(); //熄灭图形图标高亮 + 结束一次性选中（搭车收口，见 MW_GraphStrokes.cs）
             UpdateEraserIcon();
             ImageEraser.Visibility = Visibility.Collapsed;
@@ -215,7 +217,7 @@ namespace Ink_Canvas
         private void BtnClear_Click(object sender, RoutedEventArgs e)
         {
             forceEraser = false;
-            BorderClearInDelete.Visibility = Visibility.Collapsed;
+            CloseEraserSettingsPanel(); // 滑动清屏触发后的面板收起（原 BorderClearInDelete 已废弃）
 
             //清屏不再重置笔颜色：只清墨迹，保留用户当前笔色/粗细（原版会强制重置为红/黑/白）
             if (inkCanvas.Strokes.Count != 0)
@@ -436,6 +438,18 @@ namespace Ink_Canvas
                 {
                     BorderPenColorWhite_MouseUp(null, null);
                 }
+                else if (inkColor >= 6 && inkColor <= 8)
+                {
+                    // 扩展三色（橙/紫/青）：面板专属色，直接恢复（右面板无对应色块）
+                    SelectExtraColor(inkColor - 6);
+                }
+                else if (inkColor == 9)
+                {
+                    // 自定义色：从配置恢复（未设置过则回退红色，不留无效状态）
+                    var custom = GetSavedCustomColor();
+                    if (custom.HasValue) ApplyCustomColor(custom.Value);
+                    else { inkColor = 1; BtnColorRed_Click(BtnColorRed, null); }
+                }
         }
 
         int BoundsWidth = 5;
@@ -629,6 +643,13 @@ namespace Ink_Canvas
         #region Right Side Panel (Buttons - Color)
 
         int inkColor = 1;
+        // 画笔/荧光笔各自独立的颜色记忆（同宽度的独立记忆模式）：
+        // - inkColor = 当前生效颜色索引（跟随 currentPenType 读写对应记忆）
+        // - penInkColor = 画笔（含激光笔）的记忆，默认红
+        // - highlighterInkColor = 荧光笔的记忆，默认黄（索引 4）——荧光笔是半透明叠加，
+        //   亮色才是正确语义，黑色/深色荧光毫无意义（PowerPoint/GoodNotes 同款做法）
+        int penInkColor = 1;
+        int highlighterInkColor = 4;
 
         const int ColorSwiftOpacityDurationOn = 150;
         const int ColorSwiftOpacityDurationOff = 50;
@@ -708,6 +729,14 @@ namespace Ink_Canvas
             UpdatePenIconColor();
             UpdatePenIconHighlight();
             UpdateFloatBarColorDots();
+
+            // 颜色独立记忆：把当前生效色写进对应笔种类的记忆（画笔/荧光笔互不污染）。
+            // 所有点色入口最终都汇聚到这里，一处写入全覆盖；写入是幂等的，
+            // SetPenType 恢复记忆色后再次调用本函数也只会写回同值，无副作用
+            if (currentPenType == PenType.Highlighter)
+                highlighterInkColor = inkColor;
+            else
+                penInkColor = inkColor; // 激光笔与画笔共享记忆（激光笔通常临时用红/当前色）
 
         }
 

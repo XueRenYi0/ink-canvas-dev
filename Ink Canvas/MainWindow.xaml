@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Ink_Canvas"
-        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
         xmlns:c="clr-namespace:Ink_Canvas.Converter"
         mc:Ignorable="d"
@@ -18,9 +17,11 @@
         Title="Inkboard 画板"
         Topmost="True"
         KeyDown="Window_KeyDown"
+        PreviewMouseUp="Window_PreviewMouseUp"
         Closing="Window_Closing"
         Closed="Window_Closed"
         PreviewKeyDown="Main_Grid_PreviewKeyDown"
+        PreviewMouseDown="Window_PreviewMouseDown"
         Height="10000" Width="1000"
         FontFamily="Microsoft YaHei UI"
         MouseWheel="Window_MouseWheel"
@@ -34,9 +35,7 @@
         <RoutedUICommand x:Key="HotKey_ChangeToDrawTool" Text=" "/>
         <RoutedUICommand x:Key="HotKey_ChangeToSelect" Text=" "/>
         <RoutedUICommand x:Key="HotKey_ChangeToEraser" Text=" "/>
-        <!-- 自定义图标统一厚度基准：1.22 ，来源于 SeewoImageSource.PPTExitNormal Thickness 2 / viewBox 30 × 20 Grid -->
-        <sys:Double x:Key="IconStroke">1.22</sys:Double>
-        <sys:Double x:Key="IconStrokeBold">1.55</sys:Double>
+        <!-- 图标厚度 IconStroke/IconStrokeBold 已迁移至 Resources/Styles/InkSpec.xaml（应用级统一规范） -->
     </Window.Resources>
     <!--输入命令绑定：静态保留固定默认键，可自定义的改为代码动态注册（见 MW_Shortcuts.Dynamic.cs）。
         撤销 Ctrl+Z 原静态绑定（back_HotKey_Command）已删除——那条路绕过历史栈直接删笔迹，
@@ -141,117 +140,106 @@
                            FontFamily="Segoe UI Symbol, Segoe UI"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
-            <Border Name="BorderStrokeSelectionControl"
-                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="100,900,0,0"
-                    CornerRadius="5" Height="80"
-                    Background="{DynamicResource FloatBarBackground}" Visibility="{Binding ElementName=GridInkCanvasSelectionCover, Path=Visibility}"
-                    BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
-                <Viewbox Margin="0,-2.5">
-                    <ui:SimpleStackPanel Orientation="Horizontal" Spacing="10" Height="60">
-                        <Border Name="BorderStrokeSelectionClone" Margin="0,2,-9,2" Background="Transparent" CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}"
-                                Width="40" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionClone_MouseUp">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
-                                <ui:SymbolIcon Symbol="Copy" Foreground="{DynamicResource FloatBarForeground}"/>
-                                <TextBlock Text="克隆" FontSize="10" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
+            <!-- ===== 选中墨迹操作条（紧凑单行版，可收起成＋小圆钮） =====
+                 宿主 GridSelectionBarHost 绑定选区遮罩可见性（有选中才出现，一处绑定覆盖全部显隐调用点）；
+                 内部两个互斥子元素：展开态操作条 / 收起态＋小圆钮，由代码切换（UpdateSelectionBarVisibility）。
+                 单行纯图标布局（高 46），按钮命中区 30×30 触屏可用，说明进 tooltip。
+                 缩放/旋转改用覆盖层手柄拖动，按钮只留翻转/粗细/还原等点按操作。 -->
+            <Grid Name="GridSelectionBarHost"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="100,900,0,0"
+                  Visibility="{Binding ElementName=GridInkCanvasSelectionCover, Path=Visibility}">
+                <!-- 展开态：操作条 -->
+                <Border Name="BorderStrokeSelectionControl" Visibility="Collapsed"
+                        CornerRadius="5" Height="46"
+                        Background="{DynamicResource FloatBarBackground}"
+                        BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
+                    <ui:SimpleStackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0">
+                        <!-- 删除（最高频，放最左） -->
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionDelete_MouseUp"
+                              ToolTip="删除（移除选中墨迹，Ctrl+Z 可撤销）">
+                            <ui:SymbolIcon Symbol="Delete" Foreground="{DynamicResource FloatBarForeground}"/>
+                        </Grid>
+                        <!-- 克隆（复制拖拽模式开关）：激活后图标淡蓝高亮，按住图形拖出副本 -->
+                        <Border Name="BorderStrokeSelectionClone" Background="Transparent" Width="30" Height="30"
+                                MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionClone_MouseUp"
+                                ToolTip="复制模式：点击后图标变蓝，按住选中图形拖动可拖出副本（原件不动），可连续拖出多份&#10;再点此图标或点击空白处退出；同时选中墨迹已存入剪贴板（Ctrl+V 可粘贴）">
+                            <ui:SymbolIcon Symbol="Copy" Foreground="{DynamicResource FloatBarForeground}"/>
                         </Border>
-                        <Border Name="BorderStrokeSelectionCloneToNewBoard" Margin="0,2,-9,2" Background="Transparent" CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}"
-                                Width="40" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionCloneToNewBoard_MouseUp" Visibility="{Binding Visibility, ElementName=GridBackgroundCover}">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
-                                <ui:SymbolIcon Symbol="Copy" Foreground="{DynamicResource FloatBarForeground}"/>
-                                <TextBlock Text="克隆至新页" FontSize="8" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Height="40">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" Spacing="5" Margin="0,-10">
-                                <ui:SimpleStackPanel Orientation="Horizontal" Spacing="13">
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridSelectionScaleDown_MouseUp">
-                                        <ui:SymbolIcon Symbol="ZoomOut" Foreground="{DynamicResource FloatBarForeground}"/>
-                                    </Grid>
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridSelectionScaleUp_MouseUp">
-                                        <ui:SymbolIcon Symbol="ZoomIn" Foreground="{DynamicResource FloatBarForeground}"/>
-                                    </Grid>
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridSelectionScaleRestore_MouseUp">
-                                        <ui:SymbolIcon Symbol="Refresh" Foreground="{DynamicResource FloatBarForeground}"/>
-                                    </Grid>
-                                </ui:SimpleStackPanel>
-                                <TextBlock Text="缩放" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Height="40">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" Spacing="5" Margin="0,-10">
-                                <ui:SimpleStackPanel Orientation="Horizontal" Spacing="15">
-                                    <!--旋转图标：Fluent 箭头 + TextBlock 度数叠加（文字跟随主题变色，比烘焙字形更灵活）-->
-                                    <Grid Height="22" Width="22" MouseDown="Border_MouseDown" MouseUp="ImageRotate45_MouseUp" Background="Transparent">
-                                        <Image Source="{DynamicResource Rotate15DrawingImage}"/>
-                                        <TextBlock Text="15°" FontSize="7" FontWeight="SemiBold" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Grid>
-                                    <Grid Height="22" Width="22" MouseDown="Border_MouseDown" MouseUp="ImageRotate90_MouseUp" Background="Transparent">
-                                        <Image Source="{DynamicResource Rotate90DrawingImage}"/>
-                                        <TextBlock Text="90°" FontSize="7" FontWeight="SemiBold" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </ui:SimpleStackPanel>
-                                <TextBlock Text="旋转" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border Margin="0,0,-6,0" CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Height="40">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" Spacing="5" Margin="0,-10">
-                                <ui:SimpleStackPanel Orientation="Horizontal" Spacing="15">
-                                    <Image Source="{DynamicResource FlipDrawingImage}" Width="19" Height="22" MouseDown="Border_MouseDown" MouseUp="ImageFlipHorizontal_MouseUp"/>
-                                    <Image Source="{DynamicResource FlipVerticalDrawingImage}" Width="19" Height="22" MouseDown="Border_MouseDown" MouseUp="ImageFlipVertical_MouseUp"
-                                           Margin="0,0,8,0"/>
-                                </ui:SimpleStackPanel>
-                                <TextBlock Text="翻转" FontSize="10" Margin="-8,0,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Height="40">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" Spacing="5" Margin="0,-10">
-                                <ui:SimpleStackPanel Orientation="Horizontal" Spacing="13">
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridPenWidthDecrease_MouseUp">
-                                        <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
-                                        <TextBlock Text="-"  Foreground="{DynamicResource FloatBarForeground}"
-                                                   VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                                                   Margin="0,0,-2,-7" FontSize="15"/>
-                                    </Grid>
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridPenWidthIncrease_MouseUp">
-                                        <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
-                                        <TextBlock Text="+"  Foreground="{DynamicResource FloatBarForeground}"
-                                                   VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                                                   Margin="0,0,-3,-4" FontSize="11"/>
-                                    </Grid>
-                                    <Grid MouseDown="Border_MouseDown" MouseUp="GridPenWidthRestore_MouseUp">
-                                        <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
-                                        <Image Source="{DynamicResource AndroidRefreshDrawingImage}" VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                                               Margin="0,0,-2,-2" Width="8">
-                                        </Image>
-                                    </Grid>
-                                </ui:SimpleStackPanel>
-                                <TextBlock Text="画笔粗细" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border Margin="-8,0,0,0" CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Width="40" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionSaveAsShape_MouseUp">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
-                                <ui:SymbolIcon Symbol="SaveLocal" Foreground="{DynamicResource FloatBarForeground}"/>
-                                <TextBlock Text="存入图库" FontSize="8" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
-                        <Border Width="1" Height="45" BorderBrush="{DynamicResource FloatBarForeground}" Background="{DynamicResource FloatBarForeground}"/>
-                        <Border Margin="-8,0,0,0" CornerRadius="{Binding ElementName=BorderStrokeSelectionControl, Path=CornerRadius}" Width="40" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionDelete_MouseUp">
-                            <ui:SimpleStackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5">
-                                <ui:SymbolIcon Symbol="Delete" Foreground="{DynamicResource FloatBarForeground}"/>
-                                <TextBlock Text="删除" FontSize="10" Foreground="{DynamicResource FloatBarForeground}"/>
-                            </ui:SimpleStackPanel>
-                        </Border>
+                        <Border Width="1" Height="26" Background="{DynamicResource FloatBarForeground}" Opacity="0.25" Margin="3,0"/>
+                        <!-- 翻转：水平 / 垂直 -->
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="ImageFlipHorizontal_MouseUp"
+                              ToolTip="水平翻转（选中墨迹左右镜像）">
+                            <Image Source="{DynamicResource FlipDrawingImage}" Width="19" Height="22"/>
+                        </Grid>
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="ImageFlipVertical_MouseUp"
+                              ToolTip="垂直翻转（选中墨迹上下镜像）">
+                            <Image Source="{DynamicResource FlipVerticalDrawingImage}" Width="19" Height="22"/>
+                        </Grid>
+                        <!-- 适配白板宽度（仅选中含图片时显示，纯墨迹隐藏）：宽度铺满画布、水平居中，
+                             高度等比、垂直位置不动；还原用"统一还原"键 -->
+                        <Grid Name="GridSelectionFitWidth" Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="GridSelectionFitWidth_MouseUp"
+                              ToolTip="适配白板宽度（选中图片宽度铺满白板、水平居中，高度等比缩放；点“还原”恢复原尺寸）">
+                            <Path Data="M6,15 L3,15 L6.6,11.4 M3,15 L6.6,18.6 M24,15 L27,15 L23.4,11.4 M27,15 L23.4,18.6 M9,15 L21,15"
+                                  Stroke="{DynamicResource FloatBarForeground}"
+                                  StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                        </Grid>
+                        <Border Width="1" Height="26" Background="{DynamicResource FloatBarForeground}" Opacity="0.25" Margin="3,0"/>
+                        <!-- 画笔粗细：减 / 加（仅选中含墨迹时显示，纯图片选中隐藏） -->
+                        <Grid Name="GridSelectionPenThin" Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="GridPenWidthDecrease_MouseUp"
+                              ToolTip="笔迹变细（选中墨迹的笔画粗细减一档）">
+                            <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
+                            <TextBlock Text="-" Foreground="{DynamicResource FloatBarForeground}"
+                                       VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                       Margin="0,0,-2,-7" FontSize="15"/>
+                        </Grid>
+                        <Grid Name="GridSelectionPenThick" Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="GridPenWidthIncrease_MouseUp"
+                              ToolTip="笔迹变粗（选中墨迹的笔画粗细加一档）">
+                            <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}"/>
+                            <TextBlock Text="+" Foreground="{DynamicResource FloatBarForeground}"
+                                       VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                       Margin="0,0,-3,-4" FontSize="11"/>
+                        </Grid>
+                        <!-- 统一还原：一次恢复到本次选中时的大小、位置、笔画粗细 -->
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="GridSelectionScaleRestore_MouseUp"
+                              ToolTip="还原（恢复到选中时的大小、位置和笔画粗细，Ctrl+Z 可撤销）">
+                            <ui:SymbolIcon Symbol="Refresh" Foreground="{DynamicResource FloatBarForeground}"/>
+                        </Grid>
+                        <Border Width="1" Height="26" Background="{DynamicResource FloatBarForeground}" Opacity="0.25" Margin="3,0"/>
+                        <!-- 保存到本地：选中墨迹导出为透明背景 PNG（Download=下箭头落盘，"导出文件"通用语义） -->
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionSaveToFile_MouseUp"
+                              ToolTip="保存到本地（选中墨迹导出为透明背景 PNG 图片文件）">
+                            <ui:SymbolIcon Symbol="Download" Foreground="{DynamicResource FloatBarForeground}"/>
+                        </Grid>
+                        <!-- 存入图库：直接复用浮动条"图形绘制"入口的同一 DrawingImage 资源做底形（像素级一致）
+                             + 右下角蓝色加号角标 = "存入图形面板"（Material shapes/shapes-add 的同底形+加号惯例）。
+                             存入的东西在图形面板图库区出现，与入口图标成对，用户一眼可建立"存到哪去"的关联 -->
+                        <Grid Name="GridSelectionSaveShape" Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionSaveAsShape_MouseUp"
+                              ToolTip="存入图库（选中墨迹存为自定义图形，图形面板随时可插入复用）">
+                            <Image Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}" Width="22" Height="22" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <!-- 加号角标：中心(24,24)、臂长 3px，贴图标右下角；绝对坐标定位，容器固定 30×30 -->
+                            <Path Data="M24,21 L24,27 M21,24 L27,24"
+                                  Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        </Grid>
+                        <Border Width="1" Height="26" Background="{DynamicResource FloatBarForeground}" Opacity="0.25" Margin="3,0"/>
+                        <!-- 收起钮：操作条收成＋小圆钮，不挡板书 -->
+                        <Grid Width="30" Height="30" Background="Transparent" MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionCollapse_MouseUp"
+                              ToolTip="收起操作条（缩小成＋小圆钮，不挡内容；点＋重新展开）">
+                            <Path Data="M13.5,6 L10.5,10 L13.5,14" Stroke="{DynamicResource FloatBarForeground}"
+                                  StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                        </Grid>
                     </ui:SimpleStackPanel>
-                </Viewbox>
-            </Border>
+                </Border>
+                <!-- 收起态：＋小圆钮（贴选中框下方居中，点击展开） -->
+                <Border Name="BorderStrokeSelectionCollapseBubble" Visibility="Collapsed"
+                        Width="28" Height="28" CornerRadius="14"
+                        Background="{DynamicResource FloatBarBackground}"
+                        BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}"
+                        MouseDown="Border_MouseDown" MouseUp="BorderStrokeSelectionCollapseBubble_MouseUp"
+                        ToolTip="展开操作条（显示墨迹编辑按钮）">
+                    <ui:SymbolIcon Symbol="Add" Foreground="{DynamicResource FloatBarForeground}"/>
+                </Border>
+            </Grid>
         </Grid>
 
         <Grid Visibility="Collapsed">
@@ -307,7 +295,7 @@
                     <!-- 收起白板 ✕（右下角最外沿）：自绘细描边叉，与翻页组同风格 -->
                     <Border Width="36" Height="36" MouseUp="ImageBlackboard_MouseUp" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}" ToolTip="收起白板">
                         <Viewbox Margin="9">
-                            <Path Stroke="#E5484D" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                            <Path Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                   Data="M 3,3 L 17,17 M 17,3 L 3,17"/>
                         </Viewbox>
                     </Border>
@@ -323,7 +311,7 @@
                     <!-- 收起白板 ✕（左下角最外沿）：与右下角镜像同款 -->
                     <Border Width="36" Height="36" MouseUp="ImageBlackboard_MouseUp" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}" ToolTip="收起白板">
                         <Viewbox Margin="9">
-                            <Path Stroke="#E5484D" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                            <Path Stroke="{DynamicResource DangerBrush}" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                   Data="M 3,3 L 17,17 M 17,3 L 3,17"/>
                         </Viewbox>
                     </Border>
@@ -1084,9 +1072,9 @@
                             <local:ClickSensitiveGrid Click="SymbolIconCursor_Click" ToolTip="鼠标模式（隐藏画板，点击穿透）">
                                 <ui:SymbolIcon Symbol="TouchPointer" Foreground="{DynamicResource FloatBarForeground}"/>
                             </local:ClickSensitiveGrid>
-                            <!-- ====== 画笔区：笔图标 + 6 色点（两排三列）+ 笔粗细弹出面板 ====== -->
-                            <!-- 笔图标：笔身颜色跟随当前笔颜色；单击 = 切回画笔模式 + 展开/收起笔粗细面板 -->
-                            <Grid Width="20" Height="26" Background="Transparent" MouseUp="PenIcon_MouseUp" ToolTip="画笔&#10;单击：切回画笔模式，展开/收起笔粗细面板">
+                            <!-- ====== 画笔区：笔图标（单击弹出笔设置面板，面板在 Main_Grid 末尾） ====== -->
+                            <!-- 笔图标：单击弹出完整笔设置面板（笔种类/粗细/颜色/笔锋，见 Main_Grid 末尾的 PenSettingsPanel） -->
+                            <Grid x:Name="PenIconHost" Width="20" Height="26" Background="Transparent" MouseUp="PenIcon_MouseUp" ToolTip="画笔（快捷键 F2）&#10;单击：切回画笔模式，弹出笔设置面板&#10;点击面板外任意处收起">
                                 <!-- 选中态高亮底：画笔模式时淡蓝底+蓝边（与选择工具高亮同色），其他工具时透明 -->
                                 <Border x:Name="BorderPenIconHighlight" CornerRadius="4" Margin="-4,-1"
                                         Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
@@ -1095,88 +1083,70 @@
                                       Fill="#FFFF0000" Stroke="#80FFFFFF" StrokeThickness="0.5"/>
                                 <!-- 笔尖（固定深灰，不随颜色变） -->
                                 <Path Data="M4.5,19.5 L5.8,14.9 L8.4,17.5 Z" Fill="#FF52525B"/>
-                                <!-- 笔粗细弹出面板：负 Margin 向上弹出（Viewbox 内 Popup 不可用，与清屏确认框同方案） -->
-                                <Border x:Name="BorderPenWidth" Width="88" Height="40" Visibility="Collapsed" CornerRadius="5"
-                                        Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                                        Margin="-34,-52,-34,38">
-                                    <ui:SimpleStackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Border x:Name="BorderPenWidthThin" Width="24" Height="24" CornerRadius="4" Background="Transparent"
-                                                MouseUp="BorderPenWidthThin_MouseUp" ToolTip="笔粗细：细">
-                                            <Ellipse Width="4" Height="4" Fill="{DynamicResource FloatBarForeground}"/>
-                                        </Border>
-                                        <Border x:Name="BorderPenWidthMedium" Width="24" Height="24" CornerRadius="4" Background="Transparent"
-                                                MouseUp="BorderPenWidthMedium_MouseUp" ToolTip="笔粗细：中">
-                                            <Ellipse Width="8" Height="8" Fill="{DynamicResource FloatBarForeground}"/>
-                                        </Border>
-                                        <Border x:Name="BorderPenWidthThick" Width="24" Height="24" CornerRadius="4" Background="Transparent"
-                                                MouseUp="BorderPenWidthThick_MouseUp" ToolTip="笔粗细：粗">
-                                            <Ellipse Width="12" Height="12" Fill="{DynamicResource FloatBarForeground}"/>
-                                        </Border>
-                                    </ui:SimpleStackPanel>
-                                </Border>
                             </Grid>
-                            <!-- 6 色点：两排三列（上排黑红绿 / 下排蓝黄白），单击 = 换色并回到画笔模式 -->
-                            <!-- 颜色仍绑定右侧面板色块（支持 Colors\*.ini 自定义配色） -->
-                            <!-- 选中态 = 中心细蓝环（Ellipse，代码控制 Visibility），不再加外描边，避免色点显粗 -->
-                            <UniformGrid Rows="2" Columns="3" Margin="0,1">
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorBlack_MouseUp" ToolTip="画笔颜色：黑色">
-                                    <Ellipse Name="BorderPenColorBlack" Fill="{Binding ElementName=BtnColorBlack, Path=Background}"/>
-                                    <Ellipse Name="EllipsePenColorBlack" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                            <!-- 旧 6 色点 + 笔粗细小面板已移入 PenSettingsPanel（点笔图标弹出） -->
+                            <!-- ====== 快捷换色条：对色格（互补色对），常驻浮动条 ======
+                                 2×2 紧凑布局：格子 13px 零间距贴成一团（26×26px，贴合浮动条内容区高度）；
+                                 每格 = 大色区 11px（默认主色，当前用副色时对调为副色）+ 右下小角标 5px
+                                 （另一色，常显——每格恒定可见两色，随时知道格内有什么颜色可用）+ 选中环 13px。
+                                 对色配对 = RGB 数字色轮标准互补对：
+                                   黑⇄白（明度对，主色随板面：白板黑/黑板白）
+                                   红⇄青、绿⇄品红、蓝⇄黄（色相差 180°）
+                                 交互：单击在对色间循环（当前是主色→切副色，是副色→切主色，
+                                 都不是→切主色）；任何工具状态下点色点都自动切回画笔。
+                                 填充/描边/选中环由 RefreshQuickColorStrip 动态构建（MW_FloatBar.cs）。 -->
+                            <UniformGrid x:Name="StackPanelQuickColors" Rows="2" Columns="2" VerticalAlignment="Center" ToolTip="快捷换色：单击色点在对色间切换（黑⇄白/红⇄青/蓝⇄黄/绿⇄品红）&#10;大色区 = 常用色，右下小角 = 另一色（当前色在格内时亮蓝环）">
+                                <!-- Tag = 格编号（0黑白/1红青/2蓝黄/3绿品红），点击切换逻辑见 QuickColorDot_MouseUp -->
+                                <!-- 每格两层色点（PS 前景/背景色模式）：
+                                     主 Ellipse = 大色区（默认主色；仅当前用副色时对调为副色）
+                                     mini Ellipse = 右下小角标（常显另一色，永不隐藏） -->
+                                <Grid x:Name="QuickColorGridBW" Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="0" ToolTip="快捷换色：黑⇄白（单击切换）&#10;大区默认黑（白板）/白（黑板），当前用另一色时对调；小角为另一色">
+                                    <Ellipse x:Name="QuickColorDotBW" Width="11" Height="11" Fill="Black"/>
+                                    <Ellipse x:Name="QuickColorMiniBW" Width="5" Height="5" Visibility="Collapsed" Fill="White"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
+                                             Stroke="#80808080" StrokeThickness="0.5"/>
+                                    <Ellipse x:Name="QuickColorRingBW" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorRed_MouseUp" ToolTip="画笔颜色：红色">
-                                    <Ellipse Name="BorderPenColorRed" Fill="{Binding ElementName=BtnColorRed, Path=Background}"/>
-                                    <Ellipse Name="EllipsePenColorRed" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="1" ToolTip="快捷换色：红⇄青（单击切换）&#10;大色区为当前色，右下小角为另一色">
+                                    <Ellipse x:Name="QuickColorDotRC" Width="11" Height="11" Fill="Red"/>
+                                    <Ellipse x:Name="QuickColorMiniRC" Width="5" Height="5" Visibility="Collapsed" Fill="#FF00D5D5"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
+                                             Stroke="#80808080" StrokeThickness="0.5"/>
+                                    <Ellipse x:Name="QuickColorRingRC" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorGreen_MouseUp" ToolTip="画笔颜色：绿色">
-                                    <Ellipse Name="BorderPenColorGreen" Fill="{Binding ElementName=BtnColorGreen, Path=Background}"/>
-                                    <Ellipse Name="EllipsePenColorGreen" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="2" ToolTip="快捷换色：蓝⇄黄（单击切换）&#10;大色区为当前色，右下小角为另一色">
+                                    <Ellipse x:Name="QuickColorDotBY" Width="11" Height="11" Fill="Blue"/>
+                                    <Ellipse x:Name="QuickColorMiniBY" Width="5" Height="5" Visibility="Collapsed" Fill="Yellow"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
+                                             Stroke="#80808080" StrokeThickness="0.5"/>
+                                    <Ellipse x:Name="QuickColorRingBY" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorBlue_MouseUp" ToolTip="画笔颜色：蓝色">
-                                    <Ellipse Name="BorderPenColorBlue" Fill="{Binding ElementName=BtnColorBlue, Path=Background}"/>
-                                    <Ellipse Name="EllipsePenColorBlue" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
-                                </Grid>
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorYellow_MouseUp" ToolTip="画笔颜色：黄色">
-                                    <Ellipse Name="BorderPenColorYellow" Fill="{Binding ElementName=BtnColorYellow, Path=Background}"/>
-                                    <Ellipse Name="EllipsePenColorYellow" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
-                                </Grid>
-                                <Grid Width="10" Height="10" Background="Transparent"
-                                      MouseUp="BorderPenColorWhite_MouseUp" ToolTip="画笔颜色：白色">
-                                    <!-- 白点加细灰描边，浅色工具栏上不隐身 -->
-                                    <Ellipse Name="BorderPenColorWhite" Fill="White" Stroke="#80808080" StrokeThickness="1"/>
-                                    <Ellipse Name="EllipsePenColorWhite" Visibility="Collapsed" Width="6" Height="6"
-                                             Stroke="#FF0088FF" StrokeThickness="1.5" Fill="Transparent"/>
+                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="3" ToolTip="快捷换色：绿⇄品红（单击切换）&#10;大区默认绿，当前用品红时对调；小角为另一色">
+                                    <Ellipse x:Name="QuickColorDotGM" Width="11" Height="11" Fill="Green"/>
+                                    <Ellipse x:Name="QuickColorMiniGM" Width="5" Height="5" Visibility="Collapsed" Fill="#FFE040FB"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
+                                             Stroke="#80808080" StrokeThickness="0.5"/>
+                                    <Ellipse x:Name="QuickColorRingGM" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
                             </UniformGrid>
-                            <Grid x:Name="EraserContainer" Width="21" Height="24" Margin="0,1.5,-2,0" MouseDown="Border_MouseDown" MouseUp="ImageEraser_MouseUp" Visibility="{Binding ElementName=BtnErase, Path=Visibility}" ToolTip="橡皮擦（点击切换：面积擦 / 笔画擦）">
+                            <Grid x:Name="EraserContainer" Width="21" Height="24" Margin="0,1.5,-2,0" MouseDown="Border_MouseDown" MouseUp="ImageEraser_MouseUp" Visibility="{Binding ElementName=BtnErase, Path=Visibility}" ToolTip="橡皮擦（快捷键 F4）&#10;单击：切到橡皮模式，弹出橡皮设置面板&#10;面积擦：按面积逐点擦除，大小可选五档&#10;笔画擦：碰到的墨迹整笔删除&#10;面板内还有滑动清屏">
                                 <Image Name="ImageEraser" Margin="0,-4,-1,-2" Source="{DynamicResource ImageSource.RubberNormal}" RenderTransformOrigin="0.5,0.5"/>
                                 <!-- 选中态图标：形状与 ImageEraser 保持一致，颜色改为蓝/橙；通过 UpdateEraserIcon 同步切换 Source -->
                                 <Image Name="ImageEraserMask" Visibility="{Binding Visibility, ElementName=ImageEraser, Converter={StaticResource VisibilityConverter}}" Margin="0,-4,-1,-2" RenderTransformOrigin="0.5,0.5"
                                        Source="{DynamicResource ImageSource.RubberSelectedPoint}"/>
                             </Grid>
-                            <Grid Margin="0,0,0,0" Width="20" Background="Transparent" ToolTip="清屏（点击后需再点确认）">
-                                <ui:SymbolIcon Name="SymbolIconDelete" Symbol="Delete" Foreground="{DynamicResource FloatBarForeground}"
-                                               MouseDown="Border_MouseDown" MouseUp="SymbolIconDelete_MouseUp"/>
-                                <Border x:Name="BorderClearInDelete" Visibility="Collapsed" Background="White" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                                    CornerRadius="5" Margin="-40,-60,-40,35">
-                                    <Button Content="点击清屏" ui:ThemeManager.RequestedTheme="Light"
-                                        FontFamily="Microsoft YaHei UI"
-                                        Width="80" HorizontalAlignment="Center"
-                                        Click="BtnClear_Click"/>
-                                </Border>
-                            </Grid>
-                            <!-- 选择墨迹：虚线框 + 箭头光标（示意"拖框选择"），替换原 SelectAll 纯虚线框；粗细用 IconStroke 资源，与原生 SymbolIcon 一致 -->
+                            <!-- 垃圾桶清屏图标已移入橡皮面板（滑动清屏，ClassIn 式防误触）：
+                                 原交互"点垃圾桶→弹点击清屏气泡→再点确认"两步废弃，腾出的图标位留给后续工具 -->
+                            <!-- 选择墨迹：虚线框 + 箭头光标（示意"拖框选择"）；单击弹出选择方式面板（矩形框选/自由选择） -->
                             <!-- Background=Transparent 使整块区域可命中测试：Grid 默认背景为 null，悬停在虚线框空白处会丢失 ToolTip 和点击 -->
-                            <Grid Name="GridSelectTool" Height="24" Width="20" Background="Transparent" MouseUp="SymbolIconSelect_MouseUp" ToolTip="选择墨迹（框选后拖动/缩放/旋转）">
+                            <Grid Name="GridSelectTool" Height="24" Width="20" Background="Transparent" MouseUp="SymbolIconSelect_MouseUp" ToolTip="选择墨迹（快捷键 Alt+S）&#10;单击：切到选择模式，弹出选择方式面板&#10;矩形框选：拖矩形选中框内墨迹&#10;自由选择：套索圈选墨迹&#10;全选：一键选中当前页全部墨迹&#10;选中后可拖动/缩放/旋转">
+                                <!-- 选中高亮框（激活选择模式时显示） -->
+                                <Border x:Name="BorderSelectIconHighlight" CornerRadius="4" Margin="-4,-1"
+                                        Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
                                 <Path Name="PathSelectBox" Data="M3,4 H16 V15 H3 Z"
                                       Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="{StaticResource IconStroke}"
                                       StrokeDashArray="2.8,2.2"/>
@@ -1186,13 +1156,12 @@
                             <Grid Margin="3,5,0,5">
                                 <Image Name="ImageDrawShape" MouseUp="ImageDrawShape_MouseUp" MouseDown="Border_MouseDown" Margin="-2.5" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}" ToolTip="图形绘制"/>
                                 <Border x:Name="BorderDrawShape" Visibility="Visible" Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
-                                    CornerRadius="8" Margin="-100,-315,-100,30" Width="420">
+                                    CornerRadius="8" Margin="-100,-315,-100,30" Width="304">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <!-- ===== 分区一：标题栏（整行都是拖动手柄，双击复位；面板已解挂为自由小窗口） ===== -->
@@ -1209,10 +1178,34 @@
                                                            Foreground="{DynamicResource FloatBarForeground}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                         </Grid>
 
+                                        <!-- ===== Tab 条：图形 / 函数 / 图库（横向选择，选中淡蓝底+蓝边；切换逻辑见 MW_ShapeDrawing.cs） ===== -->
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="8,2,8,4">
+                                            <Border x:Name="BorderShapeTabShapes" CornerRadius="4" Padding="12,3" Margin="0,0,4,0"
+                                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5" Cursor="Hand"
+                                                    MouseUp="ShapeTab_MouseUp" ToolTip="图形：内置绘图工具（直线、几何图形、圆锥曲线、坐标系、立体图形等 25 种）">
+                                                <TextBlock Text="图形" FontSize="11" FontFamily="Microsoft YaHei UI" Foreground="{DynamicResource FloatBarForeground}"/>
+                                            </Border>
+                                            <Border x:Name="BorderShapeTabFunction" CornerRadius="4" Padding="12,3" Margin="0,0,4,0"
+                                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5" Cursor="Hand"
+                                                    MouseUp="ShapeTab_MouseUp" ToolTip="函数：函数识别作图（手写公式，识别后插入函数图像）">
+                                                <TextBlock Text="函数" FontSize="11" FontFamily="Microsoft YaHei UI" Foreground="{DynamicResource FloatBarForeground}"/>
+                                            </Border>
+                                            <Border x:Name="BorderShapeTabLibrary" CornerRadius="4" Padding="12,3"
+                                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5" Cursor="Hand"
+                                                    MouseUp="ShapeTab_MouseUp" ToolTip="图库：存入的自定义图形（选中墨迹 → 操作条「存入图库」），点击插入画布">
+                                                <TextBlock Text="图库" FontSize="11" FontFamily="Microsoft YaHei UI" Foreground="{DynamicResource FloatBarForeground}"/>
+                                            </Border>
+                                        </StackPanel>
+
+                                        <!-- ===== 内容区：三个 Tab 容器叠放，同一时刻只显示一个（切换见 SetShapePanelTab） ===== -->
+                                        <Grid Grid.Row="2">
+                                            <!-- Tab① 图形：原图标网格整体迁入（拖拽调宽高、图钉、自动隐藏等逻辑全部不变） -->
+                                            <Grid x:Name="GridShapeTabShapes">
+
                                         <!-- ===== 分区二：图形图标（WrapPanel 流式排列 + 48×48 正方格 + 6px 间距 =====
                                              正方格保证纵横比一致（圆不压扁）；Uniform 拉伸让各图标视觉重量对齐；
                                              高度可拖：多出的高度喂给本 ScrollViewer，可视行数变多 -->
-                                        <ScrollViewer Grid.Row="1" Name="ShapeIconScroll" MaxHeight="216" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="6,0,6,0">
+                                        <ScrollViewer Name="ShapeIconScroll" MaxHeight="270" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="6,0,6,0">
                                             <WrapPanel>
                                                 <Border Name="BorderShapeIcon_1" Width="48" Height="48" Margin="3" Padding="3" CornerRadius="4" Background="Transparent" ToolTip="直线（拖拽绘制，两点定线）">
                                                     <Image Name="ImageDrawLine" Stretch="Uniform" MouseDown="Image_MouseDown" MouseUp="BtnDrawLine_Click" Source="{DynamicResource DrawShapeImageSource.Line}"/>
@@ -1316,18 +1309,27 @@
                                             </WrapPanel>
                                         </ScrollViewer>
 
-                                        <!-- ===== 分区 2.5：函数识别通栏条（图标+文字，弹窗式工具与图标格视觉区隔；面板开启时亮蓝） ===== -->
-                                        <Border Grid.Row="2" Name="BorderShapeIcon_27" CornerRadius="4" Background="Transparent" Margin="8,4,8,2" Padding="8,6" Cursor="Hand"
-                                                ToolTip="函数识别作图：手写公式，识别后插入函数图像" MouseUp="BtnRecognizeFunction_Click">
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Width="22" Height="22" Stretch="Uniform" Source="{DynamicResource DrawShapeImageSource.FunctionRecognize}" VerticalAlignment="Center"/>
-                                                <TextBlock Text="函数识别作图" FontSize="13" Foreground="{DynamicResource FloatBarForeground}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                                <TextBlock Text="手写 → 图像" FontSize="10" Foreground="{DynamicResource FloatBarForeground}" Opacity="0.55" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                            </StackPanel>
-                                        </Border>
+                                            </Grid> <!-- Tab① 图形 容器结束 -->
 
-                                        <!-- ===== 分区三：图库（WrapPanel 自动换行，超出高度内部滚动；"整理"= 触摸删除入口） ===== -->
-                                        <ui:SimpleStackPanel Grid.Row="3" Name="StackPanelCustomShapesRow" Orientation="Vertical" Margin="6,0,6,2">
+                                            <!-- ===== Tab② 函数：函数识别作图（整卡铺满 Tab 内容区=全区域可点；亮蓝由 MathGraph 的 Tag 机制管理，样式随 InitShapeIconStyles） ===== -->
+                                            <Grid x:Name="GridShapeTabFunction" Visibility="Collapsed">
+                                                <Border Name="BorderShapeIcon_27" CornerRadius="6" Background="Transparent" Margin="10,8,10,8" Cursor="Hand"
+                                                        ToolTip="函数识别作图：手写公式，识别后插入函数图像&#10;面板保持打开，可连续输入多个函数&#10;整个区域都可以点击"
+                                                        MouseUp="BtnRecognizeFunction_Click">
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <Image Width="44" Height="44" Stretch="Uniform" HorizontalAlignment="Center"
+                                                               Source="{DynamicResource DrawShapeImageSource.FunctionRecognize}"/>
+                                                        <TextBlock Text="函数识别作图" FontSize="14" FontFamily="Microsoft YaHei UI"
+                                                                   Foreground="{DynamicResource FloatBarForeground}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                                                        <TextBlock Text="手写公式 → 识别 → 插入图像" FontSize="11" FontFamily="Microsoft YaHei UI"
+                                                                   Foreground="{DynamicResource FloatBarForeground}" Opacity="0.55" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- ===== Tab③ 图库（WrapPanel 自动换行，超出高度内部滚动；"整理"= 触摸删除入口；独占面板高度） ===== -->
+                                            <Grid x:Name="GridShapeTabLibrary" Visibility="Collapsed">
+                                        <ui:SimpleStackPanel Name="StackPanelCustomShapesRow" Orientation="Vertical" Margin="6,0,6,2">
                                             <Grid Margin="8,2,4,2">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="图库" FontSize="11" Foreground="{DynamicResource FloatBarForeground}" VerticalAlignment="Center"/>
@@ -1339,13 +1341,19 @@
                                                     <TextBlock Name="TextBlockLibraryEdit" Text="整理" FontSize="11" Foreground="{DynamicResource FloatBarForeground}"/>
                                                 </Border>
                                             </Grid>
-                                            <ScrollViewer Name="LibraryScroll" MaxHeight="88" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="8,0,8,0">
+                                            <ScrollViewer Name="LibraryScroll" MaxHeight="240" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="8,0,8,0">
                                                 <WrapPanel Name="StackPanelCustomShapes"/>
                                             </ScrollViewer>
+                                            <!-- 空库引导（UpdateLibraryCount 控制：有图形时隐藏） -->
+                                            <TextBlock Name="TextBlockLibraryEmpty" Visibility="Collapsed" TextAlignment="Center" Margin="8,20,8,8"
+                                                       FontSize="11" FontFamily="Microsoft YaHei UI" Foreground="{DynamicResource FloatBarForeground}" Opacity="0.55"
+                                                       Text="图库还是空的&#10;用选择工具选中墨迹，点操作条「存入图库」&#10;保存的自定义图形会出现在这里"/>
                                         </ui:SimpleStackPanel>
+                                            </Grid> <!-- Tab③ 图库 容器结束 -->
+                                        </Grid> <!-- 内容区三容器结束 -->
 
-                                        <!-- ===== 右下角大小调节手柄：拖宽改每行图标数，拖高喂给图标区滚动（高度自适应内容行数） ===== -->
-                                        <Grid Grid.RowSpan="4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="18" Height="18" Background="Transparent" Cursor="SizeNWSE"
+                                        <!-- ===== 右下角大小调节手柄：拖宽改每行图标数，拖高喂给当前 Tab 滚动区（高度自适应内容行数） ===== -->
+                                        <Grid Grid.RowSpan="3" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="18" Height="18" Background="Transparent" Cursor="SizeNWSE"
                                               ToolTip="拖动调整面板大小（宽=每行图标数，高=可视行数）" MouseLeftButtonDown="ShapePanelResizeGrip_MouseDown" MouseMove="ShapePanelResizeGrip_MouseMove"
                                               MouseLeftButtonUp="ShapePanelResizeGrip_MouseUp">
                                             <Path Data="M14,2 L2,14 M14,8 L8,14" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.6"/>
@@ -1353,18 +1361,18 @@
                                     </Grid>
                                 </Border>
                             </Grid>
-                            <!-- ===== 截图入口（含三项目弹出菜单）：紧随图形绘制之后 ===== -->
-                            <Grid x:Name="GridImageMenuEntry" Width="20" Height="24" Background="Transparent" ToolTip="截图：点击弹出菜单——快速截图、隐藏界面截图、上传本地图片">
+                            <!-- ===== 截图入口（含四项目弹出菜单）：紧随图形绘制之后 ===== -->
+                            <Grid x:Name="GridImageMenuEntry" Width="20" Height="24" Background="Transparent" ToolTip="截图：点击弹出菜单——快速截图、隐藏界面截图、上传本地图片、粘贴图片">
                                 <ui:SymbolIcon Margin="0,0,0,0" Symbol="Cut" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconScreenshot_MenuToggle"/>
-                                <!-- 截图三项目菜单：与悬浮条同款亚克力半透明底 + 主题动态色，
+                                <!-- 截图四项目菜单：与悬浮条同款亚克力半透明底 + 主题动态色，
                                      每项 = 自绘细线图标 + 文字行，悬停高亮。
-                                     定位：Top 对齐 + 顶边距 -60 = 菜单底边停在图标格上方 2px（格高24 + 间隙2 + 内容高58 反推），
+                                     定位：Top 对齐 + 顶边距 -80 = 菜单底边停在图标格上方（格高24 + 间隙2 + 四项内容高约77 反推），
                                      与清屏确认框 BorderClearInDelete 同款模式（负顶边距向上弹出，已在 Viewbox 环境验证可靠）；
-                                     高度由内容撑，不遮挡工具栏任何图标 -->
+                                     注意：加菜单项后内容变高，顶边距必须同步再抬高（原 3 项 -60 时四项内容会压到相机图标上） -->
                                 <Border x:Name="BorderImageMenu" Visibility="Collapsed" Background="{DynamicResource FloatBarBackground}"
                                         BorderBrush="{DynamicResource FloatBarBorderBrush}" BorderThickness="1"
                                         VerticalAlignment="Top" CornerRadius="7"
-                                        Margin="-57,-60,-30,0" Padding="2,2.5">
+                                        Margin="-57,-80,-30,0" Padding="2,2.5">
                                     <Border.Resources>
                                         <!-- 菜单项样式：无边框透明按钮，悬停时半透明高亮圆角块 -->
                                         <Style x:Key="ScreenshotMenuItemStyle" TargetType="Button">
@@ -1398,7 +1406,7 @@
                                     <StackPanel>
                                         <Button x:Name="BtnFloatShotRegion" Style="{StaticResource ScreenshotMenuItemStyle}"
                                                 Click="BtnMenuShotRegion_Click"
-                                                ToolTip="快速截图：屏幕变暗后拖动框选区域，松手完成（Esc/右键取消）；截图自动插入白板并复制到剪贴板">
+                                                ToolTip="快速截图：屏幕变暗后拖动框选区域，松手完成（Esc/右键取消）&#10;截图进剪贴板——翻到目标页后点击白板可粘贴，或按 Ctrl+V">
                                             <StackPanel Orientation="Horizontal">
                                                 <!-- 框选截图图标：虚线四角（不完整框 = "框选"），比实心框更轻 -->
                                                 <Canvas Width="10" Height="10" Margin="0,0,5,0">
@@ -1443,6 +1451,22 @@
                                                           Data="M1.5,8.5 L4,5.5 L5.5,7 L7.5,4.5 L9.5,7"/>
                                                 </Canvas>
                                                 <TextBlock Text="上传本地图片" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="BtnFloatPasteImage" Style="{StaticResource ScreenshotMenuItemStyle}"
+                                                Click="BtnMenuPasteImage_Click"
+                                                ToolTip="粘贴：把剪贴板里的内容插入白板——纯墨迹粘出可编辑墨迹，图片/截图粘为图片&#10;点击后进入粘贴模式——光标变化、书写挂起，点白板选位置后点「粘贴到此处」落内容&#10;Esc 或点其他工具退出粘贴模式；Ctrl+V 可直接粘贴到当前页">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- 粘贴图片图标：经典剪贴板（圆角板身 + 顶部压夹），与截图菜单其他图标 10×10 规格一致 -->
+                                                <Canvas Width="10" Height="10" Margin="0,0,5,0">
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.1"
+                                                          StrokeLineJoin="Round" Fill="Transparent"
+                                                          Data="M2,3 H1.8 Q0.5,3 0.5,4.2 V8.6 Q0.5,9.5 1.8,9.5 H8.2 Q9.5,9.5 9.5,8.6 V4.2 Q9.5,3 8.2,3 H7.5"/>
+                                                    <Path Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="1.1"
+                                                          StrokeLineJoin="Round" Fill="Transparent"
+                                                          Data="M3.3,1.5 H6.7 Q7.3,1.5 7.3,2.1 V3.4 Q7.3,4 6.7,4 H3.3 Q2.7,4 2.7,3.4 V2.1 Q2.7,1.5 3.3,1.5 Z"/>
+                                                </Canvas>
+                                                <TextBlock Text="粘贴图片" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>
@@ -1525,7 +1549,7 @@
                                 <!-- ✕ 角标：白板打开期间显示，红底白叉，位于图标右上角 -->
                                 <Grid x:Name="GridWhiteboardCloseBadge" Visibility="{Binding ElementName=GridBackgroundCover, Path=Visibility}"
                                       Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-3,0">
-                                    <Ellipse Fill="#E5484D"/>
+                                    <Ellipse Fill="{DynamicResource DangerBrush}"/>
                                     <Path Stroke="White" StrokeThickness="1.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                           Data="M 3,3 L 7,7 M 7,3 L 3,7"/>
                                 </Grid>
@@ -1649,7 +1673,7 @@
                         <Path Fill="{DynamicResource FloatBarForeground}"
                               Data="M0,2 H30 V4 H0 Z M13,0 H17 V2 H13 Z M14,19 H16 V27 H14 Z M7,26 H23 V28 H7 Z"/>
                         <!-- 中央红色叉号（原图标 X 几何，仅换色） -->
-                        <Path Fill="#E5484D"
+                        <Path Fill="{DynamicResource DangerBrush}"
                               Data="M13.5355,10.9497 L10,14.4853 11.4142,15.8995 14.9497,12.364 18.4853,15.8995 19.8995,14.4853 16.364,10.9497 19.8995,7.4142 18.4853,6 14.9497,9.5355 11.4142,6 10,7.4142 13.5355,10.9497 Z"/>
                     </Grid>
                 </Border>
@@ -1776,5 +1800,63 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <!-- ===== 笔设置面板：点笔图标弹出、点面板外收起（定位/事件见 MW_PenSettings.cs） =====
+             放 Main_Grid 末尾保证渲染在最顶层；位置由代码按笔图标实时计算（浮动条可拖动） -->
+        <local:PenSettingsPanel x:Name="PenSettingsPanel"
+                               Visibility="Collapsed"
+                               HorizontalAlignment="Left" VerticalAlignment="Top"
+                               IsHitTestVisible="True"/>
+
+        <!-- ===== 选择方式面板：点选择图标弹出、选择后面板关闭（定位/事件见 MW_SelectionGestures.cs） ===== -->
+        <local:SelectionModePanel x:Name="SelectionModePanel"
+                               Visibility="Collapsed"
+                               HorizontalAlignment="Left" VerticalAlignment="Top"
+                               IsHitTestVisible="True"/>
+
+        <!-- ===== 橡皮设置面板：点橡皮图标弹出（擦除方式/大小/滑动清屏，见 MW_EraserSettings.cs） ===== -->
+        <local:EraserSettingsPanel x:Name="EraserSettingsPanel"
+                               Visibility="Collapsed"
+                               HorizontalAlignment="Left" VerticalAlignment="Top"
+                               IsHitTestVisible="True"/>
+
+        <!-- ===== 粘贴气泡：快速截图后点击白板弹出（悬在点击点上方，点"粘贴"图片中心对准该点插入；
+             位置由代码 Margin 定位，显隐/事件见 MW_Capture.cs 粘贴贯通区） ===== -->
+        <Border x:Name="BorderPastePrompt" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Background="{DynamicResource FloatBarBackground}" BorderBrush="{DynamicResource FloatBarBorderBrush}"
+                BorderThickness="1" CornerRadius="7" Padding="3">
+            <Border.Resources>
+                <Style TargetType="Button">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="10,5"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+                    <Setter Property="Foreground" Value="{DynamicResource FloatBarForeground}"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#220088FF"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Border.Resources>
+            <StackPanel Orientation="Horizontal">
+                <Button Content="粘贴到此处" Click="BtnPastePromptPaste_Click"
+                        ToolTip="图片插入当前所在视图（白板当前页或第 0 页批注层），中心对准刚才点击的位置"/>
+                <Button Content="取消" Click="BtnPastePromptCancel_Click" Margin="2,0,0,0"
+                        ToolTip="不粘贴（图片仍留在剪贴板，可 Ctrl+V 或截图菜单粘贴）"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

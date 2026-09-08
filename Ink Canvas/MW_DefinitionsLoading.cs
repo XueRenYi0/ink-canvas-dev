@@ -150,6 +150,18 @@ namespace Ink_Canvas
             //加载设置
             LoadSettings();
 
+            // 笔设置面板：订阅事件 + 注入颜色，再按配置恢复笔种类/笔宽（含荧光笔倍率）
+            InitPenSettingsPanel();
+            ApplyLoadedPenSettings();
+
+            // 橡皮设置面板：订阅事件（擦除方式/大小/滑动清屏）
+            InitEraserSettingsPanel();
+            ApplyLoadedEraserSettings();
+
+            // 选择方式：订阅面板事件 + 拖选拦截，再按配置恢复（矩形框选/自由选择）
+            InitSelectionMode();
+            ApplyLoadedSelectionMode();
+
             // 初始化动态快捷键（此时窗口句柄已就绪，避免上次 bc673dd 在构造函数注册全局热键崩溃的坑）
             InitDynamicShortcuts();
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -97,11 +98,11 @@ namespace Ink_Canvas
 
         /// <summary>
         /// 插入一张图片到白板当前页（自动按画布适配缩小、落画布左上角）。
-        /// 无论当前是注释模式还是白板模式，图片都挂在 CurrentWhiteboardIndex 页
-        /// （"上次看的那一页"），等切到白板就能看到。
+        /// 落点页 = 当前视图：白板模式挂当前白板页；注释模式（第 0 页）挂批注层（键 -1，
+        /// 与墨迹 strokeCollections[0] 同层同生死）——粘贴在哪个视图就出现在哪个视图。
         /// cascade=true 时应用级联偏移（连续插入多张不完全叠死）。
         /// </summary>
-        private Image ImageLayer_AddImage(BitmapSource source, bool cascade = false)
+        private Image ImageLayer_AddImage(BitmapSource source, bool cascade = false, Point? center = null)
         {
             try
             {
@@ -124,6 +125,13 @@ namespace Ink_Canvas
                     IsHitTestVisible = inkCanvas.EditingMode == InkCanvasEditingMode.Select
                 };
 
+                // 图片本体拖动三件套（见下方 region）：
+                // WPF InkCanvas 原生只支持"抓选框边缘"拖动元素，按在图片本体（中央）
+                // 只会重复点选——此处补齐"抓图片任意位置即可拖动"的行业通用交互
+                img.MouseLeftButtonDown += ImageLayer_DragMouseDown;
+                img.MouseMove += ImageLayer_DragMouseMove;
+                img.MouseLeftButtonUp += ImageLayer_DragMouseUp;
+
                 // 落画布左上角（留 20px 边距，保证图片边缘可被抓取拖动）；
                 // 级联时每张右下错开 24px（一轮 5 张，超出画布自动收边）
                 double left = 20, top = 20;
@@ -133,11 +141,18 @@ namespace Ink_Canvas
                     left = Math.Min(20 + off, Math.Max(0, hostW - img.Width));
                     top = Math.Min(20 + off, Math.Max(0, hostH - img.Height));
                 }
+                if (center.HasValue)
+                {
+                    // 指定位置（粘贴气泡场景）：图片中心对准点击点，钳制在画布内
+                    left = Math.Max(4, Math.Min(center.Value.X - img.Width / 2, hostW - img.Width - 4));
+                    top = Math.Max(4, Math.Min(center.Value.Y - img.Height / 2, hostH - img.Height - 4));
+                }
                 InkCanvas.SetLeft(img, left);
                 InkCanvas.SetTop(img, top);
 
                 // 登记到页表（InkCanvas 继承自 Canvas，子元素用 Left/Top 绝对定位）
-                int key = CurrentWhiteboardIndex;
+                // 键 = 当前视图：白板模式=当前白板页；注释模式（第 0 页）=-1 批注层
+                int key = currentMode != 0 ? CurrentWhiteboardIndex : -1;
                 if (!_pageImages.TryGetValue(key, out var list))
                 {
                     list = new List<Image>();
@@ -147,9 +162,36 @@ namespace Ink_Canvas
                 _imagePageKey[img] = key;
 
                 inkCanvas.Children.Add(img);
-                // 白板模式下立即可见；注释模式下等切到白板再显示
-                img.Visibility = currentMode != 0 && key == CurrentWhiteboardIndex
-                    ? Visibility.Visible : Visibility.Collapsed;
+                // 刚插入的就是当前视图，直接可见（翻页/切模式由 RefreshVisibility 接管）
+                img.Visibility = Visibility.Visible;
+
+                // 插入即选中（与"墨迹变图形"同一交互口径，见 InsertGraphStrokes）：
+                // 截图/粘贴到达画布的图默认带选框+操作条+手柄，拖动/缩放/适配白板宽度立即可用；
+                // 做其他操作（点空白/激活工具）时取消选中——复用一次性选中机制，
+                // 取消后笔模式自动还原，如同没有这回事
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        // ① 先定型笔输入（若已是 Ink 模式，这行是幂等的安全垫）
+                        forceEraser = false;
+                        inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
+
+                        // ② 选中刚插入的图（屏蔽 SelectionChanged 的快照副作用，快照由选中后重新捕获）
+                        // 注意：Select() 会把 EditingMode 切成 Select（WPF 行为），
+                        // 靠 _isOneShotGraphSelection 标志在取消选中时把笔模式换回来
+                        isProgramChangeStrokeSelection = true;
+                        try { inkCanvas.Select(new StrokeCollection(), new List<UIElement> { img }); } catch { }
+                        isProgramChangeStrokeSelection = false;
+                        _isOneShotGraphSelection = inkCanvas.GetSelectedElements().Count > 0;
+
+                        // ③ 显示选区遮罩与控制条（拖动/缩放/操作条立即可用）
+                        GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
+                        inkCanvas_SelectionChanged(inkCanvas, EventArgs.Empty);
+                        updateBorderStrokeSelectionControlLocation();
+                    }
+                    catch { }
+                }));
 
                 _lastImageVisibleKey = -2; // 强制下次 RefreshVisibility 重新同步
                 return img;
@@ -160,6 +202,123 @@ namespace Ink_Canvas
                 return null;
             }
         }
+
+        #region 图片本体拖动（补齐 WPF 原生缺口）
+
+        /// <summary>
+        /// 【为什么需要这段代码】WPF InkCanvas 的元素拖动只能从"选区装饰器"
+        /// （选框边框、手柄、选框内非元素区域）发起——装饰器的可命中区域是
+        /// "选框减去元素本体"（WPF 源码 DrawBackgound 用透明画刷只覆盖该区域）。
+        /// 按在图片本体（中央）时事件交给 Image 元素，只走"点选"路径不会移动。
+        /// 本 region 补齐：已选中的图片，按住图片任意位置（含中央）即可直接拖动。
+        /// 注意：混合选中（墨迹+图片）时选区覆盖层会先拦下事件，走
+        /// MW_SelectionGestures.cs 的覆盖层拖动路径（那里已同步平移元素），
+        /// 与本路径互斥不冲突。
+        /// </summary>
+
+        /// <summary>图片本体拖动是否进行中（MouseLeftButtonDown 到 Up 之间为 true）</summary>
+        private bool _imageBodyDragActive = false;
+
+        /// <summary>拖动起点（inkCanvas 坐标系——SetLeft/SetTop 同坐标系，直接做差）</summary>
+        private Point _imageBodyDragStart;
+
+        /// <summary>拖动开始时各选中图片的原始位置快照（整体平移基准，避免累积误差）</summary>
+        private readonly Dictionary<Image, Point> _imageBodyDragOrigins = new Dictionary<Image, Point>();
+
+        /// <summary>
+        /// 图片上按下：仅"选择工具 + 图片已被选中"时接管为拖动。
+        /// 未选中的图片不抢事件——保持原生"单击选中"体验（第一次点选中、第二次按住拖）。
+        /// </summary>
+        private void ImageLayer_DragMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (e.ChangedButton != MouseButton.Left) return; // 右键等不接管
+                if (inkCanvas.EditingMode != InkCanvasEditingMode.Select) return; // 仅选择工具
+                if (!(sender is Image img)) return;
+
+                // Ctrl/Shift+点击 = 原生多选切换（往选区里加/减这张图），交回原生逻辑，不接管成拖动
+                if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) != ModifierKeys.None) return;
+
+                // 按下的这张必须在当前选中集合里（点未选中图片 = 原生点选语义，放行）
+                var selected = inkCanvas.GetSelectedElements().OfType<Image>().ToList();
+                if (!selected.Contains(img)) return;
+
+                // 记录起点 + 所有选中图片的原始位置（多选时整体拖动）
+                _imageBodyDragActive = true;
+                _imageBodyDragStart = e.GetPosition(inkCanvas);
+                _imageBodyDragOrigins.Clear();
+                foreach (var s in selected)
+                {
+                    _imageBodyDragOrigins[s] = new Point(
+                        InkCanvas.GetLeft(s), InkCanvas.GetTop(s));
+                }
+
+                // 捕获鼠标：拖出窗口边界也能持续收到 Move/Up（行业惯例）
+                img.CaptureMouse();
+                e.Handled = true; // 阻止事件继续冒泡触发原生的重复点选逻辑
+            }
+            catch { }
+        }
+
+        /// <summary>拖动中：位移量同步应用到所有选中图片（整体平移）；顺带做悬停光标反馈</summary>
+        private void ImageLayer_DragMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!(sender is Image hoverImg)) return;
+
+            // 悬停反馈：已选中的图片显示四向移动光标（告诉用户"这里按住可拖"）；
+            // 未选中显示默认光标（首次点击是"选中"语义，还不可直接拖）。
+            // 鼠标移入/选中状态变化后的第一次移动即自动纠正，无需额外事件
+            if (!_imageBodyDragActive)
+            {
+                try
+                {
+                    bool isSelected = inkCanvas.GetSelectedElements().Contains(hoverImg);
+                    hoverImg.Cursor = isSelected ? Cursors.SizeAll : null;
+                }
+                catch { }
+                return;
+            }
+
+            try
+            {
+                // 左键已松开（异常路径）→ 直接结束，防悬空状态
+                if (e.LeftButton != MouseButtonState.Pressed)
+                {
+                    ImageLayer_EndBodyDrag(sender as Image);
+                    return;
+                }
+
+                var pos = e.GetPosition(inkCanvas);
+                double dx = pos.X - _imageBodyDragStart.X;
+                double dy = pos.Y - _imageBodyDragStart.Y;
+
+                // 用"原始位置 + 总位移"而不是逐次累加，避免浮点误差累积
+                foreach (var kv in _imageBodyDragOrigins)
+                {
+                    InkCanvas.SetLeft(kv.Key, kv.Value.X + dx);
+                    InkCanvas.SetTop(kv.Key, kv.Value.Y + dy);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>抬起：结束拖动，释放鼠标捕获</summary>
+        private void ImageLayer_DragMouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_imageBodyDragActive) return;
+            ImageLayer_EndBodyDrag(sender as Image);
+        }
+
+        /// <summary>收尾公共路径：清状态 + 释放捕获。图片移动不进 TimeMachine（与图片删除一致）</summary>
+        private void ImageLayer_EndBodyDrag(Image img)
+        {
+            _imageBodyDragActive = false;
+            _imageBodyDragOrigins.Clear();
+            try { if (img != null && img.IsMouseCaptured) img.ReleaseMouseCapture(); } catch { }
+        }
+
+        #endregion
 
         /// <summary>
         /// 页号/模式变化时切换图片可见性（换页 UpdateIndexInfoDisplay 即时调用）。
@@ -185,45 +344,32 @@ namespace Ink_Canvas
 
         /// <summary>
         /// 清屏时处理图片（BtnClear 调用，用户定稿的规则）：
-        /// - 白板模式：清屏 = 清墨迹 + 清本页图片（图片与墨迹同生共死，清屏就是"全部清掉"）；
-        /// - 注释模式：图片不在桌面层显示（都存在白板抽屉），只需自愈挂回，不删任何图。
+        /// 只清"当前视图层"——白板模式 = 当前白板页图片；注释模式 = 批注层（-1）图片
+        /// （图片与墨迹同生共死，清屏就是"全部清掉"；其他页不动，翻回去还在）。
+        /// 注释模式清屏走了 inkCanvas.Children.Clear()，白板抽屉里其他页的图也被摘了，
+        /// 结尾 EnsureHost 挂回（不可见，翻回对应页自然显示）。
         /// </summary>
         internal void ImageLayer_OnClearScreen()
         {
             try
             {
-                // ===== 诊断日志：定位"只有图片无墨迹时清屏不清图"bug =====
-                // 打印当前模式/页号/字典内全部页号和每页图片数，以及视觉树上还挂着几张图
-                Helpers.LogHelper.NewLog($"[清图诊断] OnClearScreen 进入: currentMode={currentMode}, " +
-                    $"CurrentWhiteboardIndex={CurrentWhiteboardIndex}, " +
-                    $"页表=[{string.Join(",", _pageImages.Select(kv => $"{kv.Key}页×{kv.Value.Count}张"))}], " +
-                    $"视觉树图片数={inkCanvas.Children.OfType<Image>().Count()}");
+                int key = currentMode != 0 ? CurrentWhiteboardIndex : -1;
+                Helpers.LogHelper.NewLog($"[清图诊断] OnClearScreen 进入: currentMode={currentMode}, key={key}, " +
+                    $"页表=[{string.Join(",", _pageImages.Select(kv => $"{kv.Key}页×{kv.Value.Count}张"))}]");
 
-                if (currentMode != 0)
+                if (_pageImages.TryGetValue(key, out var list))
                 {
-                    int key = CurrentWhiteboardIndex;
-                    if (_pageImages.TryGetValue(key, out var list))
+                    foreach (var img in list)
                     {
-                        foreach (var img in list)
-                        {
-                            _imagePageKey.Remove(img);
-                            inkCanvas.Children.Remove(img);
-                        }
-                        _pageImages.Remove(key);
-                        Helpers.LogHelper.NewLog($"[清图诊断] 已删除第 {key} 页的 {list.Count} 张图片（数据+视觉树）");
+                        _imagePageKey.Remove(img);
+                        inkCanvas.Children.Remove(img);
                     }
-                    else
-                    {
-                        Helpers.LogHelper.NewLog($"[清图诊断] 第 {key} 页在页表中无记录！（图片可能挂在别的页号上）");
-                    }
+                    _pageImages.Remove(key);
+                    Helpers.LogHelper.NewLog($"[清图诊断] 已删除第 {key} 页的 {list.Count} 张图片（数据+视觉树）");
                 }
-                else
-                {
-                    Helpers.LogHelper.NewLog("[清图诊断] 注释模式：不删图，走自愈挂回");
-                    // 注释模式：Children.Clear 后自愈挂回
-                    ImageLayer_EnsureHost();
-                    return;
-                }
+
+                // 注释模式：白板抽屉（其他页）的图被 Children.Clear 摘了，挂回（不可见）
+                if (currentMode == 0) ImageLayer_EnsureHost();
                 _lastImageVisibleKey = -2; // 强制下次刷新重新同步
             }
             catch (Exception ex) { Helpers.LogHelper.NewLog($"[清图诊断] OnClearScreen 异常: {ex.Message}"); }
@@ -271,7 +417,7 @@ namespace Ink_Canvas
             {
                 if (Math.Abs(actual) < 1) return;
                 int key = currentMode != 0 ? CurrentWhiteboardIndex : -1;
-                if (key < 1 || !_pageImages.TryGetValue(key, out var list)) return;
+                if (!_pageImages.TryGetValue(key, out var list)) return; // -1 批注层同样同步
                 foreach (var img in list)
                 {
                     double top = InkCanvas.GetTop(img);
@@ -290,8 +436,8 @@ namespace Ink_Canvas
             try
             {
                 int key = currentMode != 0 ? CurrentWhiteboardIndex : -1;
-                if (key < 1 || !_pageImages.TryGetValue(key, out var list) || list.Count == 0)
-                    return double.NaN;
+                if (!_pageImages.TryGetValue(key, out var list) || list.Count == 0)
+                    return double.NaN; // -1 批注层的图片同样计入
                 double bottom = double.MinValue;
                 foreach (var img in list)
                 {

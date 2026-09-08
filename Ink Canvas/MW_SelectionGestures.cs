@@ -26,6 +26,7 @@ using System.Windows.Input;
 using System.Windows.Input.StylusPlugIns;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Application = System.Windows.Application;
 using File = System.IO.File;
@@ -53,41 +54,289 @@ namespace Ink_Canvas
         private void BorderStrokeSelectionClone_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (lastBorderMouseDownObject != sender) return;
+            //入口含图片：纯图片选中同样可进复制模式（拖出图片副本）
+            if (inkCanvas.GetSelectedStrokes().Count == 0 && GetSelectedPageImages().Count == 0) return;
 
-            //点击即克隆：立即复制一份选中墨迹，偏移一段距离后自动选中副本，
-            //用户可直接拖走（原交互为开关模式，拖动时才复制，易忘关、不直观）
-            var strokes = inkCanvas.GetSelectedStrokes();
-            if (strokes.Count == 0) return;
+            // 复制拖拽模式（PPT/Visio 惯例）：点图标只进入模式（图标变色提示），
+            // 之后按住选中图形拖动 = 拖出一份副本（原件不动），松手落定，可连续拖出多份。
+            // 原交互"点击即克隆出副本"已废弃——副本固定偏移 24px 落点不可控。
+            ToggleCopyDragMode();
+        }
 
-            var cloned = strokes.Clone();
-            var m = new Matrix();
-            m.Translate(24, 24); // 副本向右下偏移，与原件错开可见
-            cloned.Transform(m, false);
+        /// <summary>复制拖拽模式激活中：按住选中图形拖动会拖出副本（见 GridInkCanvasSelectionCover_MouseDown）</summary>
+        bool isCopyDragMode = false;
+
+        /// <summary>开关复制拖拽模式</summary>
+        private void ToggleCopyDragMode()
+        {
+            isCopyDragMode = !isCopyDragMode;
+            UpdateCopyDragModeVisual();
+            if (isCopyDragMode)
+            {
+                // 进入模式时顺手把选中墨迹存入剪贴板（联动 Ctrl+V / 跨页粘贴）
+                CopySelectedStrokesToClipboard();
+                ShowNotification("复制模式：按住图形拖出副本，可连续多份；再点图标或点空白退出");
+            }
+        }
+
+        /// <summary>图标高亮反馈：激活 = 淡蓝底（与各面板选中态同款规范），关闭 = 透明</summary>
+        private void UpdateCopyDragModeVisual()
+        {
+            BorderStrokeSelectionClone.Background = isCopyDragMode
+                ? new SolidColorBrush(Color.FromArgb(0x26, 0x00, 0x88, 0xFF))
+                : Brushes.Transparent;
+        }
+
+        /// <summary>退出复制拖拽模式（选区消失/切换工具时由各路径调用）</summary>
+        private void ExitCopyDragMode()
+        {
+            if (!isCopyDragMode) return;
+            isCopyDragMode = false;
+            UpdateCopyDragModeVisual();
+        }
+
+        /// <summary>
+        /// 复制拖拽会话中创建的图片副本（墨迹副本走 Strokes.Add 天然进撤销栈；
+        /// 图片副本列表在此跟踪——拖动 Move 时移动副本而非原件，松手清空）。
+        /// 与 StrokesSelectionClone（恒空的防御字段）不同，此列表真实参与拖动分流。
+        /// </summary>
+        List<System.Windows.Controls.Image> _imageDragClones = new List<System.Windows.Controls.Image>();
+
+        /// <summary>
+        /// 从选中内容拖出一份副本：完全重合复制（不偏移）→ 选中副本。
+        /// 后续正常拖动路径移动的是副本，原件不动——"从图上拖出来"的手感即由此而来。
+        /// 墨迹：StrokeCollection.Clone；图片：新建 Image 拷贝源/尺寸/翻转/位置并登记页表。
+        /// </summary>
+        private void CreateCopyDragClone()
+        {
+            var selected = inkCanvas.GetSelectedStrokes();
+            var selectedImages = GetSelectedPageImages();
+            if (selected.Count == 0 && selectedImages.Count == 0) return;
+
+            //克隆图片：与原件完全重合（Source/尺寸/翻转/位置一致），登记到原件同一页
+            var imageClones = new List<System.Windows.Controls.Image>();
+            foreach (var src in selectedImages)
+            {
+                try
+                {
+                    var clone = new System.Windows.Controls.Image
+                    {
+                        Source = src.Source,
+                        Width = src.Width,
+                        Height = src.Height,
+                        Stretch = src.Stretch,
+                        IsHitTestVisible = src.IsHitTestVisible
+                    };
+                    //翻转态照搬（ScaleTransform 是可变对象，必须新建避免与原件共享）
+                    if (src.RenderTransform is ScaleTransform sst && (sst.ScaleX != 1 || sst.ScaleY != 1))
+                        clone.RenderTransform = new ScaleTransform(sst.ScaleX, sst.ScaleY);
+                    InkCanvas.SetLeft(clone, InkCanvas.GetLeft(src));
+                    InkCanvas.SetTop(clone, InkCanvas.GetTop(src));
+
+                    //登记页表：跟随原件的页键（跨页拖拽副本仍属原图所在页）
+                    int key = _imagePageKey[src];
+                    if (!_pageImages.TryGetValue(key, out var list))
+                    {
+                        list = new List<System.Windows.Controls.Image>();
+                        _pageImages[key] = list;
+                    }
+                    list.Add(clone);
+                    _imagePageKey[clone] = key;
+
+                    //图片本体拖动三件套（与 ImageLayer_AddImage 同款，见 MW_ImageLayer.cs）
+                    clone.MouseLeftButtonDown += ImageLayer_DragMouseDown;
+                    clone.MouseMove += ImageLayer_DragMouseMove;
+                    clone.MouseLeftButtonUp += ImageLayer_DragMouseUp;
+
+                    inkCanvas.Children.Add(clone);
+                    clone.Visibility = src.Visibility;
+                    imageClones.Add(clone);
+                }
+                catch { }
+            }
+
+            //清选中（双参：墨迹+图片一起）→ 加入墨迹副本 → 选中全部副本
+            isProgramChangeStrokeSelection = true;
+            inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
+            isProgramChangeStrokeSelection = false;
+
+            StrokeCollection cloneStrokes = null;
+            if (selected.Count > 0)
+            {
+                cloneStrokes = selected.Clone(); // 副本与原件完全重合，拖动时再分开
+                inkCanvas.Strokes.Add(cloneStrokes); // StrokesChanged 自动进 TimeMachine（可撤销）
+            }
 
             isProgramChangeStrokeSelection = true;
-            inkCanvas.Select(new StrokeCollection());
+            inkCanvas.Select(cloneStrokes ?? new StrokeCollection(), imageClones);
             isProgramChangeStrokeSelection = false;
-            inkCanvas.Strokes.Add(cloned);
-            inkCanvas.Select(cloned);
+
+            _imageDragClones = imageClones; //后续 Move 拖的是副本（原件不动）
         }
 
-        private void BorderStrokeSelectionCloneToNewBoard_MouseUp(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// 把选中内容存入剪贴板（Ctrl+C / 复制按钮联动共用）。按选中内容分两路：
+        /// 1. 纯墨迹 → ISF 序列化（"InkStrokes" 格式）：粘回画板仍是墨迹（可编辑/可擦/走撤销栈），
+        ///    同时放 PNG（外部应用 PPT/微信 粘贴兼容；画板内读取优先 ISF）。
+        /// 2. 含图片 → 整体渲染成透明底 PNG（墨迹+图片同框所见即所得），双格式入剪贴板。
+        /// 【黑背景坑】Clipboard.SetImage 的 DIB 转换会丢 alpha——墨迹图大半是透明像素，
+        /// 直接贴回来是黑底图。解法：DataObject 同时放 PNG 流（带 alpha，自己读）+ 标准位图。
+        /// 复制失败不影响调用方主流程。
+        /// </summary>
+        private void CopySelectedStrokesToClipboard()
         {
-            if (lastBorderMouseDownObject != sender) return;
+            try
+            {
+                var strokes = inkCanvas.GetSelectedStrokes();
+                var selectedImages = inkCanvas.GetSelectedElements()
+                    .OfType<System.Windows.Controls.Image>().ToList();
+                if (strokes.Count == 0 && selectedImages.Count == 0) return;
 
-            var strokes = inkCanvas.GetSelectedStrokes();
-            inkCanvas.Select(new StrokeCollection());
-            strokes = strokes.Clone();
-            BtnWhiteBoardAdd_Click(null, null);
-            inkCanvas.Strokes.Add(strokes);
+                if (selectedImages.Count == 0)
+                {
+                    // ---- 纯墨迹：ISF 序列化（核心）+ PNG（外部兼容）----
+                    var dataObj = new DataObject();
+                    using (var ms = new MemoryStream())
+                    {
+                        strokes.Save(ms); // ISF（Ink Serialized Format）：保留笔迹全部属性
+                        dataObj.SetData("InkStrokes", new MemoryStream(ms.ToArray()), false);
+                    }
+                    var rtb = RenderStrokesAndImages(strokes, selectedImages);
+                    if (rtb != null)
+                    {
+                        dataObj.SetImage(rtb); // 标准位图（外部应用读）
+                        using (var ms = new MemoryStream())
+                        {
+                            var enc = new PngBitmapEncoder();
+                            enc.Frames.Add(BitmapFrame.Create(rtb));
+                            enc.Save(ms);
+                            dataObj.SetData("PNG", new MemoryStream(ms.ToArray()), false);
+                        }
+                    }
+                    Clipboard.SetDataObject(dataObj, true);
+                    return;
+                }
+
+                // ---- 含图片：整体渲染 PNG ----
+                var bmp = RenderStrokesAndImages(strokes, selectedImages);
+                if (bmp == null) return;
+                var dataObj2 = new DataObject();
+                dataObj2.SetImage(bmp);
+                using (var ms = new MemoryStream())
+                {
+                    var enc = new PngBitmapEncoder();
+                    enc.Frames.Add(BitmapFrame.Create(bmp));
+                    enc.Save(ms);
+                    dataObj2.SetData("PNG", new MemoryStream(ms.ToArray()), false);
+                }
+                Clipboard.SetDataObject(dataObj2, true);
+            }
+            catch { /* 静默：复制是附加动作，失败不干扰主流程 */ }
         }
+
+        /// <summary>把墨迹(+图片)渲染成透明底位图（所见即所得：原尺寸、含 alpha）</summary>
+        private RenderTargetBitmap RenderStrokesAndImages(StrokeCollection strokes, List<System.Windows.Controls.Image> images)
+        {
+            // 统一包围盒 = 墨迹 ∪ 图片
+            Rect bounds = Rect.Empty;
+            if (strokes.Count > 0) bounds = strokes.GetBounds();
+            foreach (var img in images)
+            {
+                var r = new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height);
+                bounds = bounds.IsEmpty ? r : Rect.Union(bounds, r);
+            }
+            if (bounds.IsEmpty || bounds.Width < 1 || bounds.Height < 1) return null;
+
+            var dv = new DrawingVisual();
+            using (var dc = dv.RenderOpen())
+            {
+                dc.PushTransform(new TranslateTransform(-bounds.X, -bounds.Y));
+                foreach (Stroke s in strokes) s.Draw(dc);
+                foreach (var img in images) // 图片按显示尺寸原样画入
+                    dc.DrawImage(img.Source, new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height));
+                dc.Pop();
+            }
+            var rtb = new RenderTargetBitmap(
+                (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height),
+                96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            rtb.Render(dv);
+            rtb.Freeze();
+            return rtb;
+        }
+
+        /// <summary>
+        /// 从剪贴板读图片：优先取 "PNG" 格式（CopySelectedStrokesToClipboard 写入，
+        /// 带 alpha 透明通道——墨迹图不黑底）；没有再退回 GetImage（截图/外部来源）。
+        /// </summary>
+        private BitmapSource TryGetClipboardImage()
+        {
+            try
+            {
+                if (Clipboard.ContainsData("PNG"))
+                {
+                    var stream = Clipboard.GetData("PNG") as Stream;
+                    if (stream != null)
+                    {
+                        var bmp = new BitmapImage();
+                        bmp.BeginInit();
+                        bmp.CacheOption = BitmapCacheOption.OnLoad;
+                        bmp.StreamSource = stream;
+                        bmp.EndInit();
+                        bmp.Freeze();
+                        if (bmp.PixelWidth > 0) return bmp;
+                    }
+                }
+                if (Clipboard.ContainsImage()) return Clipboard.GetImage();
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>
+        /// 从剪贴板读墨迹（ISF 格式，纯墨迹复制时写入）。
+        /// 粘回画板仍是墨迹（可编辑/可擦/可撤销）——这是"纯墨迹复制"与"截图"的本质区别。
+        /// </summary>
+        private StrokeCollection TryGetClipboardStrokes()
+        {
+            try
+            {
+                if (!Clipboard.ContainsData("InkStrokes")) return null;
+                var stream = Clipboard.GetData("InkStrokes") as Stream;
+                if (stream == null) return null;
+                var sc = new StrokeCollection(stream); // 反序列化 ISF
+                return sc.Count > 0 ? sc : null;
+            }
+            catch { return null; }
+        }
+
 
         private void BorderStrokeSelectionDelete_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (lastBorderMouseDownObject == sender)
+            if (lastBorderMouseDownObject != sender) return;
+
+            ExitCopyDragMode(); // 复制模式随选区一起结束
+
+            // 图片优先删（ImageLayer 内部自清页表并同步选中集合），再删墨迹——
+            // 混合选中时两者一起删除
+            ImageLayer_DeleteSelectedImages();
+
+            // 只删除选中墨迹（原实现转调 SymbolIconDelete_MouseUp，而它已被改为转调
+            // 滑动清屏——选中后点删除会把整页墨迹全清掉，bug 根因即在此）
+            var strokes = inkCanvas.GetSelectedStrokes();
+            if (strokes.Count > 0)
             {
-                SymbolIconDelete_MouseUp(sender, e);
+                // StrokesChanged 会把 Removed 记进 TimeMachine（Ctrl+Z 可撤销）
+                inkCanvas.Strokes.Remove(strokes);
             }
+
+            //清空选中（双参：元素+墨迹）。挡板拦住 SelectionChanged（不触发快照副作用），
+            //但收尾必须手动收起覆盖层——操作条绑定覆盖层可见性，不收就残留在原地。
+            //纯墨迹删除无此问题：Strokes.Remove 在挡板前先触发了 SelectionChanged 自动收起
+            isProgramChangeStrokeSelection = true;
+            inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
+            isProgramChangeStrokeSelection = false;
+            GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+            TryEndOneShotSelection();
         }
 
         private void GridPenWidthDecrease_MouseUp(object sender, MouseButtonEventArgs e)
@@ -133,17 +382,6 @@ namespace Ink_Canvas
             }
         }
 
-        private void GridPenWidthRestore_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (lastBorderMouseDownObject != sender) return;
-
-            foreach (Stroke stroke in inkCanvas.GetSelectedStrokes())
-            {
-                stroke.DrawingAttributes.Width = inkCanvas.DefaultDrawingAttributes.Width;
-                stroke.DrawingAttributes.Height = inkCanvas.DefaultDrawingAttributes.Height;
-            }
-        }
-
         private void ImageFlipHorizontal_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (lastBorderMouseDownObject != sender) return;
@@ -153,8 +391,8 @@ namespace Ink_Canvas
             // Find center of element and then transform to get current location of center
             FrameworkElement fe = e.Source as FrameworkElement;
             Point center = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
-            center = new Point(inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Width / 2,
-                inkCanvas.GetSelectionBounds().Top + inkCanvas.GetSelectionBounds().Height / 2);
+            center = new Point(GetGestureSelectionBounds().Left + GetGestureSelectionBounds().Width / 2,
+                GetGestureSelectionBounds().Top + GetGestureSelectionBounds().Height / 2);
             center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
 
             // Update matrix to reflect translation/rotation
@@ -165,6 +403,11 @@ namespace Ink_Canvas
             {
                 stroke.Transform(m, false);
             }
+
+            //图片水平镜像：RenderTransform 反转 X（中心点翻转，不影响布局尺寸，
+            //原生选框天然贴合）。连续点两次 = 翻回原样，符合翻转按钮的通用语义
+            foreach (var img in GetSelectedPageImages()) FlipImage(img, flipHorizontal: true);
+
             if (DrawingAttributesHistory.Count > 0)
             {
                 var collecion = new StrokeCollection();
@@ -182,6 +425,61 @@ namespace Ink_Canvas
             //updateBorderStrokeSelectionControlLocation();
         }
 
+        /// <summary>
+        /// 适配白板宽度（操作条按钮，仅选中含图片时可见）：
+        /// 选中图片宽度 = 画布可视宽度，高度等比缩放，水平居中，垂直位置保持不动（板书习惯：左右铺满、上下不跳）。
+        /// 多张图片时按各自中心对齐铺满。恢复走"统一还原"键（快照在选中时记录，含适配前尺寸）。
+        /// </summary>
+        private void GridSelectionFitWidth_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                //只认登记过的页面图片（排除其他来源元素），纯墨迹点击无效果
+                foreach (var img in GetSelectedPageImages())
+                {
+                    if (img.Width <= 0 || img.Height <= 0) continue;
+
+                    //目标宽度=画布可视宽度；高度按图片自身宽高比等比缩放
+                    double targetW = inkCanvas.ActualWidth;
+                    double ratio = img.Height / img.Width;
+                    double targetH = targetW * ratio;
+
+                    //垂直位置保持原中心（上下不跳动），水平居中
+                    double cy = InkCanvas.GetTop(img) + img.Height / 2;
+                    InkCanvas.SetLeft(img, (inkCanvas.ActualWidth - targetW) / 2); //宽度=画布宽时结果恒 0，显式写出语义
+                    InkCanvas.SetTop(img, cy - targetH / 2);
+                    img.Width = targetW;
+                    img.Height = targetH;
+                }
+                updateBorderStrokeSelectionControlLocation(); //选区变大，操作条/旋转钮/手柄跟随
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 翻转图片（渲染层镜像，不动布局）：把已有的 ScaleTransform 的 X/Y 乘 -1 切换翻转态。
+        /// 布局尺寸不变（选框贴合），翻转态持续到下次翻转或还原按钮恢复位置尺寸。
+        /// </summary>
+        private void FlipImage(System.Windows.Controls.Image img, bool flipHorizontal)
+        {
+            try
+            {
+                var st = img.RenderTransform as ScaleTransform;
+                if (st == null)
+                {
+                    //首次翻转：中心点缩放（渲染中心=布局中心，天然镜像不位移）
+                    st = new ScaleTransform(flipHorizontal ? -1 : 1, flipHorizontal ? 1 : -1);
+                    img.RenderTransform = st;
+                    img.RenderTransformOrigin = new Point(0.5, 0.5);
+                }
+                else
+                {
+                    if (flipHorizontal) st.ScaleX *= -1; else st.ScaleY *= -1;
+                }
+            }
+            catch { }
+        }
+
         private void ImageFlipVertical_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (lastBorderMouseDownObject != sender) return;
@@ -191,8 +489,8 @@ namespace Ink_Canvas
             // Find center of element and then transform to get current location of center
             FrameworkElement fe = e.Source as FrameworkElement;
             Point center = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
-            center = new Point(inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Width / 2,
-                inkCanvas.GetSelectionBounds().Top + inkCanvas.GetSelectionBounds().Height / 2);
+            center = new Point(GetGestureSelectionBounds().Left + GetGestureSelectionBounds().Width / 2,
+                GetGestureSelectionBounds().Top + GetGestureSelectionBounds().Height / 2);
             center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
 
             // Update matrix to reflect translation/rotation
@@ -203,77 +501,11 @@ namespace Ink_Canvas
             {
                 stroke.Transform(m, false);
             }
+
+            //图片垂直镜像（与水平翻转同一套 RenderTransform 逻辑）
+            foreach (var img in GetSelectedPageImages()) FlipImage(img, flipHorizontal: false);
             if (DrawingAttributesHistory.Count > 0)
             {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
-        }
-
-        private void ImageRotate45_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (lastBorderMouseDownObject != sender) return;
-
-            Matrix m = new Matrix();
-
-            // Find center of element and then transform to get current location of center
-            FrameworkElement fe = e.Source as FrameworkElement;
-            Point center = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
-            center = new Point(inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Width / 2,
-                inkCanvas.GetSelectionBounds().Top + inkCanvas.GetSelectionBounds().Height / 2);
-            center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
-
-            // Update matrix to reflect translation/rotation
-            m.RotateAt(15, center.X, center.Y);  // 旋转（原 45°，改为 15° 细步进，教学场景更实用）
-
-            StrokeCollection targetStrokes = inkCanvas.GetSelectedStrokes();
-            foreach (Stroke stroke in targetStrokes)
-            {
-                stroke.Transform(m, false);
-            }
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
-        }
-
-        private void ImageRotate90_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (lastBorderMouseDownObject != sender) return;
-
-            Matrix m = new Matrix();
-
-            // Find center of element and then transform to get current location of center
-            FrameworkElement fe = e.Source as FrameworkElement;
-            Point center = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
-            center = new Point(inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Width / 2,
-                inkCanvas.GetSelectionBounds().Top + inkCanvas.GetSelectionBounds().Height / 2);
-            center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
-
-            // Update matrix to reflect translation/rotation
-            m.RotateAt(90, center.X, center.Y);  // 旋转
-
-            StrokeCollection targetStrokes = inkCanvas.GetSelectedStrokes();
-            foreach (Stroke stroke in targetStrokes)
-            {
-                stroke.Transform(m, false);
-            }
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                var collecion = new StrokeCollection();
-                foreach (var item in DrawingAttributesHistory)
-                {
-                    collecion.Add(item.Key);
-                }
                 timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
                 DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
                 foreach (var item in DrawingAttributesHistoryFlag)
@@ -288,6 +520,36 @@ namespace Ink_Canvas
 
         bool isGridInkCanvasSelectionCoverMouseDown = false;
         StrokeCollection StrokesSelectionClone = new StrokeCollection();
+
+        /// <summary>取当前选中元素里的页面图片（已登记页表的）——混合选中（墨迹+图片）拖动路径共用</summary>
+        private List<System.Windows.Controls.Image> GetSelectedPageImages()
+        {
+            // 只认 ImageLayer 登记过的图片，排除其他来源的元素
+            return inkCanvas.GetSelectedElements()
+                .OfType<System.Windows.Controls.Image>()
+                .Where(img => _imagePageKey.ContainsKey(img))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 手势几何统一入口：选中内容包围盒（inkCanvas 坐标系）= 墨迹 bounds ∪ 选中页面图片 rect。
+        /// 【为什么不用 InkCanvas.GetSelectionBounds()】它对"元素"的 bounds 由选区装饰器经
+        /// LayoutUpdated 异步跟踪（WPF 源码 InkCanvasSelection：元素入选时走 UpdateSelectionAdorner），
+        /// SelectionChanged 同步时刻常拿到空/旧值——纯图片选中时整个覆盖层命中区被清零、
+        /// 手柄判定/缩放/操作条定位全部失效。自算版本完全同步，纯墨迹/纯图片/混合三态一致。
+        /// </summary>
+        private Rect GetGestureSelectionBounds()
+        {
+            Rect b = Rect.Empty;
+            var strokes = inkCanvas.GetSelectedStrokes();
+            if (strokes.Count > 0) b = strokes.GetBounds();
+            foreach (var img in GetSelectedPageImages())
+            {
+                var r = new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height);
+                b = b.IsEmpty ? r : Rect.Union(b, r);
+            }
+            return b;
+        }
 
         //鼠标拖动选区状态（触摸走 Manipulation 事件，鼠标/数位笔走此路径；dec>0 表示触摸进行中，让位）
         bool isMouseSelectionDragging = false;
@@ -309,11 +571,17 @@ namespace Ink_Canvas
                 return;
             }
 
-            //克隆已改为按钮点击即生成（见 BorderStrokeSelectionClone_MouseUp），此处仅负责拖动
+            // 复制模式的副本在框内按下时才创建（见下方 isCopyDragMode 分支），此处不再预创建
 
             //【框内才能拖】与 PowerPoint 等全行业一致：按下点在选中笔迹包围盒内（含 10px 容差，
             //方便抓细线）才进入拖动；框外按下不遥控选中物——想在别处落笔时不会误拽走整个图形
             var dragBounds = inkCanvas.GetSelectedStrokes().GetBounds();
+            // 混合选中（墨迹+图片）：命中区并入图片包围盒——否则按在图片本体上会被判"框外"
+            // 直接取消选中，图片区域就拖不动了（与"抓本体即可拖"的通用交互不符）
+            foreach (var img in GetSelectedPageImages())
+            {
+                dragBounds.Union(new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height));
+            }
             dragBounds.Inflate(10, 10);
             if (!dragBounds.Contains(handlePos))
             {
@@ -321,6 +589,10 @@ namespace Ink_Canvas
                 isMouseSelectionDragging = false;
                 return;
             }
+
+            // 复制拖拽模式：框内按下先拖出一份副本并选中它，
+            // 之后正常拖动路径移动的是副本（原件不动）——"从图上拖出来"的核心
+            if (isCopyDragMode) CreateCopyDragClone();
 
             //开始鼠标拖动（捕获鼠标保证移出窗口也能收到 Move/Up）
             lastMousePointOnSelectionCover = e.GetPosition(null);
@@ -338,6 +610,7 @@ namespace Ink_Canvas
             if (_activeHandleDragKind != SelectionHandleKind.None)
             {
                 UpdateHandleDrag(e.GetPosition(inkCanvas));
+                TryCollapseBarForDrag(); // 缩放拖动中：操作条临时收成＋小圆钮
                 return;
             }
 
@@ -347,6 +620,7 @@ namespace Ink_Canvas
             lastMousePointOnSelectionCover = pos;
             if (Math.Abs(dx) < 0.1 && Math.Abs(dy) < 0.1) return;
             hasMouseSelectionDragMoved = true; // 超过阈值的移动才算拖动
+            TryCollapseBarForDrag(); // 平移拖动中：操作条临时收成＋小圆钮
 
             //与触摸路径一致：克隆时拖动副本，否则拖动选中墨迹
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
@@ -359,8 +633,28 @@ namespace Ink_Canvas
                 stroke.Transform(m, false);
             }
 
-            //克隆拖动时选区（原件）未动，控制条无需跟随
-            if (StrokesSelectionClone.Count == 0) updateBorderStrokeSelectionControlLocation();
+            //图片平移：复制模式拖动时移动的是副本（原件不动），普通拖动移动选中原件
+            //（不进 TimeMachine，与图片本体拖动口径一致）
+            if (_imageDragClones.Count > 0)
+            {
+                foreach (var img in _imageDragClones)
+                {
+                    InkCanvas.SetLeft(img, InkCanvas.GetLeft(img) + dx);
+                    InkCanvas.SetTop(img, InkCanvas.GetTop(img) + dy);
+                }
+            }
+            else
+            {
+                foreach (var img in GetSelectedPageImages())
+                {
+                    InkCanvas.SetLeft(img, InkCanvas.GetLeft(img) + dx);
+                    InkCanvas.SetTop(img, InkCanvas.GetTop(img) + dy);
+                }
+            }
+
+            //克隆拖动时选区跟副本走（副本被选中），控制条需跟随；
+            //普通拖动选区即选中物，同样跟随
+            updateBorderStrokeSelectionControlLocation();
         }
 
         private void GridInkCanvasSelectionCover_MouseUp(object sender, MouseButtonEventArgs e)
@@ -380,11 +674,13 @@ namespace Ink_Canvas
                 //结束拖动状态；手柄上原地点击未拖动 → 保持选区（空白处单击才取消选区）
                 if (isMouseSelectionDragging) FinishMouseSelectionDrag();
                 if (wasHandleDrag) return;
-                //单击（未拖动）：取消选区（原行为）
+                //单击（未拖动）：取消选区（原行为）。元素集合一并传空——
+                //纯图片/混合选中时图片也同时取消，避免"墨迹没了图片还挂着"的错乱
                 isProgramChangeStrokeSelection = true;
-                inkCanvas.Select(new StrokeCollection());
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
                 isProgramChangeStrokeSelection = false;
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+                ExitCopyDragMode(); // 选中没了，复制模式一并结束
                 //一次性选中收尾：图形插入产生的选中被取消 → 恢复笔模式（见 MW_GraphStrokes.cs）
                 TryEndOneShotSelection();
             }
@@ -395,8 +691,10 @@ namespace Ink_Canvas
         {
             isMouseSelectionDragging = false;
             _activeHandleDragKind = SelectionHandleKind.None; // 结束手柄缩放会话
+            TryRestoreBarAfterDrag(); // 拖动结束：操作条恢复展开态
             try { if (GridInkCanvasSelectionCover.IsMouseCaptured) GridInkCanvasSelectionCover.ReleaseMouseCapture(); } catch { }
             StrokesSelectionClone = new StrokeCollection();
+            _imageDragClones = new List<System.Windows.Controls.Image>(); //图片副本会话结束（副本已落定，正常选中它）
 
             if (StrokeManipulationHistory?.Count > 0)
             {
@@ -438,7 +736,7 @@ namespace Ink_Canvas
         /// </summary>
         private SelectionHandleKind HitTestSelectionHandle(Point pos)
         {
-            Rect b = inkCanvas.GetSelectionBounds();
+            Rect b = GetGestureSelectionBounds();
             if (b.IsEmpty || b.Width <= 0 || b.Height <= 0) return SelectionHandleKind.None;
 
             //旋转钮：顶部中央向上伸出（优先于缩放手柄判定，位置在框外不冲突）
@@ -475,7 +773,7 @@ namespace Ink_Canvas
         private void StartHandleDrag(SelectionHandleKind kind, Point pos)
         {
             _activeHandleDragKind = kind;
-            _handleDragStartBounds = inkCanvas.GetSelectionBounds();
+            _handleDragStartBounds = GetGestureSelectionBounds();
             isMouseSelectionDragging = true;
             hasMouseSelectionDragMoved = false;
             lastMousePointOnSelectionCover = pos;
@@ -547,7 +845,7 @@ namespace Ink_Canvas
 
             //目标尺寸 = 鼠标到锚点距离（下限 2 DIP，防翻转/退化），按当前 bounds 换算增量比例
             const double MinSize = 2.0;
-            Rect cur = inkCanvas.GetSelectionBounds();
+            Rect cur = GetGestureSelectionBounds();
             if (cur.IsEmpty || cur.Width < 0.5 || cur.Height < 0.5) return;
 
             double fx = 1.0, fy = 1.0;
@@ -576,7 +874,6 @@ namespace Ink_Canvas
             if (Math.Abs(fx - 1) < 0.001 && Math.Abs(fy - 1) < 0.001) return;
 
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
-            if (strokes.Count == 0) return;
 
             var m = new Matrix();
             m.ScaleAt(fx, fy, anchorX, anchorY);
@@ -594,15 +891,38 @@ namespace Ink_Canvas
                 catch { }
             }
 
+            //图片同步缩放（与墨迹同一锚点同一因子；翻转态 RenderTransform 不动，
+            //布局宽高缩放即可）。图片操作不进撤销栈，还原按钮负责恢复
+            foreach (var img in GetSelectedPageImages())
+                ScaleImage(img, fx, fy, anchorX, anchorY);
+
             hasMouseSelectionDragMoved = true;
             updateBorderStrokeSelectionControlLocation();
+        }
+
+        /// <summary>
+        /// 围绕锚点缩放单张图片：位置与尺寸一起变换（Left/Top 绕锚点缩放 + 宽高乘因子），
+        /// 与墨迹 stroke.Transform(ScaleAt) 同几何，混合选中时两者保持同步形变。
+        /// </summary>
+        private void ScaleImage(System.Windows.Controls.Image img, double fx, double fy, double anchorX, double anchorY)
+        {
+            try
+            {
+                double left = InkCanvas.GetLeft(img), top = InkCanvas.GetTop(img);
+                InkCanvas.SetLeft(img, anchorX + (left - anchorX) * fx);
+                InkCanvas.SetTop(img, anchorY + (top - anchorY) * fy);
+                img.Width = Math.Max(2.0, img.Width * fx);   //下限 2 DIP，与手柄拖动的 MinSize 一致
+                img.Height = Math.Max(2.0, img.Height * fy);
+            }
+            catch { }
         }
 
         /// <summary>悬停反馈：手柄上显示缩放箭头；框内显示移动光标（四向箭头）；框外恢复默认</summary>
         private void GridInkCanvasSelectionCover_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             if (isMouseSelectionDragging || dec.Count != 0) return; // 拖动/触摸进行中保持当前光标
-            if (inkCanvas.GetSelectedStrokes().Count == 0) return;
+            //判定含图片：纯图片选中同样有手柄缩放/移动的光标反馈
+            if (inkCanvas.GetSelectedStrokes().Count == 0 && GetSelectedPageImages().Count == 0) return;
 
             var pos = e.GetPosition(inkCanvas);
 
@@ -617,6 +937,11 @@ namespace Ink_Canvas
             //框内（与 MouseDown 的拖动判定同一套几何：包围盒 + 10px 容差）→ 四向移动光标
             //光标可供性：告诉用户"这里按住可以拖走"，和实际能拖的范围严格一致
             var bounds = inkCanvas.GetSelectedStrokes().GetBounds();
+            // 混合选中：图片包围盒并入（与 MouseDown 的拖动命中区同几何，悬停在哪就能拖哪）
+            foreach (var img in GetSelectedPageImages())
+            {
+                bounds.Union(new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height));
+            }
             bounds.Inflate(10, 10);
             GridInkCanvasSelectionCover.Cursor = bounds.Contains(pos) ? Cursors.SizeAll : null;
         }
@@ -660,27 +985,14 @@ namespace Ink_Canvas
         //选中快照：SelectionChanged 捕获（还原 = 恢复到本次选中时的状态）
         Dictionary<Stroke, Tuple<StylusPointCollection, DrawingAttributes>> SelectionSnapshot;
 
-        private void GridSelectionScaleUp_MouseUp(object sender, MouseButtonEventArgs e)
+        /// <summary>图片选中快照：还原按钮用（恢复到选中时的位置/尺寸/翻转态）。结构简单直接存字段</summary>
+        private class ImageSnapshot
         {
-            if (lastBorderMouseDownObject != sender) return;
-            ScaleSelection(1.1);
+            public double Left, Top, Width, Height;
+            public double ScaleX, ScaleY; //渲染层翻转态
         }
-
-        private void GridSelectionScaleDown_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (lastBorderMouseDownObject != sender) return;
-            ScaleSelection(0.9);
-        }
-
-        /// <summary>以选区中心整体缩放选中墨迹（浮动工具条"放大/缩小"按钮用）</summary>
-        private void ScaleSelection(double factor)
-        {
-            var strokes = inkCanvas.GetSelectedStrokes();
-            if (strokes.Count == 0) return;
-            Rect bounds = inkCanvas.GetSelectionBounds();
-            if (ScaleStrokes(strokes, new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2), factor))
-                updateBorderStrokeSelectionControlLocation();
-        }
+        Dictionary<System.Windows.Controls.Image, ImageSnapshot> _imageSelectionSnapshot =
+            new Dictionary<System.Windows.Controls.Image, ImageSnapshot>();
 
         /// <summary>
         /// 统一缩放入口（Ctrl+滚轮 / Ctrl+加减号）：
@@ -692,11 +1004,15 @@ namespace Ink_Canvas
             if (inkCanvas.Visibility != Visibility.Visible) return false;
 
             var strokes = inkCanvas.GetSelectedStrokes();
-            if (strokes.Count > 0)
+            var selectedImages = GetSelectedPageImages();
+            if (strokes.Count > 0 || selectedImages.Count > 0)
             {
-                Rect bounds = inkCanvas.GetSelectionBounds();
-                if (ScaleStrokes(strokes, new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2), factor))
-                    updateBorderStrokeSelectionControlLocation();
+                Rect bounds = GetGestureSelectionBounds();
+                var center = new Point(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
+                if (strokes.Count > 0 && ScaleStrokes(strokes, center, factor)) { }
+                //图片绕选区中心同步缩放（混合选中时与墨迹同中心同因子）
+                foreach (var img in selectedImages) ScaleImage(img, factor, factor, center.X, center.Y);
+                updateBorderStrokeSelectionControlLocation();
                 return true;
             }
 
@@ -746,21 +1062,25 @@ namespace Ink_Canvas
             if (lastBorderMouseDownObject != sender) return;
 
             var strokes = inkCanvas.GetSelectedStrokes();
-            if (strokes.Count == 0 || SelectionSnapshot == null) return;
+            if ((strokes.Count == 0 && _imageSelectionSnapshot.Count == 0)
+                || (strokes.Count > 0 && SelectionSnapshot == null && _imageSelectionSnapshot.Count == 0)) return;
 
             var history = new Dictionary<Stroke, Tuple<StylusPointCollection, StylusPointCollection>>();
-            foreach (Stroke s in strokes)
+            if (SelectionSnapshot != null)
             {
-                if (!SelectionSnapshot.TryGetValue(s, out var snap)) continue;
-                try
+                foreach (Stroke s in strokes)
                 {
-                    var oldPts = s.StylusPoints.Clone();
-                    s.StylusPoints = snap.Item1; //赋值触发 StylusPointsReplaced，不自动提交历史，下面手动提交
-                    s.DrawingAttributes.Width = snap.Item2.Width;
-                    s.DrawingAttributes.Height = snap.Item2.Height;
-                    history[s] = new Tuple<StylusPointCollection, StylusPointCollection>(oldPts, s.StylusPoints.Clone());
+                    if (!SelectionSnapshot.TryGetValue(s, out var snap)) continue;
+                    try
+                    {
+                        var oldPts = s.StylusPoints.Clone();
+                        s.StylusPoints = snap.Item1; //赋值触发 StylusPointsReplaced，不自动提交历史，下面手动提交
+                        s.DrawingAttributes.Width = snap.Item2.Width;
+                        s.DrawingAttributes.Height = snap.Item2.Height;
+                        history[s] = new Tuple<StylusPointCollection, StylusPointCollection>(oldPts, s.StylusPoints.Clone());
+                    }
+                    catch { }
                 }
-                catch { }
             }
 
             if (history.Count > 0)
@@ -771,6 +1091,35 @@ namespace Ink_Canvas
                     StrokeInitialHistory[item.Key] = item.Value.Item2;
                 }
             }
+
+            //图片还原：恢复到选中时的位置/尺寸/翻转态（与墨迹同语义；
+            //图片操作不进撤销栈，与拖动/删除口径一致）
+            foreach (var img in GetSelectedPageImages())
+            {
+                if (!_imageSelectionSnapshot.TryGetValue(img, out var snap)) continue;
+                try
+                {
+                    InkCanvas.SetLeft(img, snap.Left);
+                    InkCanvas.SetTop(img, snap.Top);
+                    img.Width = snap.Width;
+                    img.Height = snap.Height;
+                    //翻转态一并还原（快照时没翻 = 恢复为无翻转）
+                    var st = img.RenderTransform as ScaleTransform;
+                    if (st == null && (snap.ScaleX != 1 || snap.ScaleY != 1))
+                    {
+                        st = new ScaleTransform(snap.ScaleX, snap.ScaleY);
+                        img.RenderTransform = st;
+                        img.RenderTransformOrigin = new Point(0.5, 0.5);
+                    }
+                    else if (st != null)
+                    {
+                        st.ScaleX = snap.ScaleX;
+                        st.ScaleY = snap.ScaleY;
+                    }
+                }
+                catch { }
+            }
+
             CommitDrawingAttributesHistoryNow();
             updateBorderStrokeSelectionControlLocation();
         }
@@ -818,51 +1167,247 @@ namespace Ink_Canvas
             drawingShapeMode = 0;
             UpdateShapeIconHighlight(); //切到选择工具时熄灭图形图标高亮
             inkCanvas.IsManipulationEnabled = false;
-            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
-            {
-                if (inkCanvas.GetSelectedStrokes().Count == inkCanvas.Strokes.Count)
-                {
-                    inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-                    inkCanvas.IsManipulationEnabled = true;
-                }
-                else
-                {
-                    //inkCanvas.Select(inkCanvas.Strokes);
-                    // Fixed bug: 当通过如鼠标点击等某些方式创建没有高度或长度的笔画时，全选功能不能使用克隆、旋转、翻转、调整笔画粗细、删除功能
-                    StrokeCollection selectedStrokes = new StrokeCollection();
-                    foreach (Stroke stroke in inkCanvas.Strokes)
-                    {
-                        if (stroke.GetBounds().Width > 0 && stroke.GetBounds().Height > 0)
-                        {
-                            selectedStrokes.Add(stroke);
-                        }
-                    }
-                    inkCanvas.Select(selectedStrokes);
-                }
-            }
-            else
+
+            // 只负责切入选择模式（幂等：已在选择模式则什么都不做）。
+            // 旧版"第二次点击全选、第三次点击回笔"的双击行为已废弃——
+            // 全选移入选择方式面板（MW_SelectionMode.SelectAllStrokes），退出走笔图标/直接书写
+            if (inkCanvas.EditingMode != InkCanvasEditingMode.Select)
             {
                 inkCanvas.EditingMode = InkCanvasEditingMode.Select;
-
             }
         }
 
-        double BorderStrokeSelectionControlWidth = 490.0;
-        double BorderStrokeSelectionControlHeight = 80.0;
+        double BorderStrokeSelectionControlWidth = 338.0; // 10 键×30 + 4 分隔线×7 + 面板边距 8 + 边框 2（定位兜底值，实际优先用 ActualWidth）
+        double BorderStrokeSelectionControlHeight = 46.0; // 紧凑单行操作条高度（原双行 80）
         bool isProgramChangeStrokeSelection = false;
+
+        // ===== 操作条收起/展开状态 =====
+
+        /// <summary>本次选中是否手动收起（新选中默认展开，由用户决定收不收）</summary>
+        private bool _selectionBarCollapsed = false;
+
+        /// <summary>拖动墨迹期间的临时收起（松手自动恢复展开态，不改变用户的手动选择）</summary>
+        private bool _selectionBarDragHidden = false;
+
+        /// <summary>触摸手势累计位移（逐帧 delta 常小于 1px，累计超阈值才算拖动，轻点不收操作条）</summary>
+        private double _touchDragTotalMove = 0;
+
+        /// <summary>
+        /// 操作条显隐总开关：展开态显示整条，收起态显示＋小圆钮（宿主 Grid 已绑定选区可见性，
+        /// 这里只管两者互斥切换）。选区消失时宿主整体隐藏，两个标志在 SelectionChanged 里复位。
+        /// </summary>
+        private void UpdateSelectionBarVisibility()
+        {
+            bool showBar = !_selectionBarCollapsed && !_selectionBarDragHidden;
+            BorderStrokeSelectionControl.Visibility = showBar ? Visibility.Visible : Visibility.Collapsed;
+            BorderStrokeSelectionCollapseBubble.Visibility = showBar ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        /// <summary>拖动开始（鼠标平移/手柄缩放/触摸手势）：操作条临时收成＋小圆钮</summary>
+        private void TryCollapseBarForDrag()
+        {
+            if (_selectionBarDragHidden) return;
+            _selectionBarDragHidden = true;
+            UpdateSelectionBarVisibility();
+            //宽度已变（条→圆钮），强制布局后按新宽度重新居中，否则下帧定位按旧宽度算会偏
+            try { GridSelectionBarHost.UpdateLayout(); updateBorderStrokeSelectionControlLocation(); } catch { }
+        }
+
+        /// <summary>拖动结束：恢复展开态（用户手动收起过则保持收起）</summary>
+        private void TryRestoreBarAfterDrag()
+        {
+            if (!_selectionBarDragHidden) return;
+            _selectionBarDragHidden = false;
+            UpdateSelectionBarVisibility();
+            //宽度已变（圆钮→条），强制布局让 ActualWidth 就绪，再按选中框重新定位
+            try { GridSelectionBarHost.UpdateLayout(); updateBorderStrokeSelectionControlLocation(); } catch { }
+        }
+
+        /// <summary>收起钮：操作条 → ＋小圆钮</summary>
+        private void BorderStrokeSelectionCollapse_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            _selectionBarCollapsed = true;
+            UpdateSelectionBarVisibility();
+            //宽度已变（条→圆钮），强制布局让 ActualWidth 就绪，再按新宽度重新居中——
+            //否则定位仍按旧条宽计算，28px 圆钮会偏在旧条左端，视觉上严重不居中
+            try { GridSelectionBarHost.UpdateLayout(); } catch { }
+            updateBorderStrokeSelectionControlLocation();
+        }
+
+        /// <summary>＋小圆钮：重新展开操作条</summary>
+        private void BorderStrokeSelectionCollapseBubble_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+            _selectionBarCollapsed = false;
+            _selectionBarDragHidden = false;
+            UpdateSelectionBarVisibility();
+            //同上：宽度已变（圆钮→条），先强制布局再定位
+            try { GridSelectionBarHost.UpdateLayout(); } catch { }
+            updateBorderStrokeSelectionControlLocation();
+        }
+
+        /// <summary>
+        /// 保存到本地：选中内容导出为透明背景 PNG。纯墨迹与含图片共用 RenderStrokesAndImages
+        /// （墨迹+图片整体所见即所得渲染）；四周留 12px 边距，原尺寸 1:1。
+        /// </summary>
+        private void BorderStrokeSelectionSaveToFile_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+
+            try
+            {
+                var strokes = inkCanvas.GetSelectedStrokes();
+                var selectedImages = GetSelectedPageImages();
+                if (strokes.Count == 0 && selectedImages.Count == 0) return;
+
+                //统一渲染（纯墨迹/纯图片/混合都支持，含翻转态的渲染层变换）
+                var bmp = RenderStrokesAndImagesWithFlip(strokes, selectedImages);
+                if (bmp == null) return;
+
+                //四周加 12px 边距再导出（DrawingVisual 平移即可，重新渲染一次）
+                const double margin = 12;
+                int w = (int)Math.Ceiling(bmp.Width + margin * 2);
+                int h = (int)Math.Ceiling(bmp.Height + margin * 2);
+                DrawingVisual dv = new DrawingVisual();
+                using (DrawingContext dc = dv.RenderOpen())
+                {
+                    dc.DrawImage(bmp, new Rect(margin, margin, bmp.Width, bmp.Height));
+                }
+                var rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+                rtb.Render(dv);
+
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = selectedImages.Count > 0 ? "保存选中内容为图片" : "保存墨迹为图片",
+                    Filter = "PNG 图片|*.png",
+                    FileName = (selectedImages.Count > 0 ? "选中内容_" : "墨迹_")
+                        + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png"
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(rtb));
+                    using (var fs = File.Create(dlg.FileName))
+                        encoder.Save(fs);
+                    ShowToastNotification("已保存到本地：" + System.IO.Path.GetFileName(dlg.FileName));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("保存失败：" + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 渲染选中内容（含图片翻转态）：在 RenderStrokesAndImages 基础上，
+        /// 把图片的 RenderTransform（翻转）也应用进渲染——否则翻转过的图片存出来是原图方向。
+        /// </summary>
+        private RenderTargetBitmap RenderStrokesAndImagesWithFlip(StrokeCollection strokes, List<System.Windows.Controls.Image> images)
+        {
+            try
+            {
+                //先把翻转态应用到 DrawImage 的目标矩形镜像（用 PushTransform 包住图片绘制）
+                Rect bounds = Rect.Empty;
+                if (strokes.Count > 0) bounds = strokes.GetBounds();
+                foreach (var img in images)
+                {
+                    var r = new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height);
+                    bounds = bounds.IsEmpty ? r : Rect.Union(bounds, r);
+                }
+                if (bounds.IsEmpty || bounds.Width < 1 || bounds.Height < 1) return null;
+
+                var dv = new DrawingVisual();
+                using (DrawingContext dc = dv.RenderOpen())
+                {
+                    dc.PushTransform(new TranslateTransform(-bounds.X, -bounds.Y));
+                    foreach (Stroke s in strokes) s.Draw(dc);
+                    foreach (var img in images)
+                    {
+                        var st = img.RenderTransform as ScaleTransform;
+                        var rect = new Rect(InkCanvas.GetLeft(img), InkCanvas.GetTop(img), img.Width, img.Height);
+                        if (st != null && (st.ScaleX < 0 || st.ScaleY < 0))
+                        {
+                            //翻转：平移到图片中心、按翻转符号缩放、再平移回来（等价于中心点镜像）
+                            var cx = rect.X + rect.Width / 2;
+                            var cy = rect.Y + rect.Height / 2;
+                            var m = new Matrix();
+                            m.Translate(-cx, -cy);
+                            m.Scale(st.ScaleX, st.ScaleY);
+                            m.Translate(cx, cy);
+                            dc.PushTransform(new MatrixTransform(m));
+                            dc.DrawImage(img.Source, rect);
+                            dc.Pop();
+                        }
+                        else
+                        {
+                            dc.DrawImage(img.Source, rect);
+                        }
+                    }
+                    dc.Pop();
+                }
+                var rtb = new RenderTargetBitmap(
+                    (int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height),
+                    96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtb.Render(dv);
+                rtb.Freeze();
+                return rtb;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// 按当前选中内容动态显隐操作条按钮（统一操作条原则：不适用的键直接隐藏不占位）。
+        /// 纯图片选中：隐藏"变细/变粗/存图库"（墨迹专属）；含墨迹（纯墨迹或混合）：显示。
+        /// 显隐后操作条宽度变化，需重新布局并按选中框重新居中。
+        /// </summary>
+        private void UpdateSelectionToolbarButtons()
+        {
+            try
+            {
+                bool hasInk = inkCanvas.GetSelectedStrokes().Count > 0;
+                var vis = hasInk ? Visibility.Visible : Visibility.Collapsed;
+                GridSelectionPenThin.Visibility = vis;
+                GridSelectionPenThick.Visibility = vis;
+                GridSelectionSaveShape.Visibility = vis;
+                //适配白板宽度键反向显隐：选中含图片才显示，纯墨迹隐藏（图片专属操作）
+                GridSelectionFitWidth.Visibility = hasInk ? Visibility.Collapsed : Visibility.Visible;
+                //宽度变化后重新定位（UpdateLayout 让 ActualWidth 先就绪）
+                GridSelectionBarHost.UpdateLayout();
+                updateBorderStrokeSelectionControlLocation();
+            }
+            catch { }
+        }
 
         private void inkCanvas_SelectionChanged(object sender, EventArgs e)
         {
             if (isProgramChangeStrokeSelection) return;
-            if (inkCanvas.GetSelectedStrokes().Count == 0)
+
+            // 非程序化的选区变化（换选别的墨迹/清空/框选/全选）→ 复制模式一律结束：
+            // 用户做了新的选择动作，之前"按住图形拖出副本"的意图不再有效。
+            // 程序化选区变化（CreateCopyDragClone 等）已被上方挡板拦下，不受影响
+            ExitCopyDragMode();
+
+            //选中判定含图片：纯图片选中同样出覆盖层+操作条（模仿墨迹逻辑）
+            bool hasSelection = inkCanvas.GetSelectedStrokes().Count > 0 || GetSelectedPageImages().Count > 0;
+            if (!hasSelection)
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+                //复位收起状态：新选中一律从展开态开始（默认展开，用户可随时再收起）
+                _selectionBarCollapsed = false;
+                _selectionBarDragHidden = false;
                 //一次性选中收尾：图形插入产生的选中被取消 → 恢复笔模式（见 MW_GraphStrokes.cs）
                 TryEndOneShotSelection();
             }
             else
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
+                //新选中默认展开操作条
+                _selectionBarCollapsed = false;
+                _selectionBarDragHidden = false;
+                UpdateSelectionBarVisibility();
+                //按选中内容（纯图/纯墨迹/混合）显隐专属按钮
+                UpdateSelectionToolbarButtons();
 
                 //捕获选中快照（还原按钮用：恢复到选中时的大小/位置/粗细）
                 try
@@ -872,6 +1417,22 @@ namespace Ink_Canvas
                     {
                         SelectionSnapshot[s] = new Tuple<StylusPointCollection, DrawingAttributes>(
                             s.StylusPoints.Clone(), s.DrawingAttributes.Clone());
+                    }
+
+                    //图片快照（还原按钮用：位置/尺寸/翻转态）
+                    _imageSelectionSnapshot = new Dictionary<System.Windows.Controls.Image, ImageSnapshot>();
+                    foreach (var img in GetSelectedPageImages())
+                    {
+                        var st = img.RenderTransform as ScaleTransform;
+                        _imageSelectionSnapshot[img] = new ImageSnapshot
+                        {
+                            Left = InkCanvas.GetLeft(img),
+                            Top = InkCanvas.GetTop(img),
+                            Width = img.Width,
+                            Height = img.Height,
+                            ScaleX = st?.ScaleX ?? 1,
+                            ScaleY = st?.ScaleY ?? 1
+                        };
                     }
                 }
                 catch { }
@@ -890,7 +1451,7 @@ namespace Ink_Canvas
         {
             try
             {
-                var b = inkCanvas.GetSelectionBounds();
+                var b = GetGestureSelectionBounds();
                 if (b.IsEmpty || b.Width <= 0 || b.Height <= 0)
                 {
                     BorderSelectionHitArea.Width = 0;
@@ -923,16 +1484,17 @@ namespace Ink_Canvas
         {
             try
             {
-                if (inkCanvas.GetSelectedStrokes().Count == 0) return;
+                //判定含图片：纯图片选中时框外落笔同样要取消（否则图片选区残留挡书写）
+                if (inkCanvas.GetSelectedStrokes().Count == 0 && GetSelectedPageImages().Count == 0) return;
 
                 //先读一次性选中标志：true = 选中来自图形插入（模式被 Select() 偷偷切成了 Select），
                 //取消后要恢复笔模式，当前这一笔才画得出来
                 bool restoreInk = _isOneShotGraphSelection;
                 bool eraserShapeBefore = forcePointEraser;
 
-                //屏蔽 SelectionChanged 的快照副作用（取消不需要快照）
+                //屏蔽 SelectionChanged 的快照副作用（取消不需要快照）；元素集合一并清空（含图片选中）
                 isProgramChangeStrokeSelection = true;
-                inkCanvas.Select(new StrokeCollection());
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
                 isProgramChangeStrokeSelection = false;
 
                 if (restoreInk)
@@ -949,21 +1511,22 @@ namespace Ink_Canvas
 
         private void updateBorderStrokeSelectionControlLocation()
         {
-            //按钮增减后实际宽度会变，优先用 ActualWidth（布局完成后 > 10），常量仅作初值兜底
-            double controlWidth = BorderStrokeSelectionControl.ActualWidth > 10 ? BorderStrokeSelectionControl.ActualWidth : BorderStrokeSelectionControlWidth;
-            double borderLeft = (inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Right - controlWidth) / 2;
-            double borderTop = inkCanvas.GetSelectionBounds().Bottom + 15;
+            //定位宿主 Grid（内含展开条/收起圆钮两个互斥子元素，宽度即当前可见者）；
+            //宽度优先用 ActualWidth（布局完成后 > 10），常量仅作初值兜底
+            double controlWidth = GridSelectionBarHost.ActualWidth > 10 ? GridSelectionBarHost.ActualWidth : BorderStrokeSelectionControlWidth;
+            double borderLeft = (GetGestureSelectionBounds().Left + GetGestureSelectionBounds().Right - controlWidth) / 2;
+            double borderTop = GetGestureSelectionBounds().Bottom + 15;
             if (borderLeft < 0) borderLeft = 0;
             if (borderTop < 0) borderTop = 0;
             if (Width - borderLeft < controlWidth || double.IsNaN(borderLeft)) borderLeft = Width - controlWidth;
             if (Height - borderTop < BorderStrokeSelectionControlHeight || double.IsNaN(borderTop)) borderTop = Height - BorderStrokeSelectionControlHeight;
-            BorderStrokeSelectionControl.Margin = new Thickness(borderLeft, borderTop, 0, 0);
+            GridSelectionBarHost.Margin = new Thickness(borderLeft, borderTop, 0, 0);
 
             //旋转钮跟随选中框顶部中央（与 HitTestSelectionHandle 的命中点同一位置：
             //框顶边中点向上伸出 RotateHandleOffset 像素处，再减去钮自身半径居中）
             try
             {
-                var b = inkCanvas.GetSelectionBounds();
+                var b = GetGestureSelectionBounds();
                 GridRotateHandle.Margin = new Thickness(
                     b.Left + b.Width / 2 - GridRotateHandle.Width / 2,
                     Math.Max(0, b.Top - RotateHandleOffset - GridRotateHandle.Height / 2),
@@ -978,10 +1541,12 @@ namespace Ink_Canvas
         private void GridInkCanvasSelectionCover_ManipulationStarting(object sender, ManipulationStartingEventArgs e)
         {
             e.Mode = ManipulationModes.All;
+            _touchDragTotalMove = 0; // 新手势开始：累计位移清零
         }
 
         private void GridInkCanvasSelectionCover_ManipulationCompleted(object sender, ManipulationCompletedEventArgs e)
         {
+            TryRestoreBarAfterDrag(); // 触摸拖动结束：操作条恢复展开态
             if (StrokeManipulationHistory?.Count > 0)
             {
                 timeMachine.CommitStrokeManipulationHistory(StrokeManipulationHistory);
@@ -1013,13 +1578,20 @@ namespace Ink_Canvas
                     double rotate = md.Rotation;  // 获得旋转角度
                     Vector scale = md.Scale;  // 获得缩放倍数
 
+                    //累计位移超过阈值才算拖动（轻点的微小抖动不收操作条，避免闪烁）
+                    _touchDragTotalMove += Math.Abs(trans.X) + Math.Abs(trans.Y);
+                    if (_touchDragTotalMove > 4)
+                    {
+                        TryCollapseBarForDrag(); // 触摸拖动中：操作条临时收成＋小圆钮
+                    }
+
                     Matrix m = new Matrix();
 
                     // Find center of element and then transform to get current location of center
                     FrameworkElement fe = e.Source as FrameworkElement;
                     Point center = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
-                    center = new Point(inkCanvas.GetSelectionBounds().Left + inkCanvas.GetSelectionBounds().Width / 2,
-                        inkCanvas.GetSelectionBounds().Top + inkCanvas.GetSelectionBounds().Height / 2);
+                    center = new Point(GetGestureSelectionBounds().Left + GetGestureSelectionBounds().Width / 2,
+                        GetGestureSelectionBounds().Top + GetGestureSelectionBounds().Height / 2);
                     center = m.Transform(center);  // 转换为矩阵缩放和旋转的中心点
 
                     // Update matrix to reflect translation/rotation
@@ -1046,6 +1618,18 @@ namespace Ink_Canvas
                         }
                         catch { }
                     }
+
+                    //图片：复制模式拖动时移动副本（原件不动），普通拖动移动选中原件。
+                    //平移+绕中心缩放（与墨迹矩阵同序，保证混合选中时两者几何同步；旋转不支持图片）
+                    var touchImages = _imageDragClones.Count > 0 ? _imageDragClones : GetSelectedPageImages();
+                    foreach (var img in touchImages)
+                    {
+                        //先平移（矩阵第一段）
+                        InkCanvas.SetLeft(img, InkCanvas.GetLeft(img) + trans.X);
+                        InkCanvas.SetTop(img, InkCanvas.GetTop(img) + trans.Y);
+                        //再绕选区中心缩放（矩阵第二段，锚点用变换前 center）
+                        ScaleImage(img, scale.X, scale.Y, center.X, center.Y);
+                    }
                     updateBorderStrokeSelectionControlLocation();
                 }
             }
@@ -1071,7 +1655,14 @@ namespace Ink_Canvas
                 centerPoint = touchPoint.Position;
                 lastTouchPointOnGridInkCanvasCover = touchPoint.Position;
 
-                //克隆已改为按钮点击即生成（见 BorderStrokeSelectionClone_MouseUp），触摸路径不再消费开关
+                // 复制拖拽模式（触摸版）：手指按在选中框内 = 拖出一份副本，
+                // 之后正常手势路径移动的是副本（原件不动）——与鼠标路径同语义
+                if (isCopyDragMode)
+                {
+                    var b = GetGestureSelectionBounds();
+                    b.Inflate(10, 10);
+                    if (b.Contains(touchPoint.Position)) CreateCopyDragClone();
+                }
             }
         }
 
@@ -1082,12 +1673,13 @@ namespace Ink_Canvas
             isProgramChangeStrokeSelection = false;
             if (lastTouchPointOnGridInkCanvasCover == e.GetTouchPoint(null).Position)
             {
-                if (lastTouchPointOnGridInkCanvasCover.X < inkCanvas.GetSelectionBounds().Left ||
-                    lastTouchPointOnGridInkCanvasCover.Y < inkCanvas.GetSelectionBounds().Top ||
-                    lastTouchPointOnGridInkCanvasCover.X > inkCanvas.GetSelectionBounds().Right ||
-                    lastTouchPointOnGridInkCanvasCover.Y > inkCanvas.GetSelectionBounds().Bottom)
+                if (lastTouchPointOnGridInkCanvasCover.X < GetGestureSelectionBounds().Left ||
+                    lastTouchPointOnGridInkCanvasCover.Y < GetGestureSelectionBounds().Top ||
+                    lastTouchPointOnGridInkCanvasCover.X > GetGestureSelectionBounds().Right ||
+                    lastTouchPointOnGridInkCanvasCover.Y > GetGestureSelectionBounds().Bottom)
                 {
-                    inkCanvas.Select(new StrokeCollection());
+                    //双参清空：图片选中一并取消（与鼠标路径 MouseUp 分支同一口径）
+                    inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
                     StrokesSelectionClone = new StrokeCollection();
                     //与鼠标路径（MouseUp 分支）保持一致：取消选中的同时收起选区遮罩，
                     //否则触摸点掉选中后拖动控制条仍残留悬空。
@@ -1100,11 +1692,13 @@ namespace Ink_Canvas
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
                 StrokesSelectionClone = new StrokeCollection();
+                _imageDragClones = new List<System.Windows.Controls.Image>(); //触摸克隆会话收尾
             }
             else
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
                 StrokesSelectionClone = new StrokeCollection();
+                _imageDragClones = new List<System.Windows.Controls.Image>(); //触摸克隆会话收尾
             }
         }
 

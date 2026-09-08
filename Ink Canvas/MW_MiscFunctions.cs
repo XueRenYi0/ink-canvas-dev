@@ -176,7 +176,7 @@ namespace Ink_Canvas
             }
 
             SetSelectToolColor(FloatBarForegroundColor);
-            SymbolIconDelete.Foreground = new SolidColorBrush(FloatBarForegroundColor);
+            // 垃圾桶图标（SymbolIconDelete）已移除，清屏走橡皮面板的滑动清屏
         }
 
         private void SystemEvents_UserPreferenceChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs e)
@@ -272,6 +272,19 @@ namespace Ink_Canvas
             var size = System.Windows.Forms.SystemInformation.PrimaryMonitorSize;
             var rc = new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), new System.Drawing.Size(size.Width, size.Height));
             var bitmap = new System.Drawing.Bitmap(rc.Width, rc.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            //截图前取消选中并刷一帧渲染（Dispatcher 上下文内同步执行）：
+            //否则选框虚线/缩放手柄/操作条会被 CopyFromScreen 一并截进保存的 PNG（脏图）
+            try
+            {
+                CancelActiveSelection();
+                //让"收起覆盖层"的布局变化真正渲染到屏幕再截图。
+                //Render 优先级排在正常布局之后，相当于插队等一帧渲染完成
+                System.Windows.Threading.DispatcherPriority renderPriority = System.Windows.Threading.DispatcherPriority.Render;
+                Dispatcher.Invoke(new Action(() => { }), renderPriority);
+            }
+            catch { }
+
             using (System.Drawing.Graphics memoryGrahics = System.Drawing.Graphics.FromImage(bitmap))
             {
                 memoryGrahics.CopyFromScreen(rc.X, rc.Y, 0, 0, rc.Size, System.Drawing.CopyPixelOperation.SourceCopy);

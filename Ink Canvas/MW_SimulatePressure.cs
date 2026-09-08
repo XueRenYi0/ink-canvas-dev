@@ -50,6 +50,15 @@ namespace Ink_Canvas
             try
             {
                 inkCanvas.Opacity = 1;
+
+                // 激光笔：临时指示笔迹——启动淡出计时后直接返回，
+                // 不走墨迹转图形/笔锋/直线拉直（见 MW_PenSettings.cs）
+                if (e.Stroke.DrawingAttributes.ContainsPropertyData(LaserStrokeGuid))
+                {
+                    StartLaserFade(e.Stroke);
+                    return;
+                }
+
                 if (Settings.InkToShape.IsInkToShapeEnabled && !Environment.Is64BitProcess)
                 {
                     void InkToShapeProcess()
@@ -430,6 +439,9 @@ namespace Ink_Canvas
                     }
                 }
                 catch { }
+
+                // 荧光笔：矩形笔头下压感渐变无意义，跳过笔锋处理（InkStyle）
+                if (e.Stroke.DrawingAttributes.IsHighlighter) return;
 
                 switch (Settings.Canvas.InkStyle)
                 {
@@ -892,8 +904,10 @@ namespace Ink_Canvas
             inkCanvas.Strokes.Add(straight);
             _currentCommitType = CommitReason.UserInput;
 
-            //拉直的线也是"图形"：打标签 + 自动选中，可整组拖动/撤销
-            InsertGraphStrokes(new StrokeCollection(new[] { straight }));
+            //拉直的线也是"图形"：只打组标签（保留整组拖动/撤销语义），不再自动选中——
+            //板书画线是高频连续操作，每次弹操作条会打断书写节奏；
+            //需要调整时用选择工具点选即可（组标签保证选一条就是整组）。
+            TagAsGraph(new StrokeCollection(new[] { straight }));
 
             _lineAssistCommitted = true; //标记已提交，后续 StrokeCollected 兜底只清残影、不再重复提交
         }

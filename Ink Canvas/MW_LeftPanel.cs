@@ -1,4 +1,4 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
@@ -78,20 +78,21 @@ namespace Ink_Canvas
 
         private void BtnUndo_Click(object sender, RoutedEventArgs e)
         {
-            if (inkCanvas.GetSelectedStrokes().Count != 0)
+            //含图片判定：纯图片选中同样先清（图片操作不进撤销栈，但选中状态要复位）
+            if (inkCanvas.GetSelectedStrokes().Count != 0 || inkCanvas.GetSelectedElements().Count > 0)
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
-                inkCanvas.Select(new StrokeCollection());
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
             }
             var item = timeMachine.Undo();
             ApplyHistoryToCanvas(item);
         }
         private void BtnRedo_Click(object sender, RoutedEventArgs e)
         {
-            if (inkCanvas.GetSelectedStrokes().Count != 0)
+            if (inkCanvas.GetSelectedStrokes().Count != 0 || inkCanvas.GetSelectedElements().Count > 0)
             {
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
-                inkCanvas.Select(new StrokeCollection());
+                inkCanvas.Select(new StrokeCollection(), new System.Collections.Generic.List<UIElement>());
             }
             var item = timeMachine.Redo();
             ApplyHistoryToCanvas(item);

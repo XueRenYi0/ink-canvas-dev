@@ -249,6 +249,10 @@ namespace Ink_Canvas
                 StrokeInitialHistory[stroke] = stroke.StylusPoints.Clone();
             }
             if (_currentCommitType == CommitReason.CodeInput || _currentCommitType == CommitReason.ShapeDrawing) return;
+            // 激光笔笔迹：临时演示笔迹（约 1 秒后淡出删除），不进撤销栈——
+            // 否则撤销会把已消失的激光笔迹复活。标记见 MW_PenSettings.cs LaserStrokeGuid
+            if (e.Added != null && e.Added.Count > 0 && e.Added[0].DrawingAttributes.ContainsPropertyData(LaserStrokeGuid))
+                return;
             if ((e.Added.Count != 0 || e.Removed.Count != 0) && IsEraseByPoint)
             {
                 if (AddedStroke == null) AddedStroke = new StrokeCollection();

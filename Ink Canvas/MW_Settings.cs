@@ -281,11 +281,9 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
 
-            drawingAttributes.Height = ((Slider)sender).Value / 2;
-            drawingAttributes.Width = ((Slider)sender).Value / 2;
-
-            Settings.Canvas.InkWidth = ((Slider)sender).Value / 2;
-
+            // 滑条值 = 画笔逻辑笔宽 × 2。ApplyBasePenWidth 统一负责：
+            // 更新画笔宽度记忆 + 持久化 + 套用到画布（荧光笔模式下只改记忆，切回时生效）
+            ApplyBasePenWidth(((Slider)sender).Value / 2);
             SaveSettingsToFile();
         }
 

@@ -78,7 +78,7 @@ namespace Ink_Canvas
         //     ★ 必须在 Show() 之前调用才保证生效；这是"首次打开位置正确"的唯一可靠手段
         //     （冷启动期间 FindWindow 找不到窗口，Win32 方案全部失效）。
         //   · GetPosition(out L, out T, out R, out B)  读取当前矩形（位置+大小一起拿）。
-        //   · Clear()  清空手写区（本文件在 Insert 成功后调用，下次打开是干净面板）。
+        //   · Clear()  清空手写区（原在 Insert 后自动调用，已废除——老师自己清，识别结果可对照）。
         //   · SetCaptionText(标题)  设窗口标题。作用不是给人看——是给 FindWindow 当"身份证"。
         //   · Show() / Hide()  显示/隐藏。用 Hide 不销毁：同一实例反复开关，规避冷启动延迟。
         //   · EnableAutoGrow(bool)  长公式自动扩面板（已在初始化时开启）。
@@ -304,9 +304,9 @@ namespace Ink_Canvas
                     //插入成功前先记住面板当前位置（面板不关闭，记忆用于下次点 fx 时恢复）
                     SaveMathPanelPosition();
 
-                    //【清屏】出图后自动清手写区，老师直接写下一个函数（连续输入流不中断）。
+                    //【不清屏】出图后手写区保持原样，由老师自己决定是否清（面板自带"清除"按钮）。
+                    //原设计 Insert 后自动 Clear() 已按需求废除——识别结果可对照着微调重写。
                     //Clear() 是接口原生方法（逆向笔记 5.1 节：void Clear()，清除面板内所有笔迹）
-                    try { _mathInputPanel?.Clear(); } catch { }
 
                     //【面板保持打开】连续输入多个函数：Insert 不关面板，
                     //点 X（Close 事件）才收起——对齐"多函数分次插入"的使用流

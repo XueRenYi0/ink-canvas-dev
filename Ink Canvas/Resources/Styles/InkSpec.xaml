@@ -1,0 +1,47 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <!-- ============================================================
+         InkSpec.xaml —— 界面规范资源字典（界面重构第一步）
+         说明：
+         1) 这里只收口"已存在的事实规范值"，不改变任何现有渲染效果；
+         2) 主题相关的颜色仍走 Light.xaml / Dark.xaml 的 FloatBar* 键，
+            本字典只放与主题无关的结构性规范值；
+         3) 新增面板/控件一律引用本字典的键，禁止再写硬编码数值；
+         4) 完整规范条目与违规点清见项目根目录《界面规范-现状对照表.md》。
+         ============================================================ -->
+
+    <!-- ===== 一、图标描边厚度 ===== -->
+    <!-- 基准厚度：1.22（来源 SeewoImageSource.PPTExitNormal Thickness 2 / viewBox 30 × 20 Grid） -->
+    <sys:Double x:Key="IconStroke">1.22</sys:Double>
+    <!-- 加粗版：1.55（用于需要更醒目的少量图标，如需强调的主操作） -->
+    <sys:Double x:Key="IconStrokeBold">1.55</sys:Double>
+
+    <!-- ===== 二、图标基准尺寸 ===== -->
+    <!-- 图标标准占位：宽 20（SymbolIcon 默认字号 20 同源），高 24（预留上下留白） -->
+    <sys:Double x:Key="IconWidth">20</sys:Double>
+    <sys:Double x:Key="IconHeight">24</sys:Double>
+
+    <!-- ===== 三、圆角 ===== -->
+    <!-- 面板级圆角：浮动条/弹出面板外框（现状 CornerRadius=5 的 24 处） -->
+    <CornerRadius x:Key="PanelCornerRadius">5</CornerRadius>
+    <!-- 控件级圆角：按钮/图标底座/色块（现状 CornerRadius=4 的 32 处） -->
+    <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+
+    <!-- ===== 四、间距与分隔 ===== -->
+    <!-- 浮动条内图标间距（SimpleStackPanel Spacing 现状主流值 10） -->
+    <sys:Double x:Key="BarSpacing">10</sys:Double>
+    <!-- 分隔线规格：宽 1 × 高 45（现状选区操作条的分隔线） -->
+    <sys:Double x:Key="SeparatorThickness">1</sys:Double>
+    <sys:Double x:Key="SeparatorHeight">45</sys:Double>
+
+    <!-- ===== 五、功能色（与主题无关的语义色） ===== -->
+    <!-- 选中/高亮蓝：色点选中环、工具选中态边框（收口自 #FF0088FF 的 7 处硬编码） -->
+    <SolidColorBrush x:Key="HighlightBrush" Color="#FF0088FF"/>
+    <!-- 危险/删除红：清屏确认、删除操作（收口自 #E5484D 的 4 处硬编码） -->
+    <SolidColorBrush x:Key="DangerBrush" Color="#E5484D"/>
+
+    <!-- ===== 六、状态不透明度 ===== -->
+    <!-- 置灰态：不适用功能用 Opacity=0.4 + IsEnabled=False（新规范，统一操作条时启用） -->
+    <sys:Double x:Key="DisabledOpacity">0.4</sys:Double>
+</ResourceDictionary>

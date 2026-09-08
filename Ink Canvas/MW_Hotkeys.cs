@@ -72,12 +72,36 @@ namespace Ink_Canvas
         {
             if (e.Key == Key.Escape)
             {
+                // 粘贴模式中：Esc = 取消粘贴（恢复原工具和光标），不触发全局退出
+                if (isPasteMode)
+                {
+                    ExitPasteMode();
+                    return;
+                }
                 KeyExit(null, null);
             }
             // Delete 键删除选中的图片（选择工具下点选图片后按 Delete；墨迹删除走操作条按钮）
             if (e.Key == Key.Delete)
             {
                 ImageLayer_DeleteSelectedImages();
+            }
+
+            // ---- 剪贴板贯通快捷键（设置页文本框获得焦点时由文本框处理，不会进到这里） ----
+            // Ctrl+C：选中墨迹 → 渲染成图片存剪贴板（无选中时不占用剪贴板——别覆盖用户刚截的图）
+            if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key == Key.C)
+            {
+                if (inkCanvas.GetSelectedStrokes().Count > 0)
+                {
+                    CopySelectedStrokesToClipboard();
+                    ShowNotification("选中墨迹已复制到剪贴板，Ctrl+V 可粘贴");
+                }
+                return;
+            }
+            // Ctrl+V：剪贴板图片 → 插入白板当前页（级联错位，连续粘贴不叠死）
+            if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key == Key.V)
+            {
+                PasteClipboardImageToCanvas(null);
+                return;
             }
         }
 

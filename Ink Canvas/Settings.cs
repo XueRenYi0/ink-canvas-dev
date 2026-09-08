@@ -78,6 +78,18 @@ namespace Ink_Canvas
         public bool IsShowCursor { get; set; } = true; //默认开（笔形光标）：教室大屏距离远，笔形比红点好找落点；偏好红点可在设置里关
         [JsonProperty("inkStyle")]
         public int InkStyle { get; set; } = 0;
+        /// <summary>笔种类：0=画笔 1=荧光笔 2=激光笔（笔设置面板选择，重启恢复）</summary>
+        [JsonProperty("penType")]
+        public int PenType { get; set; } = 0;
+        /// <summary>荧光笔宽度（与画笔各自独立记忆，重启恢复）</summary>
+        [JsonProperty("highlighterWidth")]
+        public double HighlighterWidth { get; set; } = 14;
+        /// <summary>笔面板自定义颜色（#AARRGGBB 十六进制串；null=未设置，面板显示"＋"入口）</summary>
+        [JsonProperty("customColor")]
+        public string CustomColor { get; set; } = null;
+        /// <summary>选择墨迹方式：0=矩形框选（默认） 1=自由选择（套索）（选择面板选择，重启恢复）</summary>
+        [JsonProperty("selectionMode")]
+        public int SelectionMode { get; set; } = 0;
         [JsonProperty("eraserSize")]
         public int EraserSize { get; set; } = 2;
         [JsonProperty("eraserType")]

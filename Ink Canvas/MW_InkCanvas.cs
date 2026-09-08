@@ -109,11 +109,8 @@ namespace Ink_Canvas
             {
                 inkCanvas1.ForceCursor = false;
             }
-            if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink)
-            {
-                forcePointEraser = !forcePointEraser;
-                UpdateEraserIcon();
-            }
+            // 原"编辑模式变回画笔时 toggle 擦除方式"已废弃（不可见的隐晦切换）；
+            // 擦除方式只在橡皮设置面板里切（SetEraserMode，见 MW_EraserSettings.cs）
 
             if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
             {
@@ -126,6 +123,9 @@ namespace Ink_Canvas
 
             // 悬浮条笔图标高亮同步：画笔模式亮、橡皮/选择等熄灭（图形模式由 drawingShapeMode 判断）
             UpdatePenIconHighlight();
+
+            // 选择图标高亮同步：选择模式亮淡蓝底+蓝边，其他模式熄灭
+            UpdateSelectIconHighlight();
         }
 
         /// <summary>更新选择图标的颜色（虚线框描边 + 箭头填充共用同一画刷）</summary>

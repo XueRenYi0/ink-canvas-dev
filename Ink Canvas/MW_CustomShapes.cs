@@ -124,9 +124,9 @@ namespace Ink_Canvas
                 UpdateLibraryEditVisual();
             }
 
-            //空状态折叠整区（标题+行），不占面板空间
-            StackPanelCustomShapesRow.Visibility =
-                count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            //空状态：Tab 化后图库 Tab 常驻，改为显示引导文案（不再折叠整区）
+            LibraryScroll.Visibility = count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            TextBlockLibraryEmpty.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>
