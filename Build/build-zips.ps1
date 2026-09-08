@@ -35,9 +35,12 @@ Get-ChildItem -LiteralPath $src -Force | Where-Object {
 }
 
 # 打包内使用说明（模板存于 Build/，纳入版本管理，Rebuild 不会丢）
+# 版本号自动正则替换：模板里写死的历史版本会被刷成当前 $ver，发版无需手改模板
 $readmeTpl = Join-Path $PSScriptRoot '使用说明 README.txt'
 if (Test-Path -LiteralPath $readmeTpl) {
     $txt = [IO.File]::ReadAllText($readmeTpl)
+    $txt = [regex]::Replace($txt, 'v\d+\.\d+\.\d+', ('v' + $ver))
+    $txt = [regex]::Replace($txt, '\d+\.\d+\.\d{4}\.\d{4}', ($ver + '.2026.' + (Get-Date -Format 'MMdd')))
     [IO.File]::WriteAllText((Join-Path $stagedir '使用说明 README.txt'), $txt, [Text.UTF8Encoding]::new($true))
     Write-Host '使用说明 README.txt: included'
 } else {

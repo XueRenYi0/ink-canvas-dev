@@ -18,11 +18,12 @@ Write-Host ('MSBuild exit: ' + $LASTEXITCODE)
 # 版本号（与 AssemblyInfo.cs / InkCanvas.iss / build-zips.ps1 保持一致，升级时四处同步改）
 $ver = '6.1.0'
 
-# 版本 README 刷新
+# 版本 README 刷新（正则自动替换任意历史版本号，发版无需手改模板）
 $readme = Join-Path $out '使用说明 README.txt'
 if (Test-Path -LiteralPath $readme) {
     $txt = [IO.File]::ReadAllText($readme)
-    $txt = $txt.Replace('2.1.0', $ver).Replace('2.1.2026.0829', $ver + '.2026.0829').Replace('5.1.0', $ver).Replace('5.1.2026.0829', $ver + '.2026.0829')
+    $txt = [regex]::Replace($txt, 'v\d+\.\d+\.\d+', ('v' + $ver))
+    $txt = [regex]::Replace($txt, '\d+\.\d+\.\d{4}\.\d{4}', ($ver + '.2026.' + (Get-Date -Format 'MMdd')))
     [IO.File]::WriteAllText($readme, $txt, [Text.UTF8Encoding]::new($false))
     Write-Host ('README updated to ' + $ver)
 }
