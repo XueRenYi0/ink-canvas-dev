@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$msb = 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe',
     [string]$csproj = '',
     [string]$releases = ''
@@ -9,7 +9,8 @@ $repo = Split-Path -Parent $PSScriptRoot
 if (-not $csproj)   { $csproj   = Join-Path $repo 'Ink Canvas\Ink Canvas.csproj' }
 if (-not $releases) { $releases = Join-Path $repo 'Releases' }
 $ErrorActionPreference = 'Continue'
-$out = Split-Path $csproj -Parent ; $out = Join-Path $out 'bin\Release'
+# 统一输出目录（csproj 已把 Debug/Release 都指向 bin\Inkboard，见 Ink Canvas.csproj 顶层 OutputPath）
+$out = Split-Path $csproj -Parent ; $out = Join-Path $out 'bin\Inkboard'
 Write-Host ('--- MSBuild Rebuild Release (AnyCPU 32位首选，与 VS Debug 配置一致) ---')
 & $msb $csproj /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /v:minimal
 Write-Host ('MSBuild exit: ' + $LASTEXITCODE)

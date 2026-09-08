@@ -1,7 +1,8 @@
-$ErrorActionPreference = 'Continue'
+﻿$ErrorActionPreference = 'Continue'
 $repo = Split-Path -Parent $PSScriptRoot
 $r = Join-Path $repo 'Releases'
-$src = Join-Path $repo 'Ink Canvas\bin\Release'
+# 统一输出目录（csproj 已把 Debug/Release 都指向 bin\Inkboard）
+$src = Join-Path $repo 'Ink Canvas\bin\Inkboard'
 
 if (-not (Test-Path -LiteralPath (Join-Path $src 'Inkboard.exe'))) {
     Write-Host ('未找到编译产物: ' + $src + '\Inkboard.exe — 请先运行 rebuild-release-v5.ps1')
