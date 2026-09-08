@@ -256,6 +256,16 @@ namespace Ink_Canvas
             ShowToastNotification("已恢复默认快捷键");
         }
 
+        /// <summary>右键菜单：手动检查更新（走 App 的镜像回退链；无新版/失败都弹提示）</summary>
+        private void MenuItemCheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                (Application.Current as App)?.CheckForUpdate(true);
+            }
+            catch { }
+        }
+
         #region 全局逃生热键
 
         /// <summary>

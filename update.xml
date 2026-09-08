@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AutoUpdater.NET 版本描述文件（软件启动时拉取对比本地版本） -->
+<!-- 发版流程：更新 version + changelog + url 三个字段，随 master 推送即可生效 -->
+<!-- url 使用 gh-proxy 国内镜像加速；镜像失效时软件会自动回退直连 GitHub -->
+<item>
+    <version>6.1.0</version>
+    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.1.0/Inkboard-v6.1.0-Setup.exe</url>
+    <changelog>
+        v6.1.0 图片操作与墨迹统一：插入即选中、完整操作条（删除/翻转/复制模式/适配白板宽度）、8 方向手柄缩放、
+        统一还原、剪贴板 ISF 墨迹格式；操作条精简为 10 键；笔/橡皮/选择方式独立面板；悬浮栏双色色点；
+        修复截图带选框、选中区域无法落笔等 bug。
+    </changelog>
+    <mandatory mode="2">false</mandatory>
+</item>

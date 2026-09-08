@@ -140,6 +140,9 @@ namespace Ink_Canvas
         public bool IsAutoHideCanvas { get; set; } = true;
         [JsonProperty("isAutoEnterModeFinger")]
         public bool IsAutoEnterModeFinger { get; set; } = false;
+        /// <summary>启动时自动检查更新（默认开；关闭后仍可从悬浮条右键菜单手动检查）</summary>
+        [JsonProperty("isAutoCheckUpdate")]
+        public bool IsAutoCheckUpdate { get; set; } = true;
     }
 
     public class Appearance

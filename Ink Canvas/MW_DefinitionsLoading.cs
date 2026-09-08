@@ -261,6 +261,8 @@ namespace Ink_Canvas
             {
                 ToggleSwitchAutoEnterModeFinger.IsOn = false;
             }
+            // 自动更新开关回显（新字段有默认值 true，老配置文件缺字段也安全）
+            ToggleSwitchAutoCheckUpdate.IsOn = Settings.Startup.IsAutoCheckUpdate;
             if (Settings.Startup.IsAutoHideCanvas)
             {
                 if (isStartup)

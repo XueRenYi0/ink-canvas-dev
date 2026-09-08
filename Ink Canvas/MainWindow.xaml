@@ -445,6 +445,7 @@
                             <ui:SimpleStackPanel Spacing="12">
                                 <ui:ToggleSwitch Name="ToggleSwitchAutoHideCanvas" Header="自动隐藏画板" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchAutoHideCanvas_Toggled"/>
                                 <ui:ToggleSwitch Name="ToggleSwitchAutoEnterModeFinger" Header="自动进入手指模式" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchAutoEnterModeFinger_Toggled"/>
+                                <ui:ToggleSwitch Name="ToggleSwitchAutoCheckUpdate" Header="启动时检查更新（国内镜像加速）" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchAutoCheckUpdate_Toggled"/>
                             </ui:SimpleStackPanel>
                         </GroupBox>
                         <GroupBox Header="画板">
@@ -1036,6 +1037,7 @@
                         <!--右键快捷菜单：全部复用现有 handler（签名兼容 RoutedEventArgs）-->
                         <ContextMenu>
                             <MenuItem Header="设置" Click="SymbolIconSettings_Click"/>
+                            <MenuItem Header="检查更新" Click="MenuItemCheckUpdate_Click"/>
                             <MenuItem Header="快捷键">
                                 <MenuItem Header="查看快捷键" Click="MenuItemShowShortcuts_Click"/>
                                 <MenuItem Header="恢复默认快捷键" Click="MenuItemResetShortcuts_Click"/>

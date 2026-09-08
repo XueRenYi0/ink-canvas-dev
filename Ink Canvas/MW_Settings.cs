@@ -101,6 +101,14 @@ namespace Ink_Canvas
             SaveSettingsToFile();
         }
 
+        private void ToggleSwitchAutoCheckUpdate_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!isLoaded) return;
+
+            Settings.Startup.IsAutoCheckUpdate = ToggleSwitchAutoCheckUpdate.IsOn;
+            SaveSettingsToFile();
+        }
+
         #endregion
 
         #region Appearance
