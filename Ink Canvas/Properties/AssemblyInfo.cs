@@ -57,6 +57,7 @@ using System.Windows;
 // 6.0.2：截图三件套（遮罩框选/掀板去墨/本地图片）、笔图标+色点两排三列+粗细面板、清屏优化、Fluent 图标
 // 6.1.0：图片操作与墨迹统一（操作条/缩放手柄/翻转/复制模式/适配宽度/插入即选中）、
 //        操作条精简为 10 键、双色色点、ISF 剪贴板、笔/橡皮/选择方式独立面板组件
-[assembly: AssemblyVersion("6.1.0.0")]
-[assembly: AssemblyFileVersion("6.1.2026.0908")]
-[assembly: AssemblyInformationalVersion("6.1.0")]
+// v6.1.1：自动更新接入国内镜像回退链（gh-proxy → at9 → 直连）、发版校验脚本修复
+[assembly: AssemblyVersion("6.1.1.0")]
+[assembly: AssemblyFileVersion("6.1.2026.0909")]
+[assembly: AssemblyInformationalVersion("6.1.1")]
