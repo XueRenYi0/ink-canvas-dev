@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- AutoUpdater.NET version description file (fetched on app startup, compared with local version) -->
-<!-- Release steps: update version + changelog + url, then push to master -->
-<!-- IMPORTANT: keep every COMMENT ASCII-only, never Chinese.
-     AutoUpdater.NET downloads with the system ANSI codepage instead of UTF-8, so Chinese text inside
-     comments becomes mojibake and can destroy the comment terminator, swallowing the elements that
-     follow it -> "XML document has an error" and the whole update check fails (hit on 2026-09-10).
-     The changelog TEXT node is safe: garbled text does not break the element structure. -->
-<!-- url goes through the gh-proxy mirror for users inside China, with direct GitHub as fallback -->
+<!-- AutoUpdater.NET version description file (fetched on startup, compared with local version) -->
+<!-- Release steps: update version + url + changelog, then push to master -->
+<!-- IMPORTANT: this file MUST stay pure ASCII (bytes 0-127 only), comments AND changelog included.
+     Reason: AutoUpdater.NET downloads it with WebClient.DownloadString without setting Encoding,
+     which decodes with the system ANSI codepage. Any non-ASCII byte then turns into mojibake that
+     breaks the XML structure and the whole update check fails with "XML document has an error".
+     So the changelog points to the release page (Chinese notes live there) instead of inline text.
+     Verify before pushing: every byte < 128, and [xml]$s parses fine. -->
 <item>
     <version>6.2.3</version>
     <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.2.3/Inkboard-v6.2.3-Setup.exe</url>
-    <changelog>v6.2.3 「更多」面板改版：每个功能图标下加了汉字标签，一眼看清是什么；新增「系统」组（设置 / 检查更新 / 查看快捷键 / 退出）；更新图标与"重启"区分开；去掉用不到的"恢复默认快捷键"。主栏精简：「设置」「退出」「白板底纹」「多人书写」收进「更多」面板，主栏更清爽。快捷键对齐 ClassIn 与 PPT 放映习惯：Ctrl+P 画笔、Ctrl+E 橡皮、Ctrl+M 选择，并新增 Ctrl+A 全选。滚动修复：滚动位置改为按页记忆（切页回来还在原处，不再"滚不回去"）；滚动时选中框与操作条会跟随；选中状态下在选框内滚轮也能滚动了（原来时灵时不灵）。滚动指示器（左右胶囊）改为按需浮现：去掉厚重外框、改窄长比例、静止 3 秒淡出、无内容时隐藏。「检查更新」现在全程有反馈：点击后立刻提示"正在检查"，已是最新或失败都会明确告知。</changelog>
+    <changelog>https://github.com/XueRenYi0/ink-canvas-dev/releases/tag/v6.2.3</changelog>
     <mandatory mode="2">false</mandatory>
 </item>
