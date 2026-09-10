@@ -27,7 +27,7 @@
             <!-- ===== 分区一：笔种类（画笔 / 荧光笔 / 激光笔）===== -->
             <UniformGrid Rows="1" Columns="3">
                 <Grid x:Name="BorderPenTypePen" Width="56" Height="46" Background="Transparent"
-                      MouseUp="PenTypeButton_MouseUp" ToolTip="画笔（快捷键 F2）&#10;普通墨迹笔">
+                      MouseUp="PenTypeButton_MouseUp" ToolTip="画笔（快捷键 Ctrl+P）&#10;普通墨迹笔">
                     <Border x:Name="PenTypePenHighlight" CornerRadius="4" Margin="1"
                             Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">

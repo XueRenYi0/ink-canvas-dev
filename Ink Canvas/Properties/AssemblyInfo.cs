@@ -68,6 +68,10 @@ using System.Windows;
 //         滚动修复（滚动位置按页记忆、滚动后选区跟随、选区内滚轮转发）、
 //         滚动胶囊改为按需浮现（去外框、窄长比例、静止淡出、无内容隐藏）、
 //         检查更新全程有反馈（正在检查 / 已是最新 / 失败）
-[assembly: AssemblyVersion("6.2.3.0")]
-[assembly: AssemblyFileVersion("6.2.2026.0910")]
-[assembly: AssemblyInformationalVersion("6.2.3")]
+// v6.3.3：快捷键切换逻辑修复 —— Ctrl+E 橡皮改为幂等（原来按一下切橡皮、再按又切回画笔）；
+//         Ctrl+M 选择改走与"选择墨迹"图标同一条路径（原来实际是隐藏画布，上游遗留的错误实现）；
+//         Ctrl+A 全选可直接触发（原来必须先点过选择图标）；笔/橡皮/选择的提示文本同步更新；
+//         检查更新失败时显示具体原因并写入日志，便于定位
+[assembly: AssemblyVersion("6.3.3.0")]
+[assembly: AssemblyFileVersion("6.3.2026.0910")]
+[assembly: AssemblyInformationalVersion("6.3.3")]

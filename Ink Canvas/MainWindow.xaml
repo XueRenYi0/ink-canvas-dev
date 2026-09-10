@@ -1062,7 +1062,7 @@
                             </local:ClickSensitiveGrid>
                             <!-- ====== 画笔区：笔图标（单击弹出笔设置面板，面板在 Main_Grid 末尾） ====== -->
                             <!-- 笔图标：单击弹出完整笔设置面板（笔种类/粗细/颜色/笔锋，见 Main_Grid 末尾的 PenSettingsPanel） -->
-                            <Grid x:Name="PenIconHost" Width="20" Height="26" Background="Transparent" MouseUp="PenIcon_MouseUp" ToolTip="画笔（快捷键 F2）&#10;单击：切回画笔模式，弹出笔设置面板&#10;点击面板外任意处收起">
+                            <Grid x:Name="PenIconHost" Width="20" Height="26" Background="Transparent" MouseUp="PenIcon_MouseUp" ToolTip="画笔（快捷键 Ctrl+P）&#10;单击：切回画笔模式，弹出笔设置面板&#10;点击面板外任意处收起">
                                 <!-- 选中态高亮底：画笔模式时淡蓝底+蓝边（与选择工具高亮同色），其他工具时透明 -->
                                 <Border x:Name="BorderPenIconHighlight" CornerRadius="4" Margin="-4,-1"
                                         Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
@@ -1121,7 +1121,7 @@
                                              Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
                             </UniformGrid>
-                            <Grid x:Name="EraserContainer" Width="21" Height="24" Margin="0,1.5,-2,0" MouseDown="Border_MouseDown" MouseUp="ImageEraser_MouseUp" Visibility="{Binding ElementName=BtnErase, Path=Visibility}" ToolTip="橡皮擦（快捷键 F4）&#10;单击：切到橡皮模式，弹出橡皮设置面板&#10;面积擦：按面积逐点擦除，大小可选五档&#10;笔画擦：碰到的墨迹整笔删除&#10;面板内还有滑动清屏">
+                            <Grid x:Name="EraserContainer" Width="21" Height="24" Margin="0,1.5,-2,0" MouseDown="Border_MouseDown" MouseUp="ImageEraser_MouseUp" Visibility="{Binding ElementName=BtnErase, Path=Visibility}" ToolTip="橡皮擦（快捷键 Ctrl+E）&#10;单击：切到橡皮模式，弹出橡皮设置面板&#10;面积擦：按面积逐点擦除，大小可选五档&#10;笔画擦：碰到的墨迹整笔删除&#10;面板内还有滑动清屏">
                                 <Image Name="ImageEraser" Margin="0,-4,-1,-2" Source="{DynamicResource ImageSource.RubberNormal}" RenderTransformOrigin="0.5,0.5"/>
                                 <!-- 选中态图标：形状与 ImageEraser 保持一致，颜色改为蓝/橙；通过 UpdateEraserIcon 同步切换 Source -->
                                 <Image Name="ImageEraserMask" Visibility="{Binding Visibility, ElementName=ImageEraser, Converter={StaticResource VisibilityConverter}}" Margin="0,-4,-1,-2" RenderTransformOrigin="0.5,0.5"
@@ -1131,7 +1131,7 @@
                                  原交互"点垃圾桶→弹点击清屏气泡→再点确认"两步废弃，腾出的图标位留给后续工具 -->
                             <!-- 选择墨迹：虚线框 + 箭头光标（示意"拖框选择"）；单击弹出选择方式面板（矩形框选/自由选择） -->
                             <!-- Background=Transparent 使整块区域可命中测试：Grid 默认背景为 null，悬停在虚线框空白处会丢失 ToolTip 和点击 -->
-                            <Grid Name="GridSelectTool" Height="24" Width="20" Background="Transparent" MouseUp="SymbolIconSelect_MouseUp" ToolTip="选择墨迹（快捷键 Alt+S）&#10;单击：切到选择模式，弹出选择方式面板&#10;矩形框选：拖矩形选中框内墨迹&#10;自由选择：套索圈选墨迹&#10;全选：一键选中当前页全部墨迹&#10;选中后可拖动/缩放/旋转">
+                            <Grid Name="GridSelectTool" Height="24" Width="20" Background="Transparent" MouseUp="SymbolIconSelect_MouseUp" ToolTip="选择墨迹（快捷键 Ctrl+M）&#10;单击：切到选择模式，弹出选择方式面板&#10;矩形框选：拖矩形选中框内墨迹&#10;自由选择：套索圈选墨迹&#10;全选：一键选中当前页全部墨迹&#10;选中后可拖动/缩放/旋转">
                                 <!-- 选中高亮框（激活选择模式时显示） -->
                                 <Border x:Name="BorderSelectIconHighlight" CornerRadius="4" Margin="-4,-1"
                                         Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>

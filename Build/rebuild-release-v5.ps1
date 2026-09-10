@@ -16,7 +16,7 @@ Write-Host ('--- MSBuild Rebuild Release (AnyCPU 32位首选，与 VS Debug 配�
 Write-Host ('MSBuild exit: ' + $LASTEXITCODE)
 
 # 版本号（与 AssemblyInfo.cs / InkCanvas.iss / build-zips.ps1 保持一致，升级时四处同步改）
-$ver = '6.2.3'
+$ver = '6.3.3'
 
 # 版本 README 刷新（正则自动替换任意历史版本号，发版无需手改模板）
 $readme = Join-Path $out '使用说明 README.txt'

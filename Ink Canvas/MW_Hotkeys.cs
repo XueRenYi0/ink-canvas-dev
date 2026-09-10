@@ -125,22 +125,19 @@ namespace Ink_Canvas
 
         private void KeyChangeToSelect(object sender, ExecutedRoutedEventArgs e)
         {
-            if (inkCanvas.Visibility == Visibility.Visible)
-            {
-                BtnHideInkCanvas_Click(sender, e);
-            }
+            // 幂等：切到「选择墨迹」工具 —— 与点悬浮条的选择图标走同一条路径（BtnSelect_Click），
+            // 而不是旧的 BtnHideInkCanvas_Click。
+            // 旧实现名义上叫 ChangeToSelect，实际是"隐藏画布"（上游遗留），
+            // 按 Ctrl+M 会把画布藏起来，看起来就是"选择快捷键没反应"。
+            BtnSelect_Click(BtnSelect, null);
         }
 
         private void KeyChangeToEraser(object sender, ExecutedRoutedEventArgs e)
         {
-            if (ImageEraserMask.Visibility == Visibility.Visible)
-            {
-                BorderPenColorRed_MouseUp(null, null);
-            }
-            else
-            {
-                BtnErase_Click(sender, e);
-            }
+            // 幂等：每次都进入橡皮（BtnErase_Click 内部已是"固定进入当前擦除方式，不 toggle"）。
+            // 旧实现是「橡皮 ⇄ 画笔」来回切（依据旧界面控件 ImageEraserMask 的可见性判断），
+            // 表现为按一下切橡皮、再按又切回画笔、再按才又切橡皮 —— 用户以为快捷键坏了。
+            BtnErase_Click(BtnErase, null);
         }
 
         #endregion Hotkeys

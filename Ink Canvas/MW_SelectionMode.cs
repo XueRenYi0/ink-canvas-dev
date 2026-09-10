@@ -113,35 +113,50 @@ namespace Ink_Canvas
         private void SelectAllStrokes()
         {
             CloseSelectionModePanel();
-            if (inkCanvas.EditingMode != InkCanvasEditingMode.Select)
-                inkCanvas.EditingMode = InkCanvasEditingMode.Select;
 
-            StrokeCollection selectedStrokes = new StrokeCollection();
-            foreach (Stroke stroke in inkCanvas.Strokes)
-            {
-                try
-                {
-                    if (stroke.GetBounds().Width > 0 && stroke.GetBounds().Height > 0)
-                        selectedStrokes.Add(stroke);
-                }
-                catch { }
-            }
-
-            // 图片一并全选（与矩形框选同标准：只选当前视图可见的页面图片，
-            // 其他页/隐藏层的不可见图片不参选）——走 Select 双参重载进原生选区
-            var selectedImages = new System.Collections.Generic.List<UIElement>();
+            // 用程序化标志屏蔽副作用，保证「模式切好 → 再 Select」这条链完整走完。
+            // 原因：给 EditingMode 赋值会「内联」触发 SelectionChanged（见 MW_GraphStrokes.cs 的说明），
+            // 而那一刻还没有任何选中 → 会走到"取消选中"分支（TryEndOneShotSelection 等），
+            // 可能把模式恢复回画笔，于是紧接着的 Select 落在非选择模式下白做
+            // —— 表现就是"直接按 Ctrl+A 没反应，必须先用鼠标点过选择图标"。
+            isProgramChangeStrokeSelection = true;
             try
             {
-                foreach (var img in _imagePageKey.Keys)
-                {
-                    if (img.Visibility != Visibility.Visible) continue;
-                    selectedImages.Add(img);
-                }
-            }
-            catch { }
+                if (inkCanvas.EditingMode != InkCanvasEditingMode.Select)
+                    inkCanvas.EditingMode = InkCanvasEditingMode.Select;
 
-            // 空集 = 清空选中（与框选行为一致）
-            inkCanvas.Select(selectedStrokes, selectedImages);
+                StrokeCollection selectedStrokes = new StrokeCollection();
+                foreach (Stroke stroke in inkCanvas.Strokes)
+                {
+                    try
+                    {
+                        if (stroke.GetBounds().Width > 0 && stroke.GetBounds().Height > 0)
+                            selectedStrokes.Add(stroke);
+                    }
+                    catch { }
+                }
+
+                // 图片一并全选（与矩形框选同标准：只选当前视图可见的页面图片，
+                // 其他页/隐藏层的不可见图片不参选）——走 Select 双参重载进原生选区
+                var selectedImages = new System.Collections.Generic.List<UIElement>();
+                try
+                {
+                    foreach (var img in _imagePageKey.Keys)
+                    {
+                        if (img.Visibility != Visibility.Visible) continue;
+                        selectedImages.Add(img);
+                    }
+                }
+                catch { }
+
+                // 空集 = 清空选中（与框选行为一致）
+                inkCanvas.Select(selectedStrokes, selectedImages);
+            }
+            finally { isProgramChangeStrokeSelection = false; }
+
+            // 上面的标志把 SelectionChanged 一并挡掉了（选区覆盖层/操作条不会自动出现），
+            // 这里手动补一次选中态刷新——与 MW_GraphStrokes 插入图形后的做法一致
+            inkCanvas_SelectionChanged(inkCanvas, EventArgs.Empty);
         }
 
         /// <summary>切换选择方式面板显隐（选择图标单击入口）</summary>
