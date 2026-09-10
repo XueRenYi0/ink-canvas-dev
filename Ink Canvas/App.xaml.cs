@@ -143,7 +143,13 @@ namespace Ink_Canvas
             {
                 if (args == null || args.Error != null)
                 {
-                    Ink_Canvas.MainWindow.ShowUpdateTip("检查更新失败：网络不可用或更新服务器暂不可达");
+                    // 别只说"网络不可用"——把库返回的具体原因一并显示与记录，
+                    // 否则失败原因永远查不出来（上一版就吃了这个亏：只提示笼统失败、日志里又没记）
+                    string detail = args?.Error != null
+                        ? $"{args.Error.GetType().Name}：{args.Error.Message}"
+                        : "无法访问更新服务器（未取得更新信息）";
+                    LogHelper.NewLog($"Update check failed: {detail}");
+                    Ink_Canvas.MainWindow.ShowUpdateTip($"检查更新失败：{detail}");
                     return;
                 }
 
