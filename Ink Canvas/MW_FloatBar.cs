@@ -588,9 +588,66 @@ namespace Ink_Canvas
             }
             else
             {
+                // 板面组跟随白板状态：非白板模式整组灰显（"不适用功能灰显"规范，与笔面板笔锋区同款）。
+                // 主栏那两个图标是靠 Visibility 绑定直接隐藏，但面板里若也隐藏会让布局跳动，故改为灰显。
+                bool boardActive = GridBackgroundCover.Visibility == Visibility.Visible;
+                MoreToolsBoardSection.IsEnabled = boardActive;
+                MoreToolsBoardSection.Opacity = boardActive ? 1.0 : 0.35;
+
                 BorderTools.Visibility = Visibility.Visible;
             }
         }
+
+
+        #region 更多面板条目（BorderTools 扩充内容）
+
+        /// <summary>
+        /// 更多面板里的条目尽量直接复用现成 handler（多人物写 BorderMultiTouchMode_MouseUp、重做 SymbolIconRedo_MouseUp 等）。
+        /// 仅以下两个需要包一层：
+        /// </summary>
+
+        /// <summary>更多面板·白板底纹：菜单以本条目自身为锚点弹出
+        /// （不写死某个元素当锚点，这样菜单会从被点击的条目位置弹出，而不是跑到主栏或别处）</summary>
+        private void MoreToolsWhiteboardPattern_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            ShowWhiteboardPatternMenu(sender as FrameworkElement, placeBelow: false);
+        }
+
+        /// <summary>更多面板·打开设置</summary>
+        private void MoreToolsSettings_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            BorderTools.Visibility = Visibility.Collapsed;
+            BtnSettings_Click(BtnSettings, null);
+        }
+
+        /// <summary>更多面板·检查更新（手动检查：已是最新版本时会给出提示）</summary>
+        private void MoreToolsCheckUpdate_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            BorderTools.Visibility = Visibility.Collapsed;
+            (Application.Current as App)?.CheckForUpdate(true);
+        }
+
+        /// <summary>更多面板·白板 / 黑板切换（从白板底纹菜单顶部拆出来的独立入口；
+        /// 复用 BtnSwitchTheme_Click 的全套联动：板面色、UI 深浅主题、白板/黑板文案）</summary>
+        private void MoreToolsBoardTheme_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            BtnSwitchTheme_Click(null, null);
+        }
+
+        /// <summary>更多面板·查看快捷键（原笑脸右键菜单 →「快捷键 → 查看快捷键」）</summary>
+        private void MoreToolsShowShortcuts_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            BorderTools.Visibility = Visibility.Collapsed;
+            MenuItemShowShortcuts_Click(null, null);
+        }
+
+        /// <summary>更多面板·退出（原主栏退出图标 + 笑脸右键菜单「退出」，内部有二次确认）</summary>
+        private void MoreToolsExit_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            BtnExit_Click(null, null);
+        }
+
+        #endregion
 
 
         #region Drag

@@ -55,6 +55,7 @@ namespace Ink_Canvas
             {
                 var timeMachineHistory = timeMachine.ExportTimeMachineHistory();
                 TimeMachineHistories[0] = timeMachineHistory;
+                NoteScroll_SavePageOffset(0); // 批注层（页 0）同样记忆滚动位置
                 timeMachine.ClearStrokeHistory();
 
             }
@@ -62,6 +63,7 @@ namespace Ink_Canvas
             {
                 var timeMachineHistory = timeMachine.ExportTimeMachineHistory();
                 TimeMachineHistories[CurrentWhiteboardIndex] = timeMachineHistory;
+                NoteScroll_SavePageOffset(CurrentWhiteboardIndex); // 记下本页滚动位置（滚动是坐标物化，须随页保存）
                 timeMachine.ClearStrokeHistory();
             }
         }
@@ -87,6 +89,7 @@ namespace Ink_Canvas
                     {
                         ApplyHistoryToCanvas(item);
                     }
+                    NoteScroll_RestorePageOffset(0); // 恢复批注层的滚动位置
                 }
                 else
                 {
@@ -95,6 +98,7 @@ namespace Ink_Canvas
                     {
                         ApplyHistoryToCanvas(item);
                     }
+                    NoteScroll_RestorePageOffset(CurrentWhiteboardIndex); // 恢复本页滚动位置（修"切回来滚不回去"）
                 }
             }
             catch { }
@@ -156,6 +160,7 @@ namespace Ink_Canvas
                 for (int i = WhiteboardTotalCount; i > CurrentWhiteboardIndex; i--)
                 {
                     TimeMachineHistories[i] = TimeMachineHistories[i - 1];
+                    _pageScrollOffsets[i] = _pageScrollOffsets[i - 1]; // 滚动位置随页同步后移
                 }
             }
 
@@ -173,6 +178,7 @@ namespace Ink_Canvas
                 for (int i = CurrentWhiteboardIndex; i <= WhiteboardTotalCount; i++)
                 {
                     TimeMachineHistories[i] = TimeMachineHistories[i + 1];
+                    _pageScrollOffsets[i] = _pageScrollOffsets[i + 1]; // 滚动位置随页同步前移
                 }
             }
             else

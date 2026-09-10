@@ -23,7 +23,7 @@
 ; =====================================================================
 
 #define MyAppName "Inkboard"
-#define MyAppVersion "6.2.2"
+#define MyAppVersion "6.2.3"
 #define MyAppExeName "Inkboard.exe"
 #define MyAppPublisher "XueRenYi0"
 ; 旧名（v5.x 及之前），仅在迁移清理代码中使用

@@ -62,6 +62,12 @@ using System.Windows;
 //         笔面板新增「墨迹识别 / 显示光标」开关区）、悬浮栏双指手势锁迁入快捷设置弹层、
 //         识别出的图形粗细统一（去掉硬编码假笔锋，与圆/椭圆表现一致）、
 //         墨迹识别改为「最少笔优先」，减少多笔误合并导致的误判
-[assembly: AssemblyVersion("6.2.2.0")]
+// v6.2.3：「更多」面板改版（条目加汉字标签、新增「系统」组、检查更新换 Download 图标、去掉恢复默认快捷键）、
+//         主栏精简（设置/退出/白板底纹/多人书写收进更多面板）、快捷键对齐 ClassIn
+//         （Ctrl+P 笔 / Ctrl+E 橡皮 / Ctrl+M 选择 / 新增 Ctrl+A 全选）、
+//         滚动修复（滚动位置按页记忆、滚动后选区跟随、选区内滚轮转发）、
+//         滚动胶囊改为按需浮现（去外框、窄长比例、静止淡出、无内容隐藏）、
+//         检查更新全程有反馈（正在检查 / 已是最新 / 失败）
+[assembly: AssemblyVersion("6.2.3.0")]
 [assembly: AssemblyFileVersion("6.2.2026.0910")]
-[assembly: AssemblyInformationalVersion("6.2.2")]
+[assembly: AssemblyInformationalVersion("6.2.3")]

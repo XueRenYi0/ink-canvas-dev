@@ -37,12 +37,19 @@ namespace Ink_Canvas
 
             _shortcutActions = new List<ShortcutAction>
             {
-                new ShortcutAction { Id = "Pen",       Name = "画笔",       DefaultGesture = "F2",
+                // 笔 / 橡皮 / 选择 / 全选 采用 ClassIn 与 PowerPoint 放映模式一致的键位：
+                //   Ctrl+P 画笔、Ctrl+E 橡皮、Ctrl+M 选择&移动、Ctrl+A 全选
+                // 老师在 PPT 放映里按惯了这几个键（Ctrl+P/E 就是笔和橡皮），换到画板不用重新适应。
+                // 注：旧版是 F2 / F3 / F4（上游 Ink-Canvas 传统），本版起替换；
+                //     静态绑定的 Alt+S / Alt+E / Alt+D 仍在（不同修饰键，不冲突）。
+                new ShortcutAction { Id = "Pen",       Name = "画笔",       DefaultGesture = "Ctrl+P",
                     Execute = () => BtnPen_Click(BtnPen, null) },
-                new ShortcutAction { Id = "Eraser",    Name = "橡皮",       DefaultGesture = "F3",
+                new ShortcutAction { Id = "Eraser",    Name = "橡皮",       DefaultGesture = "Ctrl+E",
                     Execute = () => KeyChangeToEraser(null, null) },
-                new ShortcutAction { Id = "Select",    Name = "选择",       DefaultGesture = "F4",
+                new ShortcutAction { Id = "Select",    Name = "选择",       DefaultGesture = "Ctrl+M",
                     Execute = () => KeyChangeToSelect(null, null) },
+                new ShortcutAction { Id = "SelectAll", Name = "全选",       DefaultGesture = "Ctrl+A",
+                    Execute = () => SelectAllStrokes() },
                 new ShortcutAction { Id = "Undo",      Name = "撤销",       DefaultGesture = "Ctrl+Z",
                     //走和菜单栏/悬浮条完全相同的 BtnUndo_Click（TimeMachine 历史栈）。
                     //原来的 back_HotKey 是上游遗留：绕过历史栈直接删最后一条笔迹，

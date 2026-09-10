@@ -972,10 +972,24 @@ namespace Ink_Canvas
         /// <summary>Ctrl+滚轮：缩放批注（有选区缩放选区，无选区缩放整屏；与 Ctrl+加减号同语义，可撤销）</summary>
         private void GridInkCanvasSelectionCover_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control) return;
-            if (Math.Abs(e.Delta) < 1) return;
+            // Ctrl+滚轮 = 缩放当前选区（原有行为）
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                if (Math.Abs(e.Delta) >= 1 && ScaleAllOrSelection(e.Delta > 0 ? 1.1 : 0.9)) e.Handled = true;
+                return;
+            }
 
-            if (ScaleAllOrSelection(e.Delta > 0 ? 1.1 : 0.9)) e.Handled = true;
+            // 非 Ctrl：滚轮要滚动笔记——必须在这里转发。
+            // 原因：选区命中区（BorderSelectionHitArea，覆盖选中框附近）盖在 inkCanvas 之上，
+            // 且两者是"兄弟节点"（都在同一个外层 Grid 里）→ 滚轮事件目标是命中区时，
+            // inkCanvas 不在冒泡路径上，InkCanvas_PreviewMouseWheel 永远收不到。
+            // 表现就是"鼠标落在选区内滚轮没反应、落在选区外又正常"这种时灵时不灵的怪象
+            // （滚动胶囊的滑块也因此停着不动，看着像"找不到"）。
+            if (!IsNoteScrollActive) return;
+            var notches = e.Delta / 120.0;
+            if (Math.Abs(notches) < 0.01) return;
+            ScrollNote(-notches * NoteScrollWheelStep);
+            e.Handled = true;
         }
 
         #endregion 选区手柄拖动缩放 + Ctrl+滚轮缩放

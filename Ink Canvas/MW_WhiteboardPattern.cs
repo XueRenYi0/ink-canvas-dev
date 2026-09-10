@@ -141,14 +141,11 @@ namespace Ink_Canvas
             e.Handled = true;
         }
 
-        /// <summary>
-        /// 悬浮栏底纹图标点击：触摸/手写笔可达入口（右键白板空白处为鼠标入口，同一菜单）。
-        /// 菜单从按钮锚点弹出（不依赖鼠标位置），白板模式下随时可用。
-        /// </summary>
-        private void GridWhiteboardPatternIcon_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            ShowWhiteboardPatternMenu(GridWhiteboardPattern, placeBelow: true);
-        }
+        // 注：原「悬浮栏底纹图标点击」入口 GridWhiteboardPatternIcon_MouseUp 已随主栏图标一并移除
+        //（v6.2.2 起底纹收进更多面板）。底纹菜单现有两个入口：
+        //   1) 更多面板「板面」组的白板底纹条目 → MW_FloatBar.MoreToolsWhiteboardPattern_MouseUp
+        //   2) 右键白板空白处（鼠标入口）
+        // 两者最终都调用下面的 ShowWhiteboardPatternMenu。
 
         /// <summary>
         /// 构建并弹出底纹菜单（每次现建，勾选与滑块值实时准确）。

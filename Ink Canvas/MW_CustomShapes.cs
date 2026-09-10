@@ -376,6 +376,20 @@ namespace Ink_Canvas
         /// 传入 onClick 则提示可点击（手型光标），点击执行动作并立即收起；
         /// 未传 onClick 时不拦截鼠标（IsHitTestVisible=false），不打断书写。失败静默（仅反馈增强，非关键路径）。
         /// </summary>
+        /// <summary>
+        /// 自动更新流程的提示入口（供 App.xaml.cs 静态调用）。
+        /// 背景：点击「检查更新」后要立刻有回应；而"已是最新版本 / 检查失败"这两种结果
+        /// 原先都是静默的（AutoUpdater.NET 只在新版本时弹窗），用户以为点了没反应。
+        /// </summary>
+        internal static void ShowUpdateTip(string message)
+        {
+            try
+            {
+                (Application.Current?.MainWindow as MainWindow)?.ShowToastNotification(message);
+            }
+            catch { }
+        }
+
         private void ShowToastNotification(string message, Action onClick = null)
         {
             try

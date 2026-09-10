@@ -56,9 +56,9 @@ namespace Ink_Canvas
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Children.Clear();
                 isInMultiTouchMode = false;
-                //切回单人书写：显示单人像（自绘 Path，与工具栏描边风格统一）
-                PathPersonSingle.Visibility = Visibility.Visible;
-                PathPeopleMulti.Visibility = Visibility.Collapsed;
+                //切回单人书写：显示单人像（图标已从主栏迁到更多面板的板面组）
+                PathMorePersonSingle.Visibility = Visibility.Visible;
+                PathMorePeopleMulti.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -74,8 +74,8 @@ namespace Ink_Canvas
                 ImageLayer_EnsureHost(); //图片层宿主被上面的 Clear 一并清掉，此处自愈挂回
                 isInMultiTouchMode = true;
                 //开启多指书写：显示双人像（左前大人 + 右后小孩，错位布局）
-                PathPersonSingle.Visibility = Visibility.Collapsed;
-                PathPeopleMulti.Visibility = Visibility.Visible;
+                PathMorePersonSingle.Visibility = Visibility.Collapsed;
+                PathMorePeopleMulti.Visibility = Visibility.Visible;
             }
         }
 

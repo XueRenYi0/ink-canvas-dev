@@ -99,24 +99,69 @@ namespace Ink_Canvas
         /// 手动检查（showNoUpdateTip=true）时无新版会弹提示，自动检查不弹。
         /// 供 MainWindow 右键菜单"检查更新"复用。
         /// </summary>
+        /// <summary>本次检查是否由用户手动触发（决定"已是最新"要不要提示；自动检查保持静默不打扰）</summary>
+        static bool _isManualUpdateCheck;
+
         public void CheckForUpdate(bool showNoUpdateTip)
         {
+            _isManualUpdateCheck = showNoUpdateTip;
+
+            // 手动检查：立刻给个回应（否则要等几秒才有窗口，用户以为点了没反应）
+            if (showNoUpdateTip) Ink_Canvas.MainWindow.ShowUpdateTip("正在检查更新…");
+
+            // 订阅结果回调。注意：一旦订阅，AutoUpdater.NET 就**不再自行弹窗**，
+            // 三种结果（有新版本 / 已是最新 / 失败）全部由 OnAutoUpdaterCheckForUpdateEvent 接管
+            // —— 这是库的既定行为（官方文档：事件代码 "instead of showing the update dialog"）。
+            AutoUpdater.CheckForUpdateEvent -= OnAutoUpdaterCheckForUpdateEvent;
+            AutoUpdater.CheckForUpdateEvent += OnAutoUpdaterCheckForUpdateEvent;
+            AutoUpdater.ApplicationExitEvent += () => Environment.Exit(0);
+
             foreach (var url in UpdateXmlUrls)
             {
                 try
                 {
                     AutoUpdater.Start(url);
-                    AutoUpdater.ApplicationExitEvent += () => Environment.Exit(0);
-                    return; //Start 不抛错即视为受理（后续弹窗由库接管）
+                    return; // 请求已受理，真正的结果由上面的回调给出
                 }
                 catch (Exception ex)
                 {
                     LogHelper.NewLog($"Update check failed via {url}: {ex.Message}");
                 }
             }
+
+            // 所有镜像连请求都没发出去
             if (showNoUpdateTip)
-                MessageBox.Show("检查更新失败：网络不可用或更新服务器暂不可达。\n请稍后重试，或到 GitHub Releases 页面手动下载。",
-                    "检查更新", MessageBoxButton.OK, MessageBoxImage.Information);
+                Ink_Canvas.MainWindow.ShowUpdateTip("检查更新失败：网络不可用或更新服务器暂不可达");
+        }
+
+        /// <summary>
+        /// 更新检查结果回调（订阅 CheckForUpdateEvent 后，UI 由本方法全权接管）。
+        /// </summary>
+        static void OnAutoUpdaterCheckForUpdateEvent(UpdateInfoEventArgs args)
+        {
+            try
+            {
+                if (args == null || args.Error != null)
+                {
+                    Ink_Canvas.MainWindow.ShowUpdateTip("检查更新失败：网络不可用或更新服务器暂不可达");
+                    return;
+                }
+
+                if (args.IsUpdateAvailable)
+                {
+                    // 有新版本：沿用库自带的标准更新窗口（原由库自动弹，订阅事件后需自己调）
+                    AutoUpdater.ShowUpdateForm(args);
+                }
+                else if (_isManualUpdateCheck)
+                {
+                    // 手动检查且已是最新：给明确反馈（自动检查保持静默，不打扰上课）
+                    Ink_Canvas.MainWindow.ShowUpdateTip($"当前已是最新版本（v{args.InstalledVersion}）");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.NewLog($"Update check event failed: {ex.Message}");
+            }
         }
 
         #endregion

@@ -3,12 +3,17 @@
 <!-- 发版流程：更新 version + changelog + url 三个字段，随 master 推送即可生效 -->
 <!-- url 使用 gh-proxy 国内镜像加速；镜像失效时软件会自动回退直连 GitHub -->
 <item>
-    <version>6.2.2</version>
-    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.2.2/Inkboard-v6.2.2-Setup.exe</url>
+    <version>6.2.3</version>
+    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.2.3/Inkboard-v6.2.3-Setup.exe</url>
     <!-- changelog 必须用 CDATA 包裹：多行文本若直接写节点 text，XML 会把换行/缩进规范化成空格，
          AutoUpdater.NET 解析后 trim 掉就变成空白（v6.2.2 首次推送时踩过，更新说明显示为空）。 -->
-    <changelog><![CDATA[v6.2.2 笔相关设置统一收进笔面板：设置页的画笔粗细、显示画笔光标、画笔样式（笔锋）、橡皮模式、橡皮大小、墨迹识别六项已隐藏，改为点悬浮栏笔图标，在笔面板中调整（笔面板新增「墨迹识别 / 显示光标」开关区）；悬浮栏双指手势锁迁入快捷设置弹层。
-修复：识别出的三角形、矩形、平行四边形等图形粗细不均（四角细、边中粗），去掉硬编码的假笔锋，图形统一为均匀粗细，与圆、椭圆表现一致。
-优化：墨迹识别改为「最少笔优先」，从最后一笔开始尝试，命中即停，显著减少分开画多笔时被误合并成错误图形的情况（仍支持分笔画图形）。]]></changelog>
+    <changelog><![CDATA[v6.2.3 「更多」面板改版：每个功能图标下加了汉字标签，一眼看清是什么；新增「系统」组
+（设置 / 检查更新 / 查看快捷键 / 退出）；更新图标与"重启"区分开；去掉用不到的"恢复默认快捷键"。
+主栏精简：「设置」「退出」「白板底纹」「多人书写」收进「更多」面板，主栏更清爽。
+快捷键对齐 ClassIn 与 PPT 放映习惯：Ctrl+P 画笔、Ctrl+E 橡皮、Ctrl+M 选择，并新增 Ctrl+A 全选。
+滚动修复：滚动位置改为按页记忆（切页回来还在原处，不再"滚不回去"）；滚动时选中框/操作条会跟随；
+选中状态下在选框内滚轮也能滚动了（原来时灵时不灵）。
+滚动指示器（左右胶囊）改为按需浮现：去掉厚重外框、改窄长比例、静止 3 秒淡出、无内容时隐藏。
+「检查更新」现在全程有反馈：点击后立刻提示"正在检查"，已是最新或失败都会明确告知。]]></changelog>
     <mandatory mode="2">false</mandatory>
 </item>
