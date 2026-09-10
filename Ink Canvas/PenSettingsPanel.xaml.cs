@@ -36,6 +36,12 @@ namespace Ink_Canvas
         /// <summary>自定义颜色格右键被点击：请求重新打开取色板换色（左键是"使用颜色"语义）</summary>
         public event Action CustomColorReselectRequested;
 
+        /// <summary>开关区「墨迹识别」被点击：请求切换开关（原设置面板「墨迹识别」组，设置里已隐藏）</summary>
+        public event Action InkToShapeToggled;
+
+        /// <summary>开关区「显示光标」被点击：请求切换开关（原设置面板「画板」组，设置里已隐藏）</summary>
+        public event Action CursorToggled;
+
         // ===== 状态更新入口（MainWindow 调用，用于同步面板高亮） =====
 
         /// <summary>注入 9 个颜色（前 5 色支持 Colors\*.ini 自定义，后 4 色为白/橙/紫/青固定色）</summary>
@@ -151,6 +157,18 @@ namespace Ink_Canvas
             SetGridHighlight(TaperNoneHighlight, style == 2);
         }
 
+        /// <summary>刷新开关区「墨迹识别」选中态（on=开启：淡蓝底 + 蓝边）</summary>
+        public void UpdateInkToShapeState(bool on)
+        {
+            SetGridHighlight(InkToShapeHighlight, on);
+        }
+
+        /// <summary>刷新开关区「显示光标」选中态（on=开启：淡蓝底 + 蓝边）</summary>
+        public void UpdateCursorState(bool on)
+        {
+            SetGridHighlight(ShowCursorHighlight, on);
+        }
+
         // ===== 内部实现 =====
 
         /// <summary>选中态视觉：淡蓝底 + 蓝边，未选中透明</summary>
@@ -243,6 +261,14 @@ namespace Ink_Canvas
             if (sender == BorderTaperEnd) TaperSelected?.Invoke(0);
             else if (sender == BorderTaperSpeed) TaperSelected?.Invoke(1);
             else if (sender == BorderTaperNone) TaperSelected?.Invoke(2);
+        }
+
+        // 开关区两个按钮共用：只抛"我要切换"事件，具体取反与落盘由 MainWindow 处理
+        // （面板不知道当前是开还是关，状态一律由 Update*State 回显，避免两边状态各记一份）
+        private void ToggleButton_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender == BorderInkToShape) InkToShapeToggled?.Invoke();
+            else if (sender == BorderShowCursor) CursorToggled?.Invoke();
         }
     }
 }

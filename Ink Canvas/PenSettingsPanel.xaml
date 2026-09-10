@@ -248,6 +248,30 @@
                 </Grid>
             </UniformGrid>
 
+            <!-- 分隔线 -->
+            <Border Height="1" Background="{DynamicResource FloatBarForeground}" Opacity="0.2" Margin="2,6,2,6"/>
+
+            <!-- ===== 分区五：开关区（墨迹识别 / 显示光标）=====
+                 原分别在设置面板「墨迹识别」组与「画板」组，收进笔面板统一入口（设置里已隐藏）。
+                 样式同笔锋区：圆角高亮 + 文字，点击即切换；选中（淡蓝底 + 蓝边）= 开启。
+                 与笔种类无关——荧光笔/激光笔下同样可用，故不参与灰显。 -->
+            <UniformGrid Rows="1" Columns="2">
+                <Grid x:Name="BorderInkToShape" Width="80" Height="28" Background="Transparent"
+                      MouseUp="ToggleButton_MouseUp" ToolTip="墨迹识别（Beta）&#10;手绘的圆/三角形/矩形自动转成规范图形">
+                    <Border x:Name="InkToShapeHighlight" CornerRadius="4" Margin="1"
+                            Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
+                    <TextBlock Text="墨迹识别" FontSize="10" Foreground="{DynamicResource FloatBarForeground}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+                <Grid x:Name="BorderShowCursor" Width="80" Height="28" Background="Transparent"
+                      MouseUp="ToggleButton_MouseUp" ToolTip="显示画笔光标&#10;书写时笔尖显示光标圆环，方便对准落笔点">
+                    <Border x:Name="ShowCursorHighlight" CornerRadius="4" Margin="1"
+                            Background="Transparent" BorderBrush="Transparent" BorderThickness="1.5"/>
+                    <TextBlock Text="显示光标" FontSize="10" Foreground="{DynamicResource FloatBarForeground}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </UniformGrid>
+
         </StackPanel>
     </Border>
 </UserControl>

@@ -75,20 +75,38 @@ namespace Ink_Canvas
                             {
                                 if (!inkCanvas.Strokes.Contains(circles[i].Stroke)) circles.RemoveAt(i);
                             }
+                            // ===== 最少笔优先 =====
+                            // 从「仅最后一笔」开始识别，逐步往前加笔画，命中任一支持形状即停。
+                            //
+                            // 背景：InkAnalyzer 的布局分析会把空间上邻近的多条笔迹**聚成一个图形**，
+                            // 而 newStrokes 缓存最近 4 笔、且只在识别成功时才清空 → 缓存里的旧笔迹
+                            // 容易把新画的图形"凑"成别的形状（典型：四条边分着画被合成平行四边形，
+                            // 或者旁边刚写的字被卷进去一起判）。
+                            //
+                            // 改成最少笔优先后：
+                            // - 一笔能画成的图形，绝不会被多余笔迹污染（误判大幅减少）
+                            // - 分笔画的图形（四条边分着画）仍会在笔数增加后被识别到——
+                            //   保留多笔能力（OneNote 官方同样支持多笔，并建议用户"笔画尽量首尾相连"）
+                            // - 一笔就命中时只做 1 次分析，反而比原来更快
                             var strokeReco = new StrokeCollection();
-                            var result = InkRecognizeHelper.RecognizeShape(newStrokes);
+                            Ink_Canvas.Helpers.ShapeRecognizeResult result = null; // 未识别出支持形状时保持 null，下面直接 return（不再靠抛异常跳出）
                             for (int i = newStrokes.Count - 1; i >= 0; i--)
                             {
-                                strokeReco.Add(newStrokes[i]);
+                                strokeReco.Insert(0, newStrokes[i]); // Insert(0) 保持原始笔顺（原来用 Add 是倒序累积）
                                 var newResult = InkRecognizeHelper.RecognizeShape(strokeReco);
-                                if (newResult.InkDrawingNode.GetShapeName() == "Circle" || newResult.InkDrawingNode.GetShapeName() == "Ellipse")
+                                if (newResult?.InkDrawingNode == null) continue;
+
+                                var shapeName = newResult.InkDrawingNode.GetShapeName();
+                                //Label.Visibility = Visibility.Visible;
+                                Label.Content = circles.Count.ToString() + "\n" + shapeName;
+
+                                if (InkRecognizeHelper.IsContainShapeType(shapeName))
                                 {
                                     result = newResult;
                                     break;
                                 }
-                                //Label.Visibility = Visibility.Visible;
-                                Label.Content = circles.Count.ToString() + "\n" + newResult.InkDrawingNode.GetShapeName();
                             }
+                            if (result == null) return; // 本次没识别出任何支持形状，结束（正常情况，不是异常）
                             if (result.InkDrawingNode.GetShapeName() == "Circle")
                             {
                                 var shape = result.InkDrawingNode.GetShape();
@@ -309,7 +327,8 @@ namespace Ink_Canvas
                                     var pointList = p.ToList();
                                     //pointList.Add(p[0]);
                                     var point = new StylusPointCollection(pointList);
-                                    var stroke = new Stroke(GenerateFakePressureTriangle(point))
+                                    // 均匀压力：识别出的三角形粗细一致，不跟随笔锋（与圆/椭圆分支表现统一）
+                                    var stroke = new Stroke(GenerateUniformPressureTriangle(point))
                                     {
                                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                                     };
@@ -349,7 +368,8 @@ namespace Ink_Canvas
                                     var pointList = p.ToList();
                                     pointList.Add(p[0]);
                                     var point = new StylusPointCollection(pointList);
-                                    var stroke = new Stroke(GenerateFakePressureRectangle(point))
+                                    // 均匀压力：识别出的矩形/菱形/平行四边形/正方形四边一样粗，不跟随笔锋
+                                    var stroke = new Stroke(GenerateUniformPressureRectangle(point))
                                     {
                                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                                     };
@@ -973,43 +993,57 @@ namespace Ink_Canvas
             return new Point[2] { p1, p2 };
         }
 
-        public StylusPointCollection GenerateFakePressureTriangle(StylusPointCollection points)
+        /// <summary>
+        /// 生成三角形笔迹的点集：每条边按「端点 → 中点 → 端点」加密（加密点让 FitToCurve 更贴合直线、角更利），
+        /// 每个角放两个同坐标点（WPF 靠重复点形成尖角，不会被拟合成圆角）。
+        /// 压力统一 0.5：识别出的标准图形要求粗细均匀，不跟随笔锋。
+        /// 【历史】这里曾是「端点 0.4 / 中点 0.8」的假笔锋，导致四角细、边中粗，
+        /// 且与圆/椭圆分支（无假压力、天然均匀）表现不一致；2026-09-10 起统一为均匀压力。
+        /// </summary>
+        public StylusPointCollection GenerateUniformPressureTriangle(StylusPointCollection points)
         {
+            const float p = 0.5f; // 均匀压力：识别出的图形整条边一样粗
             var newPoint = new StylusPointCollection();
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, p));
             var cPoint = GetCenterPoint(points[0], points[1]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, p));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, p));
             cPoint = GetCenterPoint(points[1], points[2]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, p));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, p));
             cPoint = GetCenterPoint(points[2], points[0]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, p));
             return newPoint;
         }
 
-        public StylusPointCollection GenerateFakePressureRectangle(StylusPointCollection points)
+        /// <summary>
+        /// 生成四边形（矩形/菱形/平行四边形/正方形）笔迹的点集：结构与三角版一致
+        /// ——每条边「端点 → 中点 → 端点」加密，每个角放两个同坐标点形成尖角。
+        /// 压力统一 0.5：识别出的标准图形要求粗细均匀，不跟随笔锋（详见三角版注释）。
+        /// </summary>
+        public StylusPointCollection GenerateUniformPressureRectangle(StylusPointCollection points)
         {
+            const float p = 0.5f; // 均匀压力：识别出的图形四条边一样粗
             var newPoint = new StylusPointCollection();
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, p));
             var cPoint = GetCenterPoint(points[0], points[1]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, p));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, p));
             cPoint = GetCenterPoint(points[1], points[2]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, p));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, p));
             cPoint = GetCenterPoint(points[2], points[3]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, p));
+            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, p));
             cPoint = GetCenterPoint(points[3], points[0]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, p));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, p));
             return newPoint;
         }
 

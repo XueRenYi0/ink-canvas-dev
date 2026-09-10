@@ -450,7 +450,10 @@
                         </GroupBox>
                         <GroupBox Header="画板">
                             <ui:SimpleStackPanel Spacing="12">
-                                <StackPanel Orientation="Horizontal">
+                                <!-- 以下四项已收进笔设置面板（点悬浮栏笔图标）。
+                                     注意：只隐藏不删除——InkWidthSlider 是母控件（快捷设置/旧侧边栏 ElementName 绑定 + 笔面板选档后回写），
+                                     ComboBoxPenStyle 是笔锋落盘通道（笔面板靠给它的 SelectedIndex 赋值触发保存）。 -->
+                                <StackPanel Orientation="Horizontal" Visibility="Collapsed">
                                     <Slider x:Name="InkWidthSlider" 
                                             HorizontalAlignment="Left"
                                             Minimum="1" Maximum="20"
@@ -463,23 +466,25 @@
                                                VerticalAlignment="Bottom" Margin="10,0,0,8"
                                                FontSize="14"/>
                                 </StackPanel>
-                                <ui:ToggleSwitch Name="ToggleSwitchShowCursor" Header="显示画笔光标" IsOn="False" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchShowCursor_Toggled"/>
-                                <TextBlock Text="画笔样式" FontFamily="Microsoft YaHei UI" FontSize="14"/>
-                                <ComboBox Name="ComboBoxPenStyle" FontFamily="Microsoft YaHei UI" SelectedIndex="0" SelectionChanged="ComboBoxPenStyle_SelectionChanged">
+                                <ui:ToggleSwitch Name="ToggleSwitchShowCursor" Header="显示画笔光标" IsOn="False" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchShowCursor_Toggled" Visibility="Collapsed"/>
+                                <TextBlock Text="画笔样式" FontFamily="Microsoft YaHei UI" FontSize="14" Visibility="Collapsed"/>
+                                <ComboBox Name="ComboBoxPenStyle" FontFamily="Microsoft YaHei UI" SelectedIndex="0" SelectionChanged="ComboBoxPenStyle_SelectionChanged" Visibility="Collapsed">
                                     <ComboBoxItem Content="模拟笔锋（根据墨迹尾部计算）" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="模拟笔锋（根据速度计算）" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="无笔锋"  FontFamily="Microsoft YaHei UI"/>
                                 </ComboBox>
                                 <ui:ToggleSwitch Header="手指模式" IsOn="{Binding ElementName=ToggleSwitchModeFinger, Path=IsOn}" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关"/>
                                 <TextBlock Text="此选项仅适用于可获取触摸面积的屏幕" TextWrapping="Wrap" Foreground="#666666"/>
-                                <TextBlock Text="橡皮模式"  FontFamily="Microsoft YaHei UI" FontSize="14"/>
-                                <ComboBox Name="ComboBoxEraserType" FontFamily="Microsoft YaHei UI" SelectedIndex="0" SelectionChanged="ComboBoxEraserType_OnSelectionChanged">
+                                <!-- 橡皮模式/大小已收进橡皮设置面板（点悬浮栏橡皮图标：面积擦/笔画擦 + 五档大小 + 滑动清屏）。
+                                     同样只隐藏不删除：两个 ComboBox 是落盘通道（橡皮面板靠 SelectedIndex 赋值触发保存）。 -->
+                                <TextBlock Text="橡皮模式"  FontFamily="Microsoft YaHei UI" FontSize="14" Visibility="Collapsed"/>
+                                <ComboBox Name="ComboBoxEraserType" FontFamily="Microsoft YaHei UI" SelectedIndex="0" SelectionChanged="ComboBoxEraserType_OnSelectionChanged" Visibility="Collapsed">
                                     <ComboBoxItem Content="交替切换" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="面积擦" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="笔画擦" FontFamily="Microsoft YaHei UI"/>
                                 </ComboBox>
-                                <TextBlock Text="橡皮大小"  FontFamily="Microsoft YaHei UI" FontSize="14"/>
-                                <ComboBox Name="ComboBoxEraserSize" FontFamily="Microsoft YaHei UI" SelectedIndex="2" SelectionChanged="ComboBoxEraserSize_SelectionChanged">
+                                <TextBlock Text="橡皮大小"  FontFamily="Microsoft YaHei UI" FontSize="14" Visibility="Collapsed"/>
+                                <ComboBox Name="ComboBoxEraserSize" FontFamily="Microsoft YaHei UI" SelectedIndex="2" SelectionChanged="ComboBoxEraserSize_SelectionChanged" Visibility="Collapsed">
                                     <ComboBoxItem Content="小" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="较小" FontFamily="Microsoft YaHei UI"/>
                                     <ComboBoxItem Content="中（默认）" FontFamily="Microsoft YaHei UI"/>
@@ -507,7 +512,9 @@
                                 <ui:ToggleSwitch Name="ToggleSwitchEnableTwoFingerRotationOnSelection" Header="允许双指旋转选中的墨迹" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchEnableTwoFingerRotation_Toggled"/>
                             </ui:SimpleStackPanel>
                         </GroupBox>
-                        <GroupBox Name="GroupBoxInkRecognition" Header="墨迹识别 (Beta)">
+                        <!-- 墨迹识别已收进笔设置面板（点笔图标 → 开关区「墨迹识别」）。
+                             只隐藏不删除：ToggleSwitchEnableInkToShape 是落盘通道（笔面板开关靠给它的 IsOn 赋值触发保存）。 -->
+                        <GroupBox Name="GroupBoxInkRecognition" Header="墨迹识别 (Beta)" Visibility="Collapsed">
                             <ui:SimpleStackPanel Spacing="12">
                                 <TextBlock Text="墨迹识别功能目前处于开发阶段，目前可实现智能识别圆、三角形、&#x000A;矩形，并自动转换为规范图形。" Foreground="#666666"/>
                                 <ui:ToggleSwitch Name="ToggleSwitchEnableInkToShape" Header="启用墨迹识别" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchEnableInkToShape_Toggled" IsOn="True"/>
@@ -1482,22 +1489,8 @@
                                            Opacity="{Binding ElementName=BtnRedo, Path=IsEnabled, Converter={StaticResource IsEnabledToOpacityConverter}}"
                                            IsEnabled="{Binding ElementName=BtnRedo, Path=IsEnabled}"
                                            MouseUp="SymbolIconRedo_MouseUp" MouseDown="Border_MouseDown"/>
-                            <!-- 双指手势锁：两只手指（无斜杠=双指手势可用；斜杠+手指变淡=手势锁定）；粗细用 IconStrokeBold 资源，斜杠加粗 -->
-                            <Grid x:Name="GridGestureLock" Width="20" Height="24" Margin="-2,0,0,0" Background="Transparent"
-                                  ToolTip="双指手势开关：锁定后双指不再平移/缩放/旋转墨迹（板书防误触）"
-                                  MouseUp="SymbolIconPin_MouseUp" MouseDown="Border_MouseDown">
-                                <Path x:Name="PathGestureFingers" Fill="{DynamicResource FloatBarForeground}">
-                                    <Path.Data>
-                                        <GeometryGroup>
-                                            <RectangleGeometry Rect="5.5,7,2.9,11.8" RadiusX="1.45" RadiusY="1.45"/>
-                                            <RectangleGeometry Rect="10.2,4.6,2.9,14.2" RadiusX="1.45" RadiusY="1.45"/>
-                                            <RectangleGeometry Rect="4.9,18.6,9.8,2.5" RadiusX="1.25" RadiusY="1.25"/>
-                                        </GeometryGroup>
-                                    </Path.Data>
-                                </Path>
-                                <Path x:Name="PathGestureSlash" Visibility="Collapsed" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="{StaticResource IconStrokeBold}"
-                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M3.7,20.5 L16.3,3.5"/>
-                            </Grid>
+                            <!-- 双指手势锁已迁入快捷设置弹层（三滑杆面板内「双指手势」格），主栏不再占位；
+                                 事件与图标状态逻辑不变：MW_SaveOpen.SymbolIconPin_MouseUp / UpdateGestureLockIcon -->
                             <!-- 白板底纹：九宫格图标，点击弹出底纹菜单（触摸/手写笔可达入口；右键白板空白处同菜单）。
                                  显式绑定 GridBackgroundCover 可见性 = "与板面共存亡"契约：白板打开才出现，屏幕批注（板面收起）必隐藏。
                                  即便图标将来被挪出 StackPanelCanvasControls（白板段面板），该绑定仍保证它只在白板模式显示。 -->
@@ -1572,11 +1565,12 @@
                                             </Path.Data>
                                         </Path>
                                     </Grid>
-                                    <Border Name="BorderTools" Margin="37,-195,-140,-6" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
+                                    <Border Name="BorderTools" Margin="37,-157,-140,-6" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
                                         <ui:SimpleStackPanel>
                                             <Label Content="快捷设置" FontSize="14" Foreground="{DynamicResource FloatBarForeground}"
                                                    HorizontalAlignment="Left" Margin="8,8"/>
-                                            <Viewbox Margin="12,0,0,0" Height="38" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top">
+                                            <!-- 画笔粗细已收进笔设置面板（点笔图标 → 粗细五档） -->
+                                            <Viewbox Margin="12,0,0,0" Height="38" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
                                                 <ui:SimpleStackPanel>
                                                     <Label Margin="0,0,0,-2" Content="画笔粗细" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
                                                     <StackPanel Orientation="Horizontal">
@@ -1592,12 +1586,27 @@
                                                     </StackPanel>
                                                 </ui:SimpleStackPanel>
                                             </Viewbox>
+                                            <!-- 墨迹识别已收进笔设置面板（开关区）；此格改为「双指手势锁」（自悬浮栏主栏迁入）。
+                                                 保持 Height=32 很关键：下方「手指模式」靠 Margin="0,-32,10,0" 上提到标题行右侧，
+                                                 这个 32 就是它的高度锚点——换成同高元素可保住排版，删空则会让手指模式飞到标题上方。 -->
                                             <Viewbox Margin="12,0,0,0" Height="32" Width="50" HorizontalAlignment="Left" VerticalAlignment="Top">
                                                 <ui:SimpleStackPanel>
-                                                    <Label Margin="0,0,0,-2" Content="墨迹识别" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
-                                                    <Viewbox Height="25">
-                                                        <ui:ToggleSwitch Foreground="{DynamicResource FloatBarForeground}" FontFamily="Microsoft YaHei UI" Width="70" MinWidth="0" OnContent="开" OffContent="关" Toggled="ToggleSwitchEnableInkToShape_Toggled" IsOn="{Binding ElementName=ToggleSwitchEnableInkToShape, Path=IsOn}"/>
-                                                    </Viewbox>
+                                                    <Label Margin="0,0,0,-2" Content="双指手势" Foreground="{DynamicResource FloatBarForeground}" FontSize="13" VerticalAlignment="Center"/>
+                                                    <Grid x:Name="GridGestureLock" Width="20" Height="24" Background="Transparent"
+                                                          ToolTip="双指手势开关：锁定后双指不再平移/缩放/旋转墨迹（板书防误触）"
+                                                          MouseUp="SymbolIconPin_MouseUp" MouseDown="Border_MouseDown">
+                                                        <Path x:Name="PathGestureFingers" Fill="{DynamicResource FloatBarForeground}">
+                                                            <Path.Data>
+                                                                <GeometryGroup>
+                                                                    <RectangleGeometry Rect="5.5,7,2.9,11.8" RadiusX="1.45" RadiusY="1.45"/>
+                                                                    <RectangleGeometry Rect="10.2,4.6,2.9,14.2" RadiusX="1.45" RadiusY="1.45"/>
+                                                                    <RectangleGeometry Rect="4.9,18.6,9.8,2.5" RadiusX="1.25" RadiusY="1.25"/>
+                                                                </GeometryGroup>
+                                                            </Path.Data>
+                                                        </Path>
+                                                        <Path x:Name="PathGestureSlash" Visibility="Collapsed" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="{StaticResource IconStrokeBold}"
+                                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M3.7,20.5 L16.3,3.5"/>
+                                                    </Grid>
                                                 </ui:SimpleStackPanel>
                                             </Viewbox>
                                             <Viewbox Margin="0,-32,10,0" Height="32" Width="50" HorizontalAlignment="Right" VerticalAlignment="Top">

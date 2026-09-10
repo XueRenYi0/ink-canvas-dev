@@ -77,6 +77,9 @@ namespace Ink_Canvas
             PenSettingsPanel.TaperSelected += s => SetPenTaperStyle(s);
             // 自定义格长按/右键 = 重新打开取色板换色（左键是"使用颜色"，见 SelectCustomColorSmart）
             PenSettingsPanel.CustomColorReselectRequested += SelectCustomColor;
+            // 开关区（原设置面板「墨迹识别」组 + 「画板」组的两个开关，设置里已隐藏，改由笔面板承载）
+            PenSettingsPanel.InkToShapeToggled += ToggleInkToShape;
+            PenSettingsPanel.CursorToggled += ToggleShowCursor;
 
             // 注入 9 色：前 5 色来自右侧面板色块（支持 Colors\*.ini 自定义配色），
             // 白为固定白，后 3 色（橙/紫/青）为固定扩展色
@@ -164,6 +167,10 @@ namespace Ink_Canvas
             PenSettingsPanel.SetTaperSectionEnabled(taperRelevant);
             if (taperRelevant)
                 PenSettingsPanel.UpdateTaperHighlight(Settings.Canvas.InkStyle);
+
+            // 开关区：从母开关取当前值回显（母开关才是唯一状态源，面板不自己记账）
+            PenSettingsPanel.UpdateInkToShapeState(ToggleSwitchEnableInkToShape.IsOn);
+            PenSettingsPanel.UpdateCursorState(ToggleSwitchShowCursor.IsOn);
         }
 
         /// <summary>当前笔种类的粗细档位索引（0~4）：当前宽度与哪档预设最近就点亮哪档</summary>
@@ -545,6 +552,35 @@ namespace Ink_Canvas
             // bug 修复：原来点完不刷新面板高亮，看起来"点击没反应"——
             // 实际设置已变（下笔生效），只是面板显示纹丝不动
             PenSettingsPanel.UpdateTaperHighlight(style);
+        }
+
+        /// <summary>
+        /// 面板开关区「墨迹识别」：取反并落盘。
+        /// 借道设置页母开关 ToggleSwitchEnableInkToShape：给它 IsOn 赋值会触发其 Toggled 落盘；
+        /// 这里再显式写一次设置 + 保存，防止将来 Toggled 实现变动导致静默丢失。
+        /// </summary>
+        private void ToggleInkToShape()
+        {
+            bool next = !ToggleSwitchEnableInkToShape.IsOn;
+            ToggleSwitchEnableInkToShape.IsOn = next;
+            Settings.InkToShape.IsInkToShapeEnabled = next;
+            SaveSettingsToFile();
+            PenSettingsPanel.UpdateInkToShapeState(next);
+        }
+
+        /// <summary>
+        /// 面板开关区「显示光标」：取反并落盘，同 ToggleInkToShape。
+        /// 必须调 inkCanvas_EditingModeChanged——光标显隐是在切换编辑模式时套用的（与设置页 handler 一致），
+        /// 只改设置不改画布，会出现"设置里是开、屏幕上没光标"。
+        /// </summary>
+        private void ToggleShowCursor()
+        {
+            bool next = !ToggleSwitchShowCursor.IsOn;
+            ToggleSwitchShowCursor.IsOn = next;
+            Settings.Canvas.IsShowCursor = next;
+            inkCanvas_EditingModeChanged(inkCanvas, null);
+            SaveSettingsToFile();
+            PenSettingsPanel.UpdateCursorState(next);
         }
 
         #endregion

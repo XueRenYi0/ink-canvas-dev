@@ -3,12 +3,16 @@
 <!-- 发版流程：更新 version + changelog + url 三个字段，随 master 推送即可生效 -->
 <!-- url 使用 gh-proxy 国内镜像加速；镜像失效时软件会自动回退直连 GitHub -->
 <item>
-    <version>6.1.1</version>
-    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.1.1/Inkboard-v6.1.1-Setup.exe</url>
+    <version>6.2.2</version>
+    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.2.2/Inkboard-v6.2.2-Setup.exe</url>
     <changelog>
-        v6.1.1 自动更新正式启用：启动延迟 5 秒静默检查（gh-proxy 国内镜像加速，失败自动回退直连），
-        设置页可关闭，悬浮条右键菜单可手动检查。本版本起后续新版本将自动提示升级。
-        另修复打包内使用说明版本停更问题。
+        v6.2.2 笔相关设置统一收进笔面板：设置页的画笔粗细、显示画笔光标、画笔样式（笔锋）、
+        橡皮模式、橡皮大小、墨迹识别六项已隐藏，改为点悬浮栏笔图标，在笔面板中调整
+        （笔面板新增「墨迹识别 / 显示光标」开关区）；悬浮栏双指手势锁迁入快捷设置弹层。
+        修复：识别出的三角形、矩形、平行四边形等图形粗细不均（四角细、边中粗）——
+        去掉硬编码的假笔锋，图形统一为均匀粗细，与圆、椭圆表现一致。
+        优化：墨迹识别改为「最少笔优先」，从最后一笔开始尝试，命中即停，
+        显著减少分开画多笔时被误合并成错误图形的情况（仍支持分笔画图形）。
     </changelog>
     <mandatory mode="2">false</mandatory>
 </item>

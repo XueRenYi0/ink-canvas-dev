@@ -58,6 +58,10 @@ using System.Windows;
 // 6.1.0：图片操作与墨迹统一（操作条/缩放手柄/翻转/复制模式/适配宽度/插入即选中）、
 //        操作条精简为 10 键、双色色点、ISF 剪贴板、笔/橡皮/选择方式独立面板组件
 // v6.1.1：自动更新接入国内镜像回退链（gh-proxy → at9 → 直连）、发版校验脚本修复
-[assembly: AssemblyVersion("6.1.1.0")]
-[assembly: AssemblyFileVersion("6.1.2026.0909")]
-[assembly: AssemblyInformationalVersion("6.1.1")]
+// v6.2.2：笔设置统一收进笔面板（设置页隐藏粗细/光标/笔锋/橡皮模式/橡皮大小/墨迹识别六项，
+//         笔面板新增「墨迹识别 / 显示光标」开关区）、悬浮栏双指手势锁迁入快捷设置弹层、
+//         识别出的图形粗细统一（去掉硬编码假笔锋，与圆/椭圆表现一致）、
+//         墨迹识别改为「最少笔优先」，减少多笔误合并导致的误判
+[assembly: AssemblyVersion("6.2.2.0")]
+[assembly: AssemblyFileVersion("6.2.2026.0910")]
+[assembly: AssemblyInformationalVersion("6.2.2")]
