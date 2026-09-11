@@ -15,7 +15,7 @@ namespace Ink_Canvas
     /// 交互模型（用户需求）：
     /// - 点笔图标 → 弹出面板（笔种类/粗细/颜色/笔锋四区）
     /// - 面板内点选不关面板（可连续调整）
-    /// - 点面板外任意处 → 面板消失（Window_PreviewMouseDown 统一判定）
+    /// - 点面板外任意处 → 面板消失（判定见 MW_PopupLayers.cs，本面板已登记在表中）
     /// </summary>
     public partial class MainWindow
     {
@@ -227,61 +227,10 @@ namespace Ink_Canvas
             PenSettingsPanel.Margin = new Thickness(x, y, 0, 0);
         }
 
-        /// <summary>
-        /// 点击面板外任意处收起面板（Window.PreviewMouseDown，隧道事件最先收到）。
-        /// 笔设置面板 / 选择方式面板 / 橡皮设置面板共用此入口。
-        /// 点击目标在面板内或对应图标上时不动——图标自己的 MouseUp 做 toggle，
-        /// 若这里抢先收起，会出现"点图标关不掉"的死循环（先关再开）。
-        /// </summary>
-        private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (!(e.OriginalSource is DependencyObject dep)) return;
-
-            // 记录按下位置：快速截图后的白板单击检测用（Window_PreviewMouseUp 比较位移区分单击/书写）
-            _pasteClickDownPos = e.GetPosition(Main_Grid);
-
-            // ---- 笔设置面板 ----
-            if (PenSettingsPanel.Visibility == Visibility.Visible)
-            {
-                // 点在面板内：不收（面板内点选可连续调整）
-                if (!IsVisualDescendantOf(dep, PenSettingsPanel) &&
-                    !IsVisualDescendantOf(dep, PenIconHost))
-                    ClosePenSettingsPanel();
-            }
-
-            // ---- 选择方式面板 ----
-            if (SelectionModePanel.Visibility == Visibility.Visible)
-            {
-                // 点在面板内不收；点在选择图标上交给 SymbolIconSelect_MouseUp 做 toggle
-                if (!IsVisualDescendantOf(dep, SelectionModePanel) &&
-                    !IsVisualDescendantOf(dep, GridSelectTool))
-                    CloseSelectionModePanel();
-            }
-
-            // ---- 橡皮设置面板 ----
-            if (EraserSettingsPanel.Visibility == Visibility.Visible)
-            {
-                // 点在面板内不收（滑动清屏拖动期间更不能收）；点橡皮图标交给 ImageEraser_MouseUp 做 toggle
-                if (!IsVisualDescendantOf(dep, EraserSettingsPanel) &&
-                    !IsVisualDescendantOf(dep, EraserContainer))
-                    CloseEraserSettingsPanel();
-            }
-        }
-
-        /// <summary>判断 visual 是否是 ancestor 的后代（自身或视觉树子孙）</summary>
-        private bool IsVisualDescendantOf(DependencyObject visual, DependencyObject ancestor)
-        {
-            while (visual != null)
-            {
-                if (ReferenceEquals(visual, ancestor)) return true;
-                // 沿视觉树向上（跨 ContentElement 用 VisualTreeHelper.GetParent 也兼容 null 返回自身场景）
-                var parent = System.Windows.Media.VisualTreeHelper.GetParent(visual);
-                if (parent == null && visual is System.Windows.FrameworkContentElement fce)
-                    parent = fce.Parent as DependencyObject;
-                visual = parent;
-            }
-            return false;
-        }
+        // 「点击面板外收起面板」的统一判定已移到 MW_PopupLayers.cs（Window_PreviewMouseDown，
+        // XAML 仍绑定同名方法，故无需改 MainWindow.xaml）。
+        // 那里有一张登记表（面板 + 开关图标 + 关闭动作），新增弹层只需加一行；
+        // 请不要再在本文件恢复手写 if 判断——2026-09-11 前正是这种写法导致各面板行为不一致。
 
         #endregion
 

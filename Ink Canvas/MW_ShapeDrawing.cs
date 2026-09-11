@@ -46,6 +46,10 @@ namespace Ink_Canvas
 
         private void ImageDrawShape_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // 防误触：按下与松开须在同一元素。
+            // sender == null 是"代码直调"（F6 快捷键打开图形面板），此时跳过守卫。
+            if (sender != null && lastBorderMouseDownObject != sender) return;
+
             if (BorderDrawShape.Visibility == Visibility.Visible)
             {
                 BorderDrawShape.Visibility = Visibility.Collapsed;
@@ -163,7 +167,7 @@ namespace Ink_Canvas
         {
             if (active)
             {
-                tab.Background = new SolidColorBrush(Color.FromArgb(0x26, 0x00, 0x88, 0xFF)); //15% 蓝
+                tab.Background = CreateHighlightBrush(0x26); //15% 高亮蓝（与笔/橡皮面板选中底同款）
                 tab.BorderBrush = TryFindResource("HighlightBrush") as Brush ?? Brushes.DodgerBlue;
             }
             else
@@ -407,7 +411,7 @@ namespace Ink_Canvas
                 Value = "Active"
             };
             activeTrigger.Setters.Add(new Setter(Border.BackgroundProperty,
-                new SolidColorBrush(Color.FromArgb(140, 0, 136, 255)))); //半透明蓝，与整体高亮风格一致
+                CreateHighlightBrush(140))); //半透明高亮蓝，与整体高亮风格一致
             style.Triggers.Add(activeTrigger);
 
             //② 把样式套到全部图标 Border 上（名字规则见 UpdateShapeIconHighlight）

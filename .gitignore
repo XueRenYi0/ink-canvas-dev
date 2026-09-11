@@ -356,3 +356,6 @@ MigrationBackup/
 
 # 图标设计工作文件（本地预览）
 Resources/icon-preview.png
+
+# WorkBuddy 助手工作区（本地会话记忆 / 临时产物，不入库）
+.workbuddy/

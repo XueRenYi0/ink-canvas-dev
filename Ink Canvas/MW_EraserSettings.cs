@@ -14,7 +14,7 @@ namespace Ink_Canvas
     /// 交互模型（与笔面板/选择面板同款）：
     /// - 点橡皮图标 → 进入上次的擦除方式 + 弹出面板（方式/大小/滑动清屏三区）
     /// - 面板内点选不关面板（可连续调整）
-    /// - 点面板外任意处 → 面板消失（Window_PreviewMouseDown 统一判定）
+    /// - 点面板外任意处 → 面板消失（判定见 MW_PopupLayers.cs，本面板已登记在表中）
     ///
     /// 改造要点：
     /// - 原交互"点图标在面积擦/笔画擦间 toggle"已废弃（隐晦、不可见）——
@@ -100,7 +100,7 @@ namespace Ink_Canvas
             PositionEraserSettingsPanel();
         }
 
-        /// <summary>关闭橡皮设置面板（HideSubPanels / 点击外部等场景调用）</summary>
+        /// <summary>关闭橡皮设置面板（HideSubPanels / 点击外部 / 工具条收起等场景调用）</summary>
         private void CloseEraserSettingsPanel()
         {
             EraserSettingsPanel.Visibility = Visibility.Collapsed;

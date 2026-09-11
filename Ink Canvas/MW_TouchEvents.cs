@@ -46,6 +46,10 @@ namespace Ink_Canvas
         bool isInMultiTouchMode = false;
         private void BorderMultiTouchMode_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // 防误触：按下与松开须在同一元素。
+            // sender == null 是"代码直调"（关闭黑板时若处于多人书写会自动退出，见 MW_FloatBar.cs），此时跳过守卫。
+            if (sender != null && lastBorderMouseDownObject != sender) return;
+
             if (isInMultiTouchMode)
             {
                 inkCanvas.StylusDown -= MainWindow_StylusDown;

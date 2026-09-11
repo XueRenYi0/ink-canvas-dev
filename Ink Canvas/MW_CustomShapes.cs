@@ -223,7 +223,7 @@ namespace Ink_Canvas
         {
             TextBlockLibraryEdit.Text = _libraryEditMode ? "完成" : "整理";
             BorderLibraryEdit.Background = _libraryEditMode
-                ? new SolidColorBrush(Color.FromArgb(140, 0, 136, 255))
+                ? CreateHighlightBrush(140)   //高亮蓝（与图形图标激活态同款）
                 : Brushes.Transparent;
         }
 

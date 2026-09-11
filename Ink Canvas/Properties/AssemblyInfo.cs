@@ -72,6 +72,14 @@ using System.Windows;
 //         Ctrl+M 选择改走与"选择墨迹"图标同一条路径（原来实际是隐藏画布，上游遗留的错误实现）；
 //         Ctrl+A 全选可直接触发（原来必须先点过选择图标）；笔/橡皮/选择的提示文本同步更新；
 //         检查更新失败时显示具体原因并写入日志，便于定位
-[assembly: AssemblyVersion("6.3.3.0")]
-[assembly: AssemblyFileVersion("6.3.2026.0910")]
-[assembly: AssemblyInformationalVersion("6.3.3")]
+// v6.5.5：清理与体验整理版 ——
+//         ① 上游痕迹清理：移除 ink.wxriw.cn 后台版本上报、删除「马鞍山二中专版」UI 与 4 张图（340KB）、
+//            删除首次运行向导 WelcomeWindow（其唯一调用点就是被删的联网块，删后成孤儿）
+//         ② 悬浮栏观感：弹层底色透明度规范到 85%（浅色/深色），工具高亮色统一取 InkSpec 的 HighlightBrush
+//         ③ 启动优化：主题资源字典改为「幂等 + 就地替换」（启动字典数 12→8，不再随系统主题无限增长）；
+//            新增启动耗时分段剖析日志（便于后续定位）
+//         ④ 稳定性：工具栏防误触守卫补全 37 处（修掉"按下与松开不在同一元素也误触发"）；
+//            弹层行为统一（新增统一关闭入口 + 点外收起登记表，「更多」面板现在点外即收）
+[assembly: AssemblyVersion("6.5.5.0")]
+[assembly: AssemblyFileVersion("6.5.2026.0911")]
+[assembly: AssemblyInformationalVersion("6.5.5")]

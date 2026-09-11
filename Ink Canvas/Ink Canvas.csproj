@@ -30,7 +30,7 @@
 		<UpdateRequired>false</UpdateRequired>
 		<MapFileExtensions>true</MapFileExtensions>
 		<ApplicationRevision>0</ApplicationRevision>
-		<ApplicationVersion>6.3.3.0</ApplicationVersion>
+		<ApplicationVersion>6.5.5.0</ApplicationVersion>
 		<UseApplicationTrust>false</UseApplicationTrust>
 		<BootstrapperEnabled>false</BootstrapperEnabled>
 		<Platforms>AnyCPU;x86;x64;ARM64</Platforms>
@@ -143,16 +143,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Resource Include="Resources\InkCanvas.ico" />
-	</ItemGroup>
-	<ItemGroup>
-		<Resource Include="Resources\logo.png" />
-		<Resource Include="Resources\text.png" />
-	</ItemGroup>
-	<ItemGroup>
-		<Resource Include="Resources\textCN.png" />
-	</ItemGroup>
-	<ItemGroup>
-		<Resource Include="Resources\logo2.png" />
 	</ItemGroup>
 	<ItemGroup>
 		<BootstrapperPackage Include=".NETFramework,Version=v4.7.2">

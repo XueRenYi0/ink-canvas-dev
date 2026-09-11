@@ -84,6 +84,8 @@ namespace Ink_Canvas
 
         private void SymbolIconPin_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             _lockSmith = !_lockSmith;
             UpdateGestureLockIcon();
         }

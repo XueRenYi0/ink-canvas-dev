@@ -3,7 +3,6 @@ using iNKORE.UI.WPF.Modern;
 using iNKORE.UI.WPF.Modern.Helpers;
 using IWshRuntimeLibrary;
 using Microsoft.Office.Interop.PowerPoint;
-using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using System;
@@ -16,8 +15,6 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
@@ -56,135 +53,77 @@ namespace Ink_Canvas
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            //检查
-            new Thread(new ThreadStart(() =>
-            {
-                try
-                {
-                    string VersionInfo = "";
-                    if (File.Exists(System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "VersionInfo.ini"))
-                    {
-                        VersionInfo = File.ReadAllText(System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "VersionInfo.ini");
-                    }
-                    string Url = "http://ink.wxriw.cn:1957";
-                    if (VersionInfo != "")
-                    {
-                        Url += "/?verinfo=" + VersionInfo;// + "&pc=" + Environment.MachineName;
-                    }
-                    string response = GetWebClient(Url);
-                    if (response.Contains("Special Version"))
-                    {
-                        //isAutoUpdateEnabled = true;
+            // ★ 2026-09-11 移除：原此处有一个后台线程，向上游作者服务器 http://ink.wxriw.cn:1957
+            // 上报本机版本号，并根据返回内容决定是否弹「专版」欢迎窗 / 通知框、维护 Versions.ini。
+            // 实测：该服务器虽返回 200，但根路径与 /?verinfo= 都只回字面量 "null"，
+            // 判断条件 Contains("Special Version") 恒为 false → 所有分支永不触发，每次启动纯空转；
+            // 且会向第三方泄露本机版本信息，并存在「二中专版」品牌污染风险（服务器一旦返回
+            // Special Version，界面会突然出现“二中专版”字样与 logo2.png）。故整块移除。
+            // 连带移除：MainWindow.xaml 的 GroupBoxMASEZVersion 及 logo/logo2/text/textCN 四张专版图片。
+            // 连带移除：WelcomeWindow.xaml / .xaml.cs（首次运行设置向导，唯一调用点就是上面这块）。
+            //      向导里的功能并未丢失：推荐设置仍在设置页的「恢复推荐设置」按钮
+            //      （MW_Settings.cs 的 BtnResetToSuggestion_Click → SetSettingsToRecommendation），
+            //      开机自启仍在 MW_Settings.cs:51 的 StartAutomaticallyCreate("InkCanvas")。
+            StartupProfiler.Mark("Window_Loaded 开始");
 
-                        if (response.Contains("<notice>"))
-                        {
-                            string str = Strings.Mid(response, response.IndexOf("<notice>") + 9);
-                            if (str.Contains("<notice>"))
-                            {
-                                str = Strings.Left(str, str.IndexOf("<notice>")).Trim();
-                                if (str.Length > 0)
-                                {
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        GroupBoxMASEZVersion.Visibility = Visibility.Visible;
-                                        TextBlockMASEZNotice.Text = str;
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Version version = Assembly.GetExecutingAssembly().GetName().Version;
-                        TextBlockVersion.Text = version.ToString();
-
-                        string lastVersion = "";
-                        if (response.Contains("Special Version") && !File.Exists(App.RootPath + "Versions.ini"))
-                        {
-                            LogHelper.WriteLogToFile("Welcome Window Show Dialog", LogHelper.LogType.Event);
-
-                            if (response.Contains("Special Version Alhua"))
-                            {
-                                WelcomeWindow.IsNewBuilding = true;
-                            }
-                            new WelcomeWindow().ShowDialog();
-                        }
-                        else
-                        {
-                            try
-                            {
-                                lastVersion = File.ReadAllText(App.RootPath + "Versions.ini");
-                            }
-                            catch { }
-                            if (response.Contains("Special Version") && !lastVersion.Contains("NewWelcomeConfigured"))
-                            {
-                                LogHelper.WriteLogToFile("Welcome Window Show Dialog (Second time)", LogHelper.LogType.Event);
-
-                                if (response.Contains("Special Version Alhua"))
-                                {
-                                    WelcomeWindow.IsNewBuilding = true;
-                                }
-                                new WelcomeWindow().ShowDialog();
-                            }
-                            try
-                            {
-                                lastVersion = File.ReadAllText(App.RootPath + "Versions.ini");
-                            }
-                            catch { }
-                            if (!lastVersion.Contains(version.ToString()))
-                            {
-                                //LogHelper.WriteLogToFile("Change Log Window Show Dialog", LogHelper.LogType.Event);
-                                //new ChangeLogWindow().ShowDialog();
-                                lastVersion += "\n" + version.ToString();
-                                File.WriteAllText(App.RootPath + "Versions.ini", lastVersion.Trim());
-                            }
-                        }
-                    });
-                }
-                catch { }
-            })).Start();
-
-            loadPenCanvas();
+            using (StartupProfiler.Measure("loadPenCanvas()")) loadPenCanvas();
 
             //加载设置
-            LoadSettings();
+            using (StartupProfiler.Measure("LoadSettings()")) LoadSettings();
 
             // 笔设置面板：订阅事件 + 注入颜色，再按配置恢复笔种类/笔宽（含荧光笔倍率）
-            InitPenSettingsPanel();
-            ApplyLoadedPenSettings();
+            using (StartupProfiler.Measure("笔设置面板初始化")) { InitPenSettingsPanel(); ApplyLoadedPenSettings(); }
 
             // 橡皮设置面板：订阅事件（擦除方式/大小/滑动清屏）
-            InitEraserSettingsPanel();
-            ApplyLoadedEraserSettings();
+            using (StartupProfiler.Measure("橡皮设置面板初始化")) { InitEraserSettingsPanel(); ApplyLoadedEraserSettings(); }
 
             // 选择方式：订阅面板事件 + 拖选拦截，再按配置恢复（矩形框选/自由选择）
-            InitSelectionMode();
-            ApplyLoadedSelectionMode();
+            using (StartupProfiler.Measure("选择方式初始化")) { InitSelectionMode(); ApplyLoadedSelectionMode(); }
 
             // 初始化动态快捷键（此时窗口句柄已就绪，避免上次 bc673dd 在构造函数注册全局热键崩溃的坑）
-            InitDynamicShortcuts();
+            using (StartupProfiler.Measure("InitDynamicShortcuts()")) InitDynamicShortcuts();
 
             // 注册全局逃生热键 Ctrl+Alt+Shift+R（手写板卡死时鼠标/触摸全灭，键盘是唯一活通道）
-            InitGlobalEscapeHotkey();
+            using (StartupProfiler.Measure("InitGlobalEscapeHotkey()")) InitGlobalEscapeHotkey();
 
             // 安全重启的墨迹恢复（-restore 参数 + recovery.icstk 存在时自动加载）
-            TryRestoreStrokesOnStartup();
+            using (StartupProfiler.Measure("TryRestoreStrokesOnStartup()")) TryRestoreStrokesOnStartup();
 
             if (Environment.Is64BitProcess)
             {
                 GroupBoxInkRecognition.Visibility = Visibility.Collapsed;
             }
 
-            ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
-            SystemEvents_UserPreferenceChanged(null, null);
+            using (StartupProfiler.Measure("主题初始化（SetTheme + 资源字典）"))
+            {
+                ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
+                SystemEvents_UserPreferenceChanged(null, null);
+            }
 
             TextBlockVersion.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             LogHelper.WriteLogToFile("Ink Canvas Loaded", LogHelper.LogType.Event);
 
-            PreloadIALibrary();
-
             isLoaded = true;
+
+            // ★ 启动提速（2026-09-11）：PreloadIALibrary() 原本在这里**同步**执行，
+            // 实测 270 ms / 占启动耗时 12% —— 它只是给墨迹分析器做一次空跑预热
+            // （避免首次墨迹识别卡顿），与"界面能不能用"毫无关系，却让用户白等。
+            // 改为界面就绪后、消息队列空闲时再跑：仍是 UI 线程（不引入任何跨线程 /
+            // COM 单元风险），但已经不计入"等待界面出现"的时间。
+            // 加 try-catch：预热失败不影响任何功能（首次真正识别时库会自己初始化）。
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, (Action)(() =>
+            {
+                try
+                {
+                    var sw = Stopwatch.StartNew();
+                    PreloadIALibrary();
+                    sw.Stop();
+                    LogHelper.WriteLogToFile($"[Startup] IA 预热已在界面就绪后完成（{sw.ElapsedMilliseconds} ms，原先同步阻塞启动）", LogHelper.LogType.Event);
+                }
+                catch { }
+            }));
+
+            StartupProfiler.Dump("启动完成（界面已就绪）");
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

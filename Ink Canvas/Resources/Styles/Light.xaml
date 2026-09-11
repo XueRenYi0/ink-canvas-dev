@@ -1,6 +1,10 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="FloatBarBackground" Color="#9FFFFFFF"/>
+    <!-- 面板底色 α=85%（217/255）。2026-09-11 由 #9F(62%) 调高：
+         原值在桌面批注时背后课件文字透出后对比度达 2.12:1（比面板自己的分组标题 2.52:1 还清楚），
+         视觉上"背景残留物压过面板内容"导致看起来乱。85% 时透出降到 1.31:1（看不见）。
+         仅改这一处即可全局生效（25 处容器共用此键）。 -->
+    <SolidColorBrush x:Key="FloatBarBackground" Color="#D9FFFFFF"/>
     <SolidColorBrush x:Key="FloatBarBorderBrush" Color="#BF666666"/>
     <SolidColorBrush x:Key="FloatBarForeground" Color="#666666"/>
     <Color x:Key="FloatBarForegroundColor">#FF666666</Color>

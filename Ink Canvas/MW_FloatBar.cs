@@ -42,12 +42,60 @@ namespace Ink_Canvas
     {
         #region Float Bar
 
-        private void HideSubPanels()
+        /// <summary>弹层关闭范围 —— 两个场景要关的东西不一样，别混用</summary>
+        private enum PopupScope
         {
-            BorderTools.Visibility = Visibility.Collapsed;
+            /// <summary>切工具/换色/撤销等"正在操作画布"：只关会让路的子面板（更多 + 笔 + 选择 + 橡皮）。
+            /// 图形面板刻意不关 —— 用户可能正钉着它连续画图。</summary>
+            ToolSwitch,
+
+            /// <summary>工具条整体收起：关掉所有"不随工具条缩放消失"的浮层（笔 + 选择 + 橡皮 + 图形）。</summary>
+            ToolbarCollapse,
+        }
+
+        /// <summary>
+        /// 统一弹层关闭入口 —— 全项目 7 个弹层的唯一登记处。
+        /// ★ 今后新增弹层，先判断它属于下面哪一组，再决定要不要在本函数登记；
+        ///   不要在调用点各自手写 Visibility = Collapsed（漏一个就静默出 bug ——
+        ///   2026-09-11 就是"收起工具条时漏关橡皮设置面板"）。
+        ///
+        /// 【A 组】宿主在 BorderFloatingBarMainControls 子树内 → 工具条收起时随缩放动画一起消失，
+        ///         不需要显式关；只有"切工具让路"时才主动关 BorderTools。
+        ///   1 更多面板 BorderTools      （MainWindow.xaml:1490，注意用的是 Name= 不是 x:Name=）
+        ///   2 截图菜单 BorderImageMenu  （MainWindow.xaml:1326）
+        ///
+        /// 【B 组】★不随工具条缩放消失，凡"收起工具条"必须显式关，漏一个就留在屏幕上：
+        ///   3 笔设置   PenSettingsPanel    （MainWindow.xaml:1855，Main_Grid 直挂）
+        ///   4 选择方式 SelectionModePanel  （MainWindow.xaml:1861，Main_Grid 直挂）
+        ///   5 橡皮设置 EraserSettingsPanel （MainWindow.xaml:1867，Main_Grid 直挂）
+        ///   6 图形绘制 BorderDrawShape     （XAML:1118，运行期 DetachShapePanelToRoot 搬到 Main_Grid）
+        ///   7 数学面板 原生 COM 窗口（micaut），非 WPF 元素，永不受工具条缩放影响
+        ///      ⚠ 已知缺口：本函数目前**不关它**。因为"收起工具条腾地方、继续用手写数学面板"
+        ///        是合理用法，关掉会打断正在输入的公式，是否要关待定。
+        /// </summary>
+        private void ClosePopupLayers(PopupScope scope)
+        {
+            // A 组：只有"切工具让路"才关更多面板
+            if (scope == PopupScope.ToolSwitch)
+            {
+                BorderTools.Visibility = Visibility.Collapsed;
+            }
+
+            // B 组：解挂在 Main_Grid 顶部（或运行期 Detach）的浮层
             ClosePenSettingsPanel(); // 笔设置面板（替代原 BorderPenWidth 小面板）
             CloseSelectionModePanel(); // 选择方式面板（矩形框选/自由选择）
             CloseEraserSettingsPanel(); // 橡皮设置面板（含滑动清屏，原 BorderClearInDelete 已废弃）
+
+            if (scope == PopupScope.ToolbarCollapse)
+            {
+                BorderDrawShape.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>切工具 / 换色时收起挡路的子面板（= ClosePopupLayers(ToolSwitch)，行为与改动前一致）</summary>
+        private void HideSubPanels()
+        {
+            ClosePopupLayers(PopupScope.ToolSwitch);
         }
 
 
@@ -96,10 +144,37 @@ namespace Ink_Canvas
         private const double PenWidthMedium = 3;
         private const double PenWidthThick = 6;
 
-        // 工具选中高亮色：与选择工具高亮一致的项目蓝（#0088FF）
-        private static readonly SolidColorBrush PenToolHighlightBrush = new SolidColorBrush(Color.FromRgb(0, 136, 255));
-        // 淡蓝选中底（约 15% 不透明度），用于笔图标高亮底和粗细档位选中底
-        private static readonly SolidColorBrush PenToolHighlightSoftBrush = new SolidColorBrush(Color.FromArgb(38, 0, 136, 255));
+        // 工具选中高亮色：色值统一取自 InkSpec.xaml 的 HighlightBrush（#FF0088FF），
+        // 不再在本文件硬编码（2026-09-11 收口，原为 Color.FromRgb(0,136,255) 的字面量）。
+        // 解析失败时退回同色兜底，保证高亮不会因资源缺失而莫名消失。
+        private static readonly Color ToolHighlightFallbackColor = Color.FromRgb(0, 136, 255);
+
+        /// <summary>解析当前工具高亮主色（= InkSpec.xaml 的 HighlightBrush 颜色；解析不到时退回兜底蓝）</summary>
+        private static Color ResolveToolHighlightColor()
+        {
+            var brush = Application.Current?.TryFindResource("HighlightBrush") as SolidColorBrush;
+            return brush != null ? brush.Color : ToolHighlightFallbackColor;
+        }
+
+        /// <summary>按给定不透明度生成高亮蓝画刷（色值取自 HighlightBrush）。
+        /// 各处"激活态底色 / 蓝边"统一走这里，避免同一色值在不同文件里各写一遍颜色字面量。</summary>
+        private static Brush CreateHighlightBrush(byte alpha)
+        {
+            var c = ResolveToolHighlightColor();
+            return new SolidColorBrush(Color.FromArgb(alpha, c.R, c.G, c.B));
+        }
+
+        /// <summary>工具选中高亮边框色（笔图标 / 选择图标 / 粗细档位的蓝边）</summary>
+        private static Brush PenToolHighlightBrush
+        {
+            get { return CreateHighlightBrush(255); }
+        }
+
+        /// <summary>淡蓝选中底（约 15% 不透明度），用于笔图标高亮底和粗细档位选中底</summary>
+        private static Brush PenToolHighlightSoftBrush
+        {
+            get { return CreateHighlightBrush(38); }
+        }
 
         /// <summary>笔图标单击：切回画笔模式 + 展开/收起笔设置面板（笔种类/粗细/颜色/笔锋）</summary>
         private void PenIcon_MouseUp(object sender, MouseButtonEventArgs e)
@@ -280,12 +355,16 @@ namespace Ink_Canvas
 
         private void SymbolIconUndo_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BtnUndo_Click(BtnUndo, null);
             HideSubPanels();
         }
 
         private void SymbolIconRedo_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BtnRedo_Click(BtnRedo, null);
             HideSubPanels();
         }
@@ -375,6 +454,10 @@ namespace Ink_Canvas
 
         private void ImageBlackboard_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            // 防误触：按下与松开须在同一元素。
+            // sender == null 是"代码直调"（MW_FloatBar.cs 里光标图标收起白板时调用），此时跳过守卫。
+            if (sender != null && lastBorderMouseDownObject != sender) return;
+
             if (currentMode == 0)
             {
                 //进入黑板
@@ -582,6 +665,8 @@ namespace Ink_Canvas
 
         private void SymbolIconTools_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             if (BorderTools.Visibility == Visibility.Visible)
             {
                 BorderTools.Visibility = Visibility.Collapsed;
@@ -610,12 +695,16 @@ namespace Ink_Canvas
         /// （不写死某个元素当锚点，这样菜单会从被点击的条目位置弹出，而不是跑到主栏或别处）</summary>
         private void MoreToolsWhiteboardPattern_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             ShowWhiteboardPatternMenu(sender as FrameworkElement, placeBelow: false);
         }
 
         /// <summary>更多面板·打开设置</summary>
         private void MoreToolsSettings_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BorderTools.Visibility = Visibility.Collapsed;
             BtnSettings_Click(BtnSettings, null);
         }
@@ -623,6 +712,8 @@ namespace Ink_Canvas
         /// <summary>更多面板·检查更新（手动检查：已是最新版本时会给出提示）</summary>
         private void MoreToolsCheckUpdate_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BorderTools.Visibility = Visibility.Collapsed;
             (Application.Current as App)?.CheckForUpdate(true);
         }
@@ -631,12 +722,16 @@ namespace Ink_Canvas
         /// 复用 BtnSwitchTheme_Click 的全套联动：板面色、UI 深浅主题、白板/黑板文案）</summary>
         private void MoreToolsBoardTheme_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BtnSwitchTheme_Click(null, null);
         }
 
         /// <summary>更多面板·查看快捷键（原笑脸右键菜单 →「快捷键 → 查看快捷键」）</summary>
         private void MoreToolsShowShortcuts_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BorderTools.Visibility = Visibility.Collapsed;
             MenuItemShowShortcuts_Click(null, null);
         }
@@ -644,6 +739,8 @@ namespace Ink_Canvas
         /// <summary>更多面板·退出（原主栏退出图标 + 笑脸右键菜单「退出」，内部有二次确认）</summary>
         private void MoreToolsExit_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BtnExit_Click(null, null);
         }
 
@@ -796,14 +893,12 @@ namespace Ink_Canvas
                 });
                 BorderFloatingBarMainControls.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(isAnimated ? 100 : 0)));
 
-                //工具条收起成笑脸时，图形面板一并收起：面板已"解挂"到主窗口根层
-                //（方案B），不再是工具条的后代，不会随祖先缩放自动消失——不补这行
-                //会出现"工具条没了、面板还孤零零浮在屏幕上"的状态
-                try { BorderDrawShape.Visibility = Visibility.Collapsed; } catch { }
-                //笔设置面板同理（已解挂到 Main_Grid 顶层，不随工具条缩放消失）
-                try { ClosePenSettingsPanel(); } catch { }
-                //选择方式面板同理（也已解挂到 Main_Grid 顶层）
-                try { CloseSelectionModePanel(); } catch { }
+                //工具条收起：关掉所有"不随工具条缩放消失"的浮层（笔/选择/橡皮/图形）。
+                //它们已"解挂"到主窗口根层（方案B）或运行期 Detach，不再是工具条的后代，
+                //不会随祖先缩放自动消失——不关就会出现"工具条没了、面板还孤零零浮在屏幕上"。
+                //★ 统一走 ClosePopupLayers，新增浮层只需在其中登记一处
+                //  （2026-09-11 起因：此处曾漏关橡皮设置面板）
+                try { ClosePopupLayers(PopupScope.ToolbarCollapse); } catch { }
             }
             else
             {
@@ -830,6 +925,8 @@ namespace Ink_Canvas
 
         private void ImagePPTControlEnd_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             BtnPPTSlideShowEnd_Click(BtnPPTSlideShowEnd, null);
         }
 

@@ -43,7 +43,13 @@ namespace Ink_Canvas
 
         public MainWindow()
         {
-            InitializeComponent();
+            StartupProfiler.Mark("MainWindow 构造开始");
+
+            using (StartupProfiler.Measure("InitializeComponent()（XAML 解析 + 控件实例化）"))
+            {
+                InitializeComponent();
+            }
+            StartupProfiler.Mark("XAML 解析完成");
 
             BorderSettings.Opacity = 0;
             BorderSettings.Visibility = Visibility.Collapsed;
@@ -53,7 +59,7 @@ namespace Ink_Canvas
 
             //图形面板"解挂"到主窗口根层：从悬浮条的吊挂改为自由拖动小窗口（方案B，
             //详见 MW_ShapeDrawing.cs 里的原理注释；失败时自动降级回旧吊挂方式）
-            DetachShapePanelToRoot();
+            using (StartupProfiler.Measure("DetachShapePanelToRoot()")) DetachShapePanelToRoot();
 
             if (App.StartArgs.Contains("-b")) //-b border
             {
@@ -64,35 +70,41 @@ namespace Ink_Canvas
                 Topmost = false;
             }
 
-            if (!App.StartArgs.Contains("-o")) //-old ui
+            using (StartupProfiler.Measure("启动参数分支（HideSubPanels / 悬浮条初始定位 / debug.ini）"))
             {
-                GroupBoxAppearance.Visibility = Visibility.Collapsed;
-                ViewBoxStackPanelMain.Visibility = Visibility.Collapsed;
-                ViewBoxStackPanelShapes.Visibility = Visibility.Collapsed;
-                HideSubPanels();
+                if (!App.StartArgs.Contains("-o")) //-old ui
+                {
+                    GroupBoxAppearance.Visibility = Visibility.Collapsed;
+                    ViewBoxStackPanelMain.Visibility = Visibility.Collapsed;
+                    ViewBoxStackPanelShapes.Visibility = Visibility.Collapsed;
+                    HideSubPanels();
 
-                ViewboxFloatingBar.Margin = new Thickness((SystemParameters.WorkArea.Width - 284) / 2, SystemParameters.WorkArea.Height - 80, -2000, -200);
+                    ViewboxFloatingBar.Margin = new Thickness((SystemParameters.WorkArea.Width - 284) / 2, SystemParameters.WorkArea.Height - 80, -2000, -200);
+                }
+                else
+                {
+                    GroupBoxAppearanceNewUI.Visibility = Visibility.Collapsed;
+                    ViewboxFloatingBar.Visibility = Visibility.Collapsed;
+                    GridForRecoverOldUI.Visibility = Visibility.Collapsed;
+                }
+
+                if (File.Exists("debug.ini")) Label.Visibility = Visibility.Visible;
             }
-            else
-            {
-                GroupBoxAppearanceNewUI.Visibility = Visibility.Collapsed;
-                ViewboxFloatingBar.Visibility = Visibility.Collapsed;
-                GridForRecoverOldUI.Visibility = Visibility.Collapsed;
-            }
 
-            if (File.Exists("debug.ini")) Label.Visibility = Visibility.Visible;
+            using (StartupProfiler.Measure("InitTimers()")) InitTimers();
+            using (StartupProfiler.Measure("InitFloatingBarWatchdog()")) InitFloatingBarWatchdog(); // 悬浮条存活性看门狗：拖动卡死自愈 + 运行中强制可见（除非程序关闭）
 
-            InitTimers();
-            InitFloatingBarWatchdog(); // 悬浮条存活性看门狗：拖动卡死自愈 + 运行中强制可见（除非程序关闭）
             timeMachine.OnRedoStateChanged += TimeMachine_OnRedoStateChanged;
             timeMachine.OnUndoStateChanged += TimeMachine_OnUndoStateChanged;
             inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
-            InitNoteScroll();
-            InitImageLayer(); //页面图片层：截图/本地图片按白板页存储（见 MW_ImageLayer.cs）
-            PreviewMouseDown += ImageLayer_MenuCloseOnOutsideClick; //截图菜单：点窗口任意位置自动关闭
-            InitCustomShapes();
-            InitGraphStrokeGroupErasing(); //图形笔迹整组擦除：橡皮碰到图形任意部分即整组消失（见 MW_GraphStrokes.cs）
-            InitShapeIconStyles(); //图形图标三态视觉：悬停浅灰 / 激活蓝色高亮（见 MW_ShapeDrawing.cs）
+
+            using (StartupProfiler.Measure("InitNoteScroll()")) InitNoteScroll();
+            using (StartupProfiler.Measure("InitImageLayer()")) InitImageLayer(); //页面图片层：截图/本地图片按白板页存储（见 MW_ImageLayer.cs）
+            //（截图菜单的"点外自动关闭"原来在这里 PreviewMouseDown += ImageLayer_MenuCloseOnOutsideClick，
+            //  2026-09-11 已并入 MW_PopupLayers.cs 的统一登记表，由 XAML 绑定的 Window_PreviewMouseDown 一并处理）
+            using (StartupProfiler.Measure("InitCustomShapes()")) InitCustomShapes();
+            using (StartupProfiler.Measure("InitGraphStrokeGroupErasing()")) InitGraphStrokeGroupErasing(); //图形笔迹整组擦除：橡皮碰到图形任意部分即整组消失（见 MW_GraphStrokes.cs）
+            using (StartupProfiler.Measure("InitShapeIconStyles()")) InitShapeIconStyles(); //图形图标三态视觉：悬停浅灰 / 激活蓝色高亮（见 MW_ShapeDrawing.cs）
 
             //启动即收起悬浮工具栏，只留笑脸把手（XAML 初始 ScaleX=0；单击把手展开；PPT 放映仍会自动展开）
             //-o（old ui）保持老行为：启动即展开
@@ -106,6 +118,8 @@ namespace Ink_Canvas
             //窗口句柄就绪后挂 Win32 消息钩子：监听设备插拔（WM_DEVICECHANGE），
             //手写板/触摸屏被移除时刷新 WPF 手写笔设备表，防止输入通道悬死（详见下方 DeviceChangeWndProc）
             SourceInitialized += MainWindow_SourceInitialized;
+
+            StartupProfiler.Mark("MainWindow 构造结束");
         }
 
         #endregion
@@ -191,6 +205,7 @@ namespace Ink_Canvas
         /// <summary>窗口句柄就绪：挂上 Win32 消息钩子（构造器里订阅本事件）</summary>
         private void MainWindow_SourceInitialized(object sender, EventArgs e)
         {
+            StartupProfiler.Mark("窗口句柄就绪（SourceInitialized）");
             try
             {
                 var source = System.Windows.Interop.HwndSource.FromHwnd(

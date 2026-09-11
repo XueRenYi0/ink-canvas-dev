@@ -114,7 +114,8 @@ namespace Ink_Canvas
 
             if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
             {
-                SetSelectToolColor(Color.FromRgb(0, 136, 255));
+                // 高亮色统一取自 InkSpec.xaml 的 HighlightBrush（原为硬编码 Color.FromRgb(0,136,255)）
+                SetSelectToolColor(ResolveToolHighlightColor());
             }
             else
             {

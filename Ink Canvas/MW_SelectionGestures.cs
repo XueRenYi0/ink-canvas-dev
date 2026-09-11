@@ -44,6 +44,13 @@ namespace Ink_Canvas
 
         #region Floating Control
 
+        /// <summary>
+        /// 防误触守卫用的"按下源"：XAML 里成对写 <c>MouseDown="Border_MouseDown" MouseUp="Xxx_MouseUp"</c>，
+        /// 处理器首行以 <c>if (lastBorderMouseDownObject != sender) return;</c> 校验，
+        /// 语义 = "按下与松开必须落在同一个元素上"，避免从按钮 A 拖到按钮 B 松手时误触发 B。
+        /// 注意：漏写 XAML 里的 MouseDown 会让该按钮静默失效（守卫直接 return，不报错不记日志）。
+        /// 例外：被代码直调（sender 传 null）的处理器改成 <c>if (sender != null &amp;&amp; ...) return;</c>。
+        /// </summary>
         object lastBorderMouseDownObject;
 
         private void Border_MouseDown(object sender, MouseButtonEventArgs e)
@@ -83,7 +90,7 @@ namespace Ink_Canvas
         private void UpdateCopyDragModeVisual()
         {
             BorderStrokeSelectionClone.Background = isCopyDragMode
-                ? new SolidColorBrush(Color.FromArgb(0x26, 0x00, 0x88, 0xFF))
+                ? CreateHighlightBrush(0x26)   //淡蓝底（15%），与各面板选中态同款
                 : Brushes.Transparent;
         }
 

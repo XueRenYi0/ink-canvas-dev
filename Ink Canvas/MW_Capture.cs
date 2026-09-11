@@ -40,6 +40,8 @@ namespace Ink_Canvas
         /// <summary>相机图标：开/关截图功能弹出菜单（3 项，风格同清屏确认气泡）</summary>
         private void SymbolIconScreenshot_MenuToggle(object sender, MouseButtonEventArgs e)
         {
+            if (lastBorderMouseDownObject != sender) return;
+
             ImageLayer_MenuSetVisible(BorderImageMenu.Visibility != Visibility.Visible);
         }
 
@@ -49,22 +51,14 @@ namespace Ink_Canvas
             BorderImageMenu.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        /// <summary>
-        /// 点菜单外任意位置自动关菜单（触摸屏友好，不用专门找关闭按钮）。
-        /// 挂在窗口 Preview 阶段只做关菜单这一件事，不设 e.Handled，不影响书写/擦除等正常操作。
-        /// </summary>
-        internal void ImageLayer_MenuCloseOnOutsideClick(object sender, MouseButtonEventArgs e)
-        {
-            if (BorderImageMenu.Visibility != Visibility.Visible) return;
-            if (!(e.OriginalSource is DependencyObject d)) return;
-            // 点在菜单内部（含子按钮）不处理，交由各菜单项自己的 Click 逻辑
-            if (IsDescendantOf(d, BorderImageMenu)) return;
-            // 点在相机图标本身也不处理（图标自己的开关逻辑生效）
-            if (IsDescendantOf(d, GridImageMenuEntry)) return;
-            ImageLayer_MenuSetVisible(false);
-        }
+        // 「点菜单外自动关菜单」已并入 MW_PopupLayers.cs 的统一登记表（Window_PreviewMouseDown）。
+        // 原实现是本文件一个独立方法 + MW_Init.cs 里 `PreviewMouseDown += ImageLayer_MenuCloseOnOutsideClick`
+        // 订阅，与笔/选择/橡皮那三段 if 各写一遍、行为不一致；2026-09-11 合并。
+        // 新增弹层请改那张表，不要再恢复独立订阅。
 
-        /// <summary>判断元素是否是 target 的子孙（沿视觉树向上找）</summary>
+        /// <summary>判断元素是否是 target 的子孙（沿视觉树向上找）。
+        /// 注：弹层"点外收起"用的同类判断已迁至 MW_PopupLayers.cs 的 IsVisualDescendantOf
+        /// （多一层 ContentElement 兼容）；此处保留给粘贴气泡 / 墨迹层判断使用。</summary>
         private static bool IsDescendantOf(DependencyObject node, DependencyObject target)
         {
             while (node != null)

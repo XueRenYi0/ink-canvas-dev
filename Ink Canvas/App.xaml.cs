@@ -21,6 +21,9 @@ namespace Ink_Canvas
 
         public App()
         {
+            // 启动耗时诊断零点：对齐"进程启动"时刻（见 Helpers/StartupProfiler.cs）
+            StartupProfiler.Init();
+
             this.Startup += new StartupEventHandler(App_Startup);
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
         }
