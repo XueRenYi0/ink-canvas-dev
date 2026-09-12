@@ -8,8 +8,8 @@
      So the changelog points to the release page (Chinese notes live there) instead of inline text.
      Verify before pushing: every byte < 128, and [xml]$s parses fine. -->
 <item>
-    <version>6.5.5</version>
-    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.5.5/Inkboard-v6.5.5-Setup.exe</url>
-    <changelog>https://github.com/XueRenYi0/ink-canvas-dev/releases/tag/v6.5.5</changelog>
+    <version>6.6.1</version>
+    <url>https://gh-proxy.com/https://github.com/XueRenYi0/ink-canvas-dev/releases/download/v6.6.1/Inkboard-v6.6.1-Setup.exe</url>
+    <changelog>https://github.com/XueRenYi0/ink-canvas-dev/releases/tag/v6.6.1</changelog>
     <mandatory mode="2">false</mandatory>
 </item>
