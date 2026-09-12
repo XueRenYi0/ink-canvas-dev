@@ -1045,51 +1045,67 @@
                                 <Path Data="M4.5,19.5 L5.8,14.9 L8.4,17.5 Z" Fill="#FF52525B"/>
                             </Grid>
                             <!-- 旧 6 色点 + 笔粗细小面板已移入 PenSettingsPanel（点笔图标弹出） -->
-                            <!-- ====== 快捷换色条：对色格（互补色对），常驻浮动条 ======
+                            <!-- ====== 快捷换色条：4 格 × 2 色（色值固定，不跟白板/黑板联动）======
                                  2×2 紧凑布局：格子 13px 零间距贴成一团（26×26px，贴合浮动条内容区高度）；
-                                 每格 = 大色区 11px（默认主色，当前用副色时对调为副色）+ 右下小角标 5px
-                                 （另一色，常显——每格恒定可见两色，随时知道格内有什么颜色可用）+ 选中环 13px。
-                                 对色配对 = RGB 数字色轮标准互补对：
-                                   黑⇄白（明度对，主色随板面：白板黑/黑板白）
-                                   红⇄青、绿⇄品红、蓝⇄黄（色相差 180°）
-                                 交互：单击在对色间循环（当前是主色→切副色，是副色→切主色，
-                                 都不是→切主色）；任何工具状态下点色点都自动切回画笔。
-                                 填充/描边/选中环由 RefreshQuickColorStrip 动态构建（MW_FloatBar.cs）。 -->
-                            <UniformGrid x:Name="StackPanelQuickColors" Rows="2" Columns="2" VerticalAlignment="Center" ToolTip="快捷换色：单击色点在对色间切换（黑⇄白/红⇄青/蓝⇄黄/绿⇄品红）&#10;大色区 = 常用色，右下小角 = 另一色（当前色在格内时亮蓝环）">
-                                <!-- Tag = 格编号（0黑白/1红青/2蓝黄/3绿品红），点击切换逻辑见 QuickColorDot_MouseUp -->
-                                <!-- 每格两层色点（PS 前景/背景色模式）：
-                                     主 Ellipse = 大色区（默认主色；仅当前用副色时对调为副色）
-                                     mini Ellipse = 右下小角标（常显另一色，永不隐藏） -->
-                                <Grid x:Name="QuickColorGridBW" Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="0" ToolTip="快捷换色：黑⇄白（单击切换）&#10;大区默认黑（白板）/白（黑板），当前用另一色时对调；小角为另一色">
-                                    <Ellipse x:Name="QuickColorDotBW" Width="11" Height="11" Fill="Black"/>
-                                    <Ellipse x:Name="QuickColorMiniBW" Width="5" Height="5" Visibility="Collapsed" Fill="White"
+                                 每格 = 大色区 11px（色 A）+ 右下小角标 5px（色 B，常显）。
+                                 八色固定：黑/白 · 红/青 · 蓝/黄 · 绿/品红（配对用互补对只为好记，
+                                 两色是平等的——点哪个用哪个，不做"当前色 → 对色"的跳转）。
+                                 选中态：当前笔色落在色 A → 大区外圈亮蓝环；落在色 B → 小角外圈亮蓝环。
+                                 填充与选中环由 RefreshQuickColorStrip 构建（MW_FloatBar.cs）。 -->
+                            <UniformGrid x:Name="StackPanelQuickColors" Rows="2" Columns="2" VerticalAlignment="Center" ToolTip="快捷换色：点大色区用大区的颜色，点右下小角用小角的颜色（不再自动跳色）&#10;黑/白 · 红/青 · 蓝/黄 · 绿/品红，色值固定，不随白板黑板切换">
+                                <!-- Tag = 格编号（0黑白/1红青/2蓝黄/3绿品红），处理逻辑见 MW_FloatBar.cs -->
+                                <!-- 每格：大色区 Ellipse（色 A）+ 右下小角 Ellipse（色 B，恒显）
+                                     + 两个选中环（IsHitTestVisible=False，否则会挡住色点的点击） -->
+                                <Grid x:Name="QuickColorGridBW" Width="13" Height="13" Background="Transparent" Tag="0" ToolTip="黑白：点大区用黑，点右下小角用白">
+                                    <Ellipse x:Name="QuickColorDotBW" Width="11" Height="11" Fill="Black"
+                                             Tag="0" MouseUp="QuickColorMainDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorMiniBW" Width="5" Height="5" Fill="White"
                                              HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
-                                             Stroke="#80808080" StrokeThickness="0.5"/>
-                                    <Ellipse x:Name="QuickColorRingBW" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="#80808080" StrokeThickness="0.5"
+                                             Tag="0" MouseUp="QuickColorMiniDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorRingBW" Visibility="Collapsed" Width="13" Height="13" IsHitTestVisible="False"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
+                                    <Ellipse x:Name="QuickColorMiniRingBW" Visibility="Collapsed" Width="8" Height="8" IsHitTestVisible="False"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                              Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="1" ToolTip="快捷换色：红⇄青（单击切换）&#10;大色区为当前色，右下小角为另一色">
-                                    <Ellipse x:Name="QuickColorDotRC" Width="11" Height="11" Fill="Red"/>
-                                    <Ellipse x:Name="QuickColorMiniRC" Width="5" Height="5" Visibility="Collapsed" Fill="#FF00D5D5"
+                                <Grid Width="13" Height="13" Background="Transparent" Tag="1" ToolTip="红青：点大区用红，点右下小角用青">
+                                    <Ellipse x:Name="QuickColorDotRC" Width="11" Height="11" Fill="Red"
+                                             Tag="1" MouseUp="QuickColorMainDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorMiniRC" Width="5" Height="5" Fill="#FF00D5D5"
                                              HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
-                                             Stroke="#80808080" StrokeThickness="0.5"/>
-                                    <Ellipse x:Name="QuickColorRingRC" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="#80808080" StrokeThickness="0.5"
+                                             Tag="1" MouseUp="QuickColorMiniDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorRingRC" Visibility="Collapsed" Width="13" Height="13" IsHitTestVisible="False"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
+                                    <Ellipse x:Name="QuickColorMiniRingRC" Visibility="Collapsed" Width="8" Height="8" IsHitTestVisible="False"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                              Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="2" ToolTip="快捷换色：蓝⇄黄（单击切换）&#10;大色区为当前色，右下小角为另一色">
-                                    <Ellipse x:Name="QuickColorDotBY" Width="11" Height="11" Fill="Blue"/>
-                                    <Ellipse x:Name="QuickColorMiniBY" Width="5" Height="5" Visibility="Collapsed" Fill="Yellow"
+                                <Grid Width="13" Height="13" Background="Transparent" Tag="2" ToolTip="蓝黄：点大区用蓝，点右下小角用黄">
+                                    <Ellipse x:Name="QuickColorDotBY" Width="11" Height="11" Fill="Blue"
+                                             Tag="2" MouseUp="QuickColorMainDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorMiniBY" Width="5" Height="5" Fill="Yellow"
                                              HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
-                                             Stroke="#80808080" StrokeThickness="0.5"/>
-                                    <Ellipse x:Name="QuickColorRingBY" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="#80808080" StrokeThickness="0.5"
+                                             Tag="2" MouseUp="QuickColorMiniDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorRingBY" Visibility="Collapsed" Width="13" Height="13" IsHitTestVisible="False"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
+                                    <Ellipse x:Name="QuickColorMiniRingBY" Visibility="Collapsed" Width="8" Height="8" IsHitTestVisible="False"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                              Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
-                                <Grid Width="13" Height="13" Background="Transparent" MouseUp="QuickColorDot_MouseUp" Tag="3" ToolTip="快捷换色：绿⇄品红（单击切换）&#10;大区默认绿，当前用品红时对调；小角为另一色">
-                                    <Ellipse x:Name="QuickColorDotGM" Width="11" Height="11" Fill="Green"/>
-                                    <Ellipse x:Name="QuickColorMiniGM" Width="5" Height="5" Visibility="Collapsed" Fill="#FFE040FB"
+                                <Grid Width="13" Height="13" Background="Transparent" Tag="3" ToolTip="绿品红：点大区用绿，点右下小角用品红">
+                                    <Ellipse x:Name="QuickColorDotGM" Width="11" Height="11" Fill="Green"
+                                             Tag="3" MouseUp="QuickColorMainDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorMiniGM" Width="5" Height="5" Fill="#FFE040FB"
                                              HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1.5,1.5"
-                                             Stroke="#80808080" StrokeThickness="0.5"/>
-                                    <Ellipse x:Name="QuickColorRingGM" Visibility="Collapsed" Width="13" Height="13"
+                                             Stroke="#80808080" StrokeThickness="0.5"
+                                             Tag="3" MouseUp="QuickColorMiniDot_MouseUp"/>
+                                    <Ellipse x:Name="QuickColorRingGM" Visibility="Collapsed" Width="13" Height="13" IsHitTestVisible="False"
+                                             Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
+                                    <Ellipse x:Name="QuickColorMiniRingGM" Visibility="Collapsed" Width="8" Height="8" IsHitTestVisible="False"
+                                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                              Stroke="{DynamicResource HighlightBrush}" StrokeThickness="1.2" Fill="Transparent"/>
                                 </Grid>
                             </UniformGrid>
@@ -1486,8 +1502,15 @@
                                          内容分五组：手势 / 板面 / 墨迹 / 工具 / 系统。
                                          每个条目都改为「图标 + 汉字标签」纵向堆叠（触摸友好、一眼可辨，
                                          也省掉了原先进度条式的分隔线）；汉字直接说明功能，不再依赖 ToolTip。
-                                         尺寸靠负 Margin 定死：宽 = 20 - 37 + |right|，高 = 24 + |top| + 6 -->
-                                    <Border Name="BorderTools" Margin="37,-330,-207,-6" CornerRadius="5" Background="{DynamicResource FloatBarBackground}" BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
+                                         ★ 2026-09-11 定位改法：不再用负 Margin 吊在图标右上方（那套造成
+                                         "面板整体偏右、底边扎出工具条、与另外三个面板观感不一致"），
+                                         改为运行期解挂到 Main_Grid 根层 + 绝对定位，与笔/橡皮/选择三面板
+                                         统一（见 MW_FloatBar.cs 的 DetachToolsPanelToRoot / PositionBorderTools）。
+                                         底色单独用 FloatBarBackgroundOpaque（α97%）：本面板条目最多，
+                                         沿用 85% 半透明时文字会与背后窗口内容重影。 -->
+                                    <Border Name="BorderTools" Visibility="Collapsed" CornerRadius="5"
+                                            Background="{DynamicResource FloatBarBackgroundOpaque}"
+                                            BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
                                         <ui:SimpleStackPanel>
                                             <Label Content="更多" FontSize="14" Foreground="{DynamicResource FloatBarForeground}"
                                                    HorizontalAlignment="Left" Margin="8,8"/>
@@ -1514,12 +1537,31 @@
                                                     <TextBlock Text="双指手势" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="手指模式" FontSize="11" HorizontalAlignment="Center"
+                                                <!-- 手指模式（2026-09-11 重构）：与「双指手势」完全同构的二态图标条目。
+                                                     原先是「FontSize=11 标签 + Viewbox 缩放的 70 宽 ToggleSwitch」，
+                                                     破了本面板「20×24 图标 + 10px 标签」的统一网格 → 标签基线比同行高一截、
+                                                     开关描边被 Viewbox 非整数缩放糊掉、OffContent「关」走 ModernWpf
+                                                     内部样式导致字号不受控。现改为：点整格切换；开＝手指图标，
+                                                     关＝图标叠斜杠（沿用双指手势同一套斜杠 Data 与 IconStrokeBold）。
+                                                     ★ 点击必须写回 ToggleSwitchModeFinger.IsOn —— 它才是落盘通道，
+                                                       其 Toggled 会同步「自动进入手指模式」并保存设置（MW_RightPanel.cs:456）。 -->
+                                                <StackPanel>
+                                                    <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
+                                                          ToolTip="手指模式&#10;开启后把整根手指当笔（放大触摸面积阈值），适合没有笔的触摸屏"
+                                                          MouseUp="SymbolIconFingerMode_MouseUp" MouseDown="Border_MouseDown">
+                                                        <Path x:Name="PathFingerSingle" Fill="{DynamicResource FloatBarForeground}">
+                                                            <Path.Data>
+                                                                <GeometryGroup>
+                                                                    <RectangleGeometry Rect="7.3,4.2,5.4,15" RadiusX="2.7" RadiusY="2.7"/>
+                                                                    <RectangleGeometry Rect="4.9,19.2,9.8,2.5" RadiusX="1.25" RadiusY="1.25"/>
+                                                                </GeometryGroup>
+                                                            </Path.Data>
+                                                        </Path>
+                                                        <Path x:Name="PathFingerModeSlash" Visibility="Collapsed" Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="{StaticResource IconStrokeBold}"
+                                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" Data="M3.7,20.5 L16.3,3.5"/>
+                                                    </Grid>
+                                                    <TextBlock Text="手指模式" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
-                                                    <Viewbox Height="21" Margin="0,3,0,0">
-                                                        <ui:ToggleSwitch Foreground="{DynamicResource FloatBarForeground}" IsOn="{Binding ElementName=ToggleSwitchModeFinger, Path=IsOn}" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" MinWidth="0" Width="70"/>
-                                                    </Viewbox>
                                                 </StackPanel>
                                             </ui:SimpleStackPanel>
                                             <!-- ===== 组：板面 ===== -->

@@ -10,7 +10,7 @@ v6.0.0 起产品更名为 **Inkboard**。
 ## 项目现状
 
 - **框架**：.NET Framework 4.7.2 WPF（保持不动，Win10/Win11 均可运行）
-- **版本**：6.5.5（版本号分散在 5 处，发版必须同步，见"版本号同步清单"）
+- **版本**：6.6.1（版本号分散在 5 处，发版必须同步，见"版本号同步清单"）
 - **主要依赖**：iNKORE UI WPF、Autoupdater.NET、Microsoft.Office.Interop.PowerPoint、
   内置墨迹识别库（IACore.dll / IALoader.dll / IAWinFX.dll / Microsoft.Ink.dll）
 - **csproj 为 SDK 风格**：新增 .cs 文件自动包含进编译，无需手动登记
@@ -48,6 +48,29 @@ v6.0.0 起产品更名为 **Inkboard**。
    弹层行为统一 —— 新增统一关闭入口 `ClosePopupLayers`（`MW_FloatBar.cs`）与点外收起登记表
    （新文件 `MW_PopupLayers.cs`），「更多」面板现在点外面即收起，修掉"开着橡皮面板收起工具条、
    面板孤零零留在屏幕上"
+8. **v6.6.1**：颜色与面板定位修正版 ——
+   ① **修「点检查更新没反应」**（用户反馈）：更新弹窗里选过"延迟 30 分钟"（或"跳过此版本"）之后，
+   再点「检查更新」完全静默、连 toast 都不变。根因是 AutoUpdater.NET 1.8.1 的两层拦截叠加：
+   延迟时间点存在注册表 `HKCU\Software\Inkboard Team\Inkboard · 板书白板\AutoUpdater\RemindLaterAt`，
+   `CheckUpdate()` 读到"还没到点"就 `return remindLaterAt`（不是 args）；同时 `UpdateForm` 会调
+   `SetTimer()` 挂一个进程内 `_remindLaterTimer`，而 `Start()` 开头是
+   `if (Running || _remindLaterTimer != null) return;` —— 于是请求都不发、也不触发
+   `CheckForUpdateEvent`（我们的全部 UI 反馈都在这个回调里）。现在手动检查前先
+   `ClearUpdateBlockers()`（清注册表 RemindLaterAt/SkippedVersion + 反射取消定时器），
+   自动检查保持不打扰。**注意：库没有公开 API 取消该定时器，只能反射私有静态字段
+   `_remindLaterTimer`，升级 AutoUpdater.NET 版本时要重新核对这个字段名**
+   ② **快捷换色条改版**：4 格 × 2 色 = 固定八色（黑/白 · 红/青 · 蓝/黄 · 绿/品红），
+   点哪个用哪个（原先是"单击在对色间跳转"，点击结果取决于当前色，反直觉）；
+   大/小色区各有独立选中环，选中环 `IsHitTestVisible=False`（否则盖住色点挡住点击）
+   ③ **画笔四色统一**：`SetColors()` 不再按白板/黑板装载两套配色（同一格颜色会随板面悄悄变），
+   统一一套出厂色，仍可用 `Colors\Colors.ini`（四行）覆盖；进板面也不再强制改成红笔
+   ④ **「更多」面板解挂**：`BorderTools` 从 `BorderFloatingBarMainControls`（缩放容器）内解挂到
+   根层，与笔/橡皮/选择三个面板统一用 `Main_Grid` 绝对坐标定位（原靠负 Margin 表达，
+   面板偏右且底边扎出工具条）；内容密集，单开高不透明度背景键 `FloatBarBackgroundOpaque`
+   （α≈97%，浅 `#F7FFFFFF` / 深 `#F7000000`）消除文字与背后窗口的重影
+   ⑤ **激光笔不参与停顿拉直**：拉直生成的直线走 `Strokes.Add` 程序化提交、不触发
+   `StrokeCollected`，激光淡出永不启动，属性里又带着 `LaserStrokeGuid` → 直线永久留在画布上
+   且被 TimeMachine 判为临时笔迹、进不了撤销栈
 
 ## 已知待优化项（后续接手时先看这里）
 

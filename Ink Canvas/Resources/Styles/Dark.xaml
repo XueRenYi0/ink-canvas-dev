@@ -4,6 +4,10 @@
          与 Light.xaml 对齐成同一个 α（原来浅 62% / 深 53% 不对称），
          同时把桌面批注时背后内容透出的对比度压到 1.4:1 以下（看不见）。 -->
     <SolidColorBrush x:Key="FloatBarBackground" Color="#D9000000"/>
+    <!-- 高不透明度版（α≈97%，247/255）：与 Light.xaml 同名键一一对应，
+         供内容密集的弹层（目前只有「更多」面板 BorderTools）使用。两套字典必须同时存在此键，
+         否则 DynamicResource 在缺键的主题下解析失败 → 面板背景变全透明。 -->
+    <SolidColorBrush x:Key="FloatBarBackgroundOpaque" Color="#F7000000"/>
     <SolidColorBrush x:Key="FloatBarBorderBrush" Color="#BFcccccc"/>
     <SolidColorBrush x:Key="FloatBarForeground" Color="#cccccc"/>
     <Color x:Key="FloatBarForegroundColor">#FFcccccc</Color>

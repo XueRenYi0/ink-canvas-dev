@@ -80,6 +80,20 @@ using System.Windows;
 //            新增启动耗时分段剖析日志（便于后续定位）
 //         ④ 稳定性：工具栏防误触守卫补全 37 处（修掉"按下与松开不在同一元素也误触发"）；
 //            弹层行为统一（新增统一关闭入口 + 点外收起登记表，「更多」面板现在点外即收）
-[assembly: AssemblyVersion("6.5.5.0")]
-[assembly: AssemblyFileVersion("6.5.2026.0911")]
-[assembly: AssemblyInformationalVersion("6.5.5")]
+// v6.6.1：颜色与面板定位修正版 ——
+//         ① 修「点检查更新没反应」：更新弹窗里选过"延迟 30 分钟"（或"跳过此版本"）之后，
+//            再点检查更新完全静默 —— AutoUpdater.NET 把延迟时间点存在注册表 RemindLaterAt，
+//            并在内存挂了 _remindLaterTimer，两者都会让 Start() 连请求都不发就返回，
+//            且不触发结果回调（UI 反馈全在回调里）。现在手动检查会先清掉这两处拦截
+//         ② 快捷换色条改版：4 格 × 2 色 = 固定八色（黑/白 · 红/青 · 蓝/黄 · 绿/品红），
+//            点哪个用哪个（原来是"单击在对色间跳转"）；大小色区各自独立选中环
+//         ③ 画笔四色不再随白板/黑板切两套色（点同一格拿到的颜色会悄悄变）——
+//            统一一套出厂色，仍可用 Colors\Colors.ini 覆盖；进板面也不再强制改成红笔
+//         ④ 悬浮栏「更多」面板解挂到根层、改用绝对坐标定位（原来吊在缩放容器内，
+//            只能靠负 Margin 表达，面板偏右且底边扎出工具条）；内容密集故单开
+//            高不透明度背景键 FloatBarBackgroundOpaque（α≈97%），消除文字与背后窗口重影
+//         ⑤ 激光笔不参与停顿拉直：拉直生成的直线不经 StrokeCollected，激光淡出永不启动，
+//            会永久留在画布上且进不了撤销栈
+[assembly: AssemblyVersion("6.6.1.0")]
+[assembly: AssemblyFileVersion("6.6.2026.0912")]
+[assembly: AssemblyInformationalVersion("6.6.1")]

@@ -484,8 +484,9 @@ namespace Ink_Canvas
                 GridBackgroundCoverHolder.Visibility = Visibility.Visible;
                 GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
 
-                if (ImageEraserMask.Visibility == Visibility.Visible)
-                    BtnColorRed_Click(sender, null);
+                // 原"橡皮选中状态下进板面 → 强制变红笔"已删除（2026-09-12）：
+                // 它会在用户点过橡皮之后进板面时悄悄改掉笔色，与我们"颜色只由用户点色驱动"的规则冲突。
+                // 进板面后如果笔色与板面底色冲突（如黑笔进黑板），由用户自己点白/黑即可。
 
                 if (GridBackgroundCover.Visibility == Visibility.Collapsed)
                 {

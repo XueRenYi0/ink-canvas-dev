@@ -701,6 +701,13 @@ namespace Ink_Canvas
         {
             try
             {
+                // 激光笔不参与拉直（与 inkCanvas_StrokeCollected 开头的激光笔 return 同口径：
+                // 激光笔迹不进任何识别流程）。原因：拉直生成的新直线走 Strokes.Add 程序化提交，
+                // 不触发 StrokeCollected → StartLaserFade 永不启动；而它的属性来自
+                // DefaultDrawingAttributes.Clone()，会带着 LaserStrokeGuid 标记 →
+                // 直线永久留在画布上，且被 TimeMachine 判为临时笔迹而不进撤销栈（Ctrl+Z 也撤不掉）。
+                if (currentPenType == PenType.Laser) return;
+
                 // 仅画笔模式 + 墨迹识别开启 + 非多指手势时启用
                 if (!Settings.InkToShape.IsInkToShapeEnabled) return;
                 if (inkCanvas.EditingMode != InkCanvasEditingMode.Ink) return;

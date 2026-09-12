@@ -229,122 +229,101 @@ namespace Ink_Canvas
             PenSettingsPanel.UpdateColorHighlight(inkColor);
         }
 
-        #region 快捷换色条（常驻浮动条：对色格——黑⇄白 / 红⇄青 / 蓝⇄黄 / 绿⇄品红）
+        #region 快捷换色条（常驻浮动条：4 格 × 2 色，色值固定，不跟白板/黑板联动）
 
         /// <summary>
-        /// 快捷换色条色点单击：Tag = 格编号 → 在对色间循环切换。
-        /// 切换规则（当前色是这格的两色之一 → 切到另一个；否则 → 切到主色）：
-        /// - 黑白格：白板下当前黑→切白、当前白→切黑；黑板下主副互换（主=白）
-        /// - 红青格：红⇄青；蓝黄格：蓝⇄黄；绿品红格：绿⇄品红
-        /// 切换走 SelectPenColorByIndex：任何工具状态下点色点都会自动切回画笔。
+        /// 色槽表：4 格 × 2 槽 = 8 色（固定，不随板面变）。
+        /// 每格 [0] = 大色区（色 A），[1] = 右下小角（色 B）。
+        /// 索引语义与全局一致：0黑 1红 2绿 3蓝 4黄 5白 7品红 8青。
+        /// 配对仍用标准互补对（黑/白 · 红/青 · 蓝/黄 · 绿/品红）只是为了好记；
+        /// 两色是**平等**的：点哪个用哪个，不做"当前色 → 对色"的跳转。
         /// </summary>
-        private void QuickColorDot_MouseUp(object sender, MouseButtonEventArgs e)
+        private static readonly int[,] QuickColorSlots = new int[4, 2]
         {
-            if (!(sender is Grid grid) || !int.TryParse(grid.Tag?.ToString(), out int slot)) return;
+            { 0, 5 }, // 黑白
+            { 1, 8 }, // 红青
+            { 3, 4 }, // 蓝黄
+            { 2, 7 }, // 绿品红
+        };
 
-            var (primary, secondary) = GetQuickColorPair(slot);
-            int target;
-            if (inkColor == primary) target = secondary;      // 当前是主色 → 切副色
-            else if (inkColor == secondary) target = primary; // 当前是副色 → 切主色
-            else target = primary;                            // 当前是别的色 → 先选主色
-
-            SelectPenColorByIndex(target);
-        }
-
-        /// <summary>
-        /// 取对色格的（主色索引，副色索引）。
-        /// 索引语义与面板色格一致：0黑 1红 2绿 3蓝 4黄 5白 7品红 8青。
-        /// 黑白格主色随板面：白板黑(0)/黑板白(5)——黑板下黑看不见，主书写色必须是白。
-        /// </summary>
-        private (int primary, int secondary) GetQuickColorPair(int slot)
+        /// <summary>取色槽颜色：红/绿/蓝/黄与右面板色块同源，黑白青品红取常量/扩展色。
+        /// 右面板色块已不再按板面换两套（见 SetColors），所以这里读到的色是稳定的。</summary>
+        private Color GetQuickColorValue(int slot, int sub)
         {
-            bool isLight = currentMode != 0 && !Settings.Canvas.UsingWhiteboard;
-            switch (slot)
+            switch (QuickColorSlots[slot, sub])
             {
-                case 0: return isLight ? (0, 5) : (5, 0); // 黑⇄白（主色随板面）
-                case 1: return (1, 8);                    // 红⇄青
-                case 2: return (3, 4);                    // 蓝⇄黄
-                default: return (2, 7);                   // 绿⇄品红
+                case 0: return Colors.Black;
+                case 1: return ((SolidColorBrush)BtnColorRed.Background).Color;
+                case 2: return ((SolidColorBrush)BtnColorGreen.Background).Color;
+                case 3: return ((SolidColorBrush)BtnColorBlue.Background).Color;
+                case 4: return ((SolidColorBrush)BtnColorYellow.Background).Color;
+                case 5: return StringToColor("#FFFEFEFE");
+                case 7: return ExtraColors[1]; // 品红
+                default: return ExtraColors[2]; // 8 = 青
             }
         }
 
-        /// <summary>当前笔色在这对色中的位置：0=主色 1=副色 -1=都不是（大区/角标/选中环共用）</summary>
-        private int GetPairActiveIndex((int primary, int secondary) pair)
+        /// <summary>大色区单击：用大区显示的那个颜色（不跳色、不看板面）；任何工具状态下都切回画笔</summary>
+        private void QuickColorMainDot_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (inkColor == pair.primary) return 0;
-            if (inkColor == pair.secondary) return 1;
+            if (!(sender is FrameworkElement fe) || !int.TryParse(fe.Tag?.ToString(), out int slot)) return;
+            if (slot < 0 || slot > 3) return;
+            ApplyQuickColor(QuickColorSlots[slot, 0], GetQuickColorValue(slot, 0));
+        }
+
+        /// <summary>右下小角单击：用小角显示的那个颜色</summary>
+        private void QuickColorMiniDot_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is FrameworkElement fe) || !int.TryParse(fe.Tag?.ToString(), out int slot)) return;
+            if (slot < 0 || slot > 3) return;
+            ApplyQuickColor(QuickColorSlots[slot, 1], GetQuickColorValue(slot, 1));
+        }
+
+        /// <summary>
+        /// 应用快捷色：设色 + 记索引 + 清橡皮意图 + 走 ColorSwitchCheck（与点色块完全同一条路径），
+        /// 保证"右面板高亮 / 笔身颜色 / 条上选中环"三处同步；除颜色外不做任何别的事。
+        /// </summary>
+        private void ApplyQuickColor(int index, Color color)
+        {
+            inkCanvas.DefaultDrawingAttributes.Color = color;
+            inkColor = index;
+            forceEraser = false;
+            ColorSwitchCheck();
+        }
+
+        /// <summary>当前笔色在本格的哪个槽：0=大色区 1=右下小角 -1=都不在（选中环共用）</summary>
+        private int GetQuickColorSlotActive(int slot)
+        {
+            if (inkColor == QuickColorSlots[slot, 0]) return 0;
+            if (inkColor == QuickColorSlots[slot, 1]) return 1;
             return -1;
         }
 
         /// <summary>
-        /// 套用一格的显示状态（PS 前景色/背景色模式——面积比例 + 上下层级指示当前色）：
-        /// - 默认（当前是主色或不在本对，如橙/自定义色）→ 大色区主色 + 右下小角标副色
-        /// - 当前正在用副色 → 大区副色 + 小角主色（一点即回主色）
-        /// 小角标常显、永不隐藏：每格恒定可见两色，用户随时一眼读出格内有什么颜色可用。
-        /// 面积对比（大区 11px : 角标 5px ≈ 5:1）醒目易读，"当前色是否在这格"由选中环单独表达。
-        /// </summary>
-        private void ApplyPairDot(Ellipse mainDot, Ellipse miniDot,
-            (int primary, int secondary) pair, Color primaryC, Color secondaryC)
-        {
-            if (GetPairActiveIndex(pair) == 1)
-            {
-                // 当前用副色 → 大区显示副色、小角显示主色
-                mainDot.Fill = new SolidColorBrush(secondaryC);
-                miniDot.Fill = new SolidColorBrush(primaryC);
-            }
-            else
-            {
-                // 当前是主色或不在本对 → 大区主色 + 小角副色（默认布局）
-                mainDot.Fill = new SolidColorBrush(primaryC);
-                miniDot.Fill = new SolidColorBrush(secondaryC);
-            }
-            miniDot.Visibility = Visibility.Visible;
-        }
-
-        /// <summary>
-        /// 刷新快捷换色条状态（由 UpdatePenIconColor 搭车调用——换色/配色切换/启动恢复都会走到）：
-        /// 1. 大色区 = 主色（仅当前用副色时对调为副色）；
-        /// 2. 右下小角标 = 另一色（常显，随时可读出这格的两个颜色）；
-        /// 3. 黑白格主色随板面（白板黑/黑板白）+ 细灰描边防隐身；
-        /// 4. 选中环：当前色是这格任一色 → 亮环；橙/自定义色不在四格内 → 全灭。
+        /// 刷新快捷换色条：四格两色**恒定显示**（位置与色值都不随板面/当前色变），
+        /// 只有"当前笔色落在哪一槽"用亮蓝环表达 ——
+        /// 落在色 A → 大区外圈环；落在色 B → 小角外圈环；橙/自定义色不在四格内 → 四格都不亮环。
+        /// 由 UpdatePenIconColor 搭车调用（换色/启动恢复的公共汇合点；函数名没提色条，改调用链时注意）。
         /// </summary>
         private void RefreshQuickColorStrip()
         {
             try
             {
-                // 板面判断：与 SetColors 完全同款表达式（Light 配色 ⇔ 白板）
-                bool isLight = currentMode != 0 && !Settings.Canvas.UsingWhiteboard;
+                var mainDots = new[] { QuickColorDotBW, QuickColorDotRC, QuickColorDotBY, QuickColorDotGM };
+                var miniDots = new[] { QuickColorMiniBW, QuickColorMiniRC, QuickColorMiniBY, QuickColorMiniGM };
+                var mainRings = new[] { QuickColorRingBW, QuickColorRingRC, QuickColorRingBY, QuickColorRingGM };
+                var miniRings = new[] { QuickColorMiniRingBW, QuickColorMiniRingRC, QuickColorMiniRingBY, QuickColorMiniRingGM };
 
-                var bw = GetQuickColorPair(0);
-                var rc = GetQuickColorPair(1);
-                var by = GetQuickColorPair(2);
-                var gm = GetQuickColorPair(3);
+                for (int slot = 0; slot < 4; slot++)
+                {
+                    mainDots[slot].Fill = new SolidColorBrush(GetQuickColorValue(slot, 0));
+                    miniDots[slot].Fill = new SolidColorBrush(GetQuickColorValue(slot, 1));
+                    miniDots[slot].Visibility = Visibility.Visible; // 小角常显，永不隐藏
 
-                // ---- 黑白格：主色随板面（白板黑/黑板白），主点细灰描边防隐身 ----
-                Color bwPrimary = isLight ? Colors.Black : StringToColor("#FFFEFEFE");
-                Color bwSecondary = isLight ? StringToColor("#FFFEFEFE") : Colors.Black;
-                ApplyPairDot(QuickColorDotBW, QuickColorMiniBW, bw, bwPrimary, bwSecondary);
-                QuickColorDotBW.Stroke = new SolidColorBrush(Color.FromArgb(128, 128, 128, 128));
-                QuickColorDotBW.StrokeThickness = 0.75;
-
-                // ---- 红青格：红与右面板同源（白板纯红/黑板亮红），青为固定扩展色 ----
-                ApplyPairDot(QuickColorDotRC, QuickColorMiniRC, rc,
-                    ((SolidColorBrush)BtnColorRed.Background).Color, ExtraColors[2]);
-
-                // ---- 蓝黄格：蓝黄都与右面板同源（黑板下黄为纯黄、蓝提亮） ----
-                ApplyPairDot(QuickColorDotBY, QuickColorMiniBY, by,
-                    ((SolidColorBrush)BtnColorBlue.Background).Color,
-                    ((SolidColorBrush)BtnColorYellow.Background).Color);
-
-                // ---- 绿品红格：绿与右面板同源，品红为固定扩展色 ----
-                ApplyPairDot(QuickColorDotGM, QuickColorMiniGM, gm,
-                    ((SolidColorBrush)BtnColorGreen.Background).Color, ExtraColors[1]);
-
-                // ---- 选中环：当前色 = 这层任一色 → 亮环（与大区纯色互为印证） ----
-                QuickColorRingBW.Visibility = GetPairActiveIndex(bw) >= 0 ? Visibility.Visible : Visibility.Collapsed;
-                QuickColorRingRC.Visibility = GetPairActiveIndex(rc) >= 0 ? Visibility.Visible : Visibility.Collapsed;
-                QuickColorRingBY.Visibility = GetPairActiveIndex(by) >= 0 ? Visibility.Visible : Visibility.Collapsed;
-                QuickColorRingGM.Visibility = GetPairActiveIndex(gm) >= 0 ? Visibility.Visible : Visibility.Collapsed;
+                    int active = GetQuickColorSlotActive(slot);
+                    mainRings[slot].Visibility = active == 0 ? Visibility.Visible : Visibility.Collapsed;
+                    miniRings[slot].Visibility = active == 1 ? Visibility.Visible : Visibility.Collapsed;
+                }
             }
             catch { }
         }
@@ -409,6 +388,12 @@ namespace Ink_Canvas
         /// <summary>上次点选择图标的时间（双击检测：500ms 内两击 = 全选，恢复经典交互）</summary>
         private DateTime _lastSelectIconClickTime = DateTime.MinValue;
 
+        /// <summary>
+        /// 选择图标单击（两段式，2026-09-11 改）：
+        /// 从别的工具切进来 → 只进入选择模式，**不弹面板**；
+        /// 已经在选择模式时再点图标 → 才弹/收选择方式面板（矩形框选/自由选择/全选）。
+        /// 双击（500ms 内两击）仍为全选当前页墨迹。
+        /// </summary>
         private void SymbolIconSelect_MouseUp(object sender, MouseButtonEventArgs e)
         {
             // 双击（500ms 内两击）→ 全选当前页墨迹（经典交互回归：点两下选择图标=全选）
@@ -422,10 +407,15 @@ namespace Ink_Canvas
             }
             _lastSelectIconClickTime = now;
 
-            // 面板已打开 → 再点图标仅收起面板（toggle），不重复切换模式
-            if (SelectionModePanel.Visibility == Visibility.Visible)
+            // 两段式：面板只在"点击当下已经是选择模式"时才弹/收。
+            // 已在选择模式 → 再点图标 = 调选择方式（弹/收面板，ToggleSelectionModePanel 自带 toggle）；
+            // 从别的工具切进来 → 只进入选择模式，面板不弹（切工具是为了框选，不是为了调方式；
+            // 弹出面板会挡住板书，还得多点一次才能收起）。
+            // 顺带修掉旧实现的视觉瑕疵：双击全选时第一击会先弹面板、第二击才关掉 → 面板闪一下；
+            // 两段式下第一击不再弹面板，双击路径变干净。
+            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
             {
-                CloseSelectionModePanel();
+                ToggleSelectionModePanel();
                 return;
             }
 
@@ -438,10 +428,9 @@ namespace Ink_Canvas
             ViewboxBtnColorRedContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
             ViewboxBtnColorYellowContent.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(ColorSwiftOpacityDurationOff)));
 
+            // HideSubPanels 内含 CloseSelectionModePanel：切进来时不残留任何面板。
+            // （选择方式面板改由"已在选择模式时再点图标"打开，见上方两段式注释）
             HideSubPanels();
-
-            // 选择方式面板随选择模式弹出（矩形框选/自由选择/全选）
-            ToggleSelectionModePanel();
         }
 
         private void SymbolIconScreenshot_MouseUp(object sender, MouseButtonEventArgs e)
@@ -479,14 +468,11 @@ namespace Ink_Canvas
                         ViewboxFloatingBar.Margin = new Thickness((SystemParameters.PrimaryScreenWidth - ViewboxFloatingBar.ActualWidth) / 2, SystemParameters.PrimaryScreenHeight - 60, -2000, -200);
                     });
                 })).Start();
-                if (Settings.Canvas.UsingWhiteboard)
-                {
-                    BorderPenColorBlack_MouseUp(null, null);
-                }
-                else
-                {
-                    BorderPenColorWhite_MouseUp(null, null);
-                }
+                // 不再按板面自动改笔色（2026-09-12 改）：
+                // 原"白板→黑笔 / 黑板→白笔"会让用户刚选的色被悄悄换掉，
+                // 现在进板面前后保持用户当前笔色，需要换色自己点色块/色点。
+                // （原来这里顺带收起子面板，改色逻辑删掉后单独保留这个副作用）
+                HideSubPanels();
             }
             else
             {
@@ -512,7 +498,8 @@ namespace Ink_Canvas
                         });
                     })).Start();
                 }
-                BorderPenColorRed_MouseUp(null, null);
+                // 关黑板不再强制红笔（2026-09-12）：保持用户当前笔色（原来是 BorderPenColorRed_MouseUp）
+                HideSubPanels();
             }
             BtnSwitch_Click(BtnSwitch, null);
 
@@ -527,19 +514,33 @@ namespace Ink_Canvas
         }
 
         /// <summary>
-        /// 橡皮图标单击（新交互，与笔图标同款模式）：
-        /// 进入上次的擦除方式（不再 toggle）+ 展开/收起橡皮设置面板。
+        /// 橡皮图标单击（两段式，2026-09-11 改）：
+        /// 从别的工具切进来 → 只进入橡皮，**不弹面板**；
+        /// 已经在橡皮时再点图标 → 才弹/收橡皮设置面板。
         /// 擦除方式/大小只在面板里切（原"点图标 toggle 擦除方式"已废弃——不可见、易误切）。
         /// </summary>
         private void ImageEraser_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (lastBorderMouseDownObject != sender) return;
 
+            // 点击当下是否已在橡皮（BtnErase_Click 会按记忆的方式二选一设置 EditingMode：
+            // 面积擦 EraseByPoint / 笔画擦 EraseByStroke）
+            bool alreadyEraser = inkCanvas.EditingMode == InkCanvasEditingMode.EraseByPoint
+                              || inkCanvas.EditingMode == InkCanvasEditingMode.EraseByStroke;
+
             // 进入橡皮模式（BtnErase_Click 已改为固定进入当前方式，不 toggle）
             BtnErase_Click(BtnErase, e);
 
-            // 面板显隐 + 定位（MW_EraserSettings.cs）
-            ToggleEraserSettingsPanel();
+            if (alreadyEraser)
+            {
+                // 已在橡皮 → 再点图标 = 调擦除方式/大小（面板显隐 + 定位，MW_EraserSettings.cs）
+                ToggleEraserSettingsPanel();
+            }
+            else
+            {
+                // 刚从别的工具切进来 → 不弹面板，并兜底关闭（避免任何残留面板挡住板书）
+                CloseEraserSettingsPanel();
+            }
         }
 
         private void ImageCountdownTimer_MouseUp(object sender, MouseButtonEventArgs e)
@@ -680,7 +681,101 @@ namespace Ink_Canvas
                 MoreToolsBoardSection.Opacity = boardActive ? 1.0 : 0.35;
 
                 BorderTools.Visibility = Visibility.Visible;
+                // 手指模式图标跟随真实状态刷新（它可能被别处改过：设置页开关、启动时
+                // MW_DefinitionsLoading 恢复、设置面板自动进入手指模式的联动）
+                UpdateFingerModeIcon();
+                // 定位：以三滑杆图标为锚做绝对定位（解挂到 Main_Grid 后，不随悬浮条缩放漂移）
+                PositionBorderTools();
             }
+        }
+
+        /// <summary>
+        /// 手指模式（「更多」面板内）：点击整格切换。
+        /// 必须经 ToggleSwitchModeFinger.IsOn 走 —— 它是这条设置的**唯一落盘通道**，
+        /// 面板里原来的 ToggleSwitch 只是靠 IsOn 双向绑定挂在它上面。改了它的 IsOn
+        /// 就会触发 MW_RightPanel.cs 的 ToggleSwitchModeFinger_Toggled（同步
+        /// 「自动进入手指模式」+ 保存设置），绕开它则设置存不下来。
+        /// </summary>
+        private void SymbolIconFingerMode_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (lastBorderMouseDownObject != sender) return;
+
+            ToggleSwitchModeFinger.IsOn = !ToggleSwitchModeFinger.IsOn;
+            UpdateFingerModeIcon();
+        }
+
+        /// <summary>
+        /// 手指模式图标状态：关闭=显示斜杠+手指变淡；开启=隐藏斜杠+手指正常。
+        /// 与「双指手势」锁的 UpdateGestureLockIcon 同款表达（斜杠 = 该功能未启用）。
+        /// </summary>
+        private void UpdateFingerModeIcon()
+        {
+            bool on = ToggleSwitchModeFinger.IsOn;
+            PathFingerModeSlash.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
+            PathFingerSingle.Opacity = on ? 1.0 : 0.45;
+        }
+
+        /// <summary>
+        /// 把「更多」面板从悬浮条视觉树解挂到主窗口根层（启动时调用一次，与 DetachShapePanelToRoot 同款）。
+        /// 为什么必须解挂：面板原先是 BorderFloatingBarMainControls（缩放容器）内的子元素，
+        /// 位置只能用"相对 20×24 图标格"的负 Margin 表达 —— 既做不到居中，
+        /// 又会随工具条收起时的 ScaleX 缩放一起变形；解挂到 Main_Grid 后与笔/橡皮/选择三面板
+        /// 归入同一套绝对定位体系（位置可控、不受缩放影响）。
+        /// 失败时面板留在原处（功能不受影响，只是位置不理想）。
+        /// </summary>
+        private void DetachToolsPanelToRoot()
+        {
+            try
+            {
+                var oldParent = BorderTools.Parent as System.Windows.Controls.Grid;
+                if (oldParent == null || oldParent == Main_Grid) return; // 已在根层，防重入
+                oldParent.Children.Remove(BorderTools);
+                Main_Grid.Children.Add(BorderTools); // 追加到最后 = z 序最高，盖在画布之上
+                BorderTools.HorizontalAlignment = HorizontalAlignment.Left;
+                BorderTools.VerticalAlignment = VerticalAlignment.Top;
+            }
+            catch (Exception ex)
+            {
+                Ink_Canvas.Helpers.LogHelper.WriteLogToFile("[更多面板] 解挂失败 " + ex, Ink_Canvas.Helpers.LogHelper.LogType.Error);
+            }
+        }
+
+        /// <summary>
+        /// 「更多」面板定位：与 PositionPenSettingsPanel 完全同款算法 ——
+        /// 以三滑杆图标为锚，图标上方空间够就弹在图标正上方，顶不够时弹到图标下方；
+        /// 水平居中对齐图标，并夹在屏幕（Main_Grid）内。
+        /// </summary>
+        private void PositionBorderTools()
+        {
+            // 先量出面板实际尺寸（刚设为 Visible，强制布局立即生效）
+            Main_Grid.UpdateLayout();
+            double panelW = BorderTools.ActualWidth;
+            double panelH = BorderTools.ActualHeight;
+            if (panelW < 1 || panelH < 1) return; // 布局未就绪，放弃定位（保持上次位置）
+
+            // 三滑杆图标在 Main_Grid 坐标系中的位置与渲染尺寸
+            var transform = GridToolsEntry.TransformToAncestor(Main_Grid);
+            Point iconTopLeft = transform.Transform(new Point(0, 0));
+            Point iconBottomRight = transform.Transform(new Point(GridToolsEntry.ActualWidth, GridToolsEntry.ActualHeight));
+            double iconCenterX = (iconTopLeft.X + iconBottomRight.X) / 2;
+            double iconTopY = iconTopLeft.Y;
+            double iconBottomY = iconBottomRight.Y;
+
+            const double Gap = 8; // 面板与悬浮条间距（与笔面板一致）
+            double gridW = Main_Grid.ActualWidth;
+            double gridH = Main_Grid.ActualHeight;
+
+            // 垂直：图标上方放得下就放上方（贴近手、不挡下方板书），否则放图标下方
+            double y = iconTopY - panelH - Gap;
+            if (y < Gap) y = iconBottomY + Gap;
+            if (y + panelH > gridH - Gap) y = Math.Max(Gap, gridH - panelH - Gap);
+
+            // 水平：中心对齐图标，夹在屏幕内
+            double x = iconCenterX - panelW / 2;
+            if (x < Gap) x = Gap;
+            if (x + panelW > gridW - Gap) x = Math.Max(Gap, gridW - panelW - Gap);
+
+            BorderTools.Margin = new Thickness(x, y, 0, 0);
         }
 
 

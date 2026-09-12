@@ -61,6 +61,12 @@ namespace Ink_Canvas
             //详见 MW_ShapeDrawing.cs 里的原理注释；失败时自动降级回旧吊挂方式）
             using (StartupProfiler.Measure("DetachShapePanelToRoot()")) DetachShapePanelToRoot();
 
+            //「更多」面板同样解挂到根层（2026-09-11）：它原先吊在 BorderFloatingBarMainControls
+            //（缩放容器）内部，位置只能用负 Margin 相对 20×24 图标格表达 → 面板整体偏右、
+            //底边扎出工具条，与笔/橡皮/选择三个面板观感不一致。解挂后统一用 Main_Grid 绝对坐标定位
+            //（详见 MW_FloatBar.cs 的 DetachToolsPanelToRoot / PositionBorderTools）。
+            using (StartupProfiler.Measure("DetachToolsPanelToRoot()")) DetachToolsPanelToRoot();
+
             if (App.StartArgs.Contains("-b")) //-b border
             {
                 AllowsTransparency = false;

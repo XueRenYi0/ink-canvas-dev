@@ -109,6 +109,11 @@ namespace Ink_Canvas
         {
             _isManualUpdateCheck = showNoUpdateTip;
 
+            // 手动检查：先清掉上一次"稍后提醒 / 跳过此版本"留下的拦截状态。
+            // 不清的话库会在连请求都不发的情况下静默返回 —— 表现就是"点检查更新一点反应没有"，
+            // 根因见 ClearUpdateBlockers 的注释（2026-09-12 修）。
+            if (showNoUpdateTip) ClearUpdateBlockers();
+
             // 手动检查：立刻给个回应（否则要等几秒才有窗口，用户以为点了没反应）
             if (showNoUpdateTip) Ink_Canvas.MainWindow.ShowUpdateTip("正在检查更新…");
 
@@ -135,6 +140,89 @@ namespace Ink_Canvas
             // 所有镜像连请求都没发出去
             if (showNoUpdateTip)
                 Ink_Canvas.MainWindow.ShowUpdateTip("检查更新失败：网络不可用或更新服务器暂不可达");
+        }
+
+        /// <summary>
+        /// 清掉 AutoUpdater.NET 在"稍后提醒 / 跳过此版本"之后留下的拦截状态。
+        ///
+        /// 症状（2026-09-12 用户反馈）：更新弹窗里点了「延迟 30 分钟」后，再点「检查更新」完全没反应，
+        /// 连 toast 都不再变化 —— 看起来像按钮坏了。
+        ///
+        /// 根因（AutoUpdater.NET 1.8.1，两层拦截叠加，缺一不可）：
+        ///   ① 持久层：延迟时间点写在注册表
+        ///      HKCU\Software\Inkboard Team\Inkboard · 板书白板\AutoUpdater\RemindLaterAt。
+        ///      CheckUpdate() 若读到"还没到点"就 `return remindLaterAt`（返回的不是 args），
+        ///      于是 StartUpdate() 只挂一个定时器、**完全不触发 CheckForUpdateEvent**；
+        ///      而我们的全部 UI 反馈都在这个事件里 → 静默。
+        ///      同理 SkippedVersion >= 上线版本时 CheckUpdate() 直接 `return null`，也是静默。
+        ///   ② 内存定时器：UpdateForm 点"稍后提醒"会调 AutoUpdater.SetTimer()，
+        ///      而 Start() 开头是 `if (Running || _remindLaterTimer != null) return;`
+        ///      —— 定时器没到期之前，后续每次 Start() 都是进门就被弹回去，请求都不发。
+        ///
+        /// 手动检查 = 用户明确要求"现在就看有没有新版本"，两处都清；
+        /// 自动检查（启动 5 秒静默检查）保持不动 —— "稍后提醒"本来就该对它生效。
+        /// </summary>
+        static void ClearUpdateBlockers()
+        {
+            try
+            {
+                // ① 清持久层。必须先保证 PersistenceProvider 非空：进程刚起来、还没跑过任何检查时
+                //    它是 null，直接 ?. 会漏掉"上一轮运行存下来的"延迟状态（这正是用户遇到的情形——
+                //    延迟是昨天点的，今天启动后手动检查依然被拦）。
+                if (AutoUpdater.PersistenceProvider == null)
+                    AutoUpdater.PersistenceProvider = new RegistryPersistenceProvider(GetAutoUpdaterRegistryLocation());
+
+                // 先读出来再清：清掉的那一刻记一行日志，否则将来"到底是被什么拦住的"又要靠猜
+                var blockedUntil = AutoUpdater.PersistenceProvider.GetRemindLater();
+                var skippedVersion = AutoUpdater.PersistenceProvider.GetSkippedVersion();
+                if (blockedUntil != null || skippedVersion != null)
+                {
+                    LogHelper.NewLog($"手动检查更新：清除拦截状态（延迟至 {blockedUntil}、跳过版本 {skippedVersion}）");
+                }
+
+                AutoUpdater.PersistenceProvider.SetRemindLater(null);
+                AutoUpdater.PersistenceProvider.SetSkippedVersion(null);
+
+                // ② 清内存定时器。库里没有公开 API 能取消它，只能反射拿私有静态字段
+                //    （字段名 _remindLaterTimer 在 1.8.1 固定；包版本已在 csproj 里锁死）
+                var timerField = typeof(AutoUpdater).GetField("_remindLaterTimer",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                var pendingTimer = timerField?.GetValue(null) as System.Threading.Timer;
+                if (pendingTimer != null)
+                {
+                    pendingTimer.Dispose();
+                    timerField.SetValue(null, null);
+                    LogHelper.NewLog("手动检查更新：已取消等待中的延迟提醒定时器");
+                }
+            }
+            catch (Exception ex)
+            {
+                // 清不掉也不能让"检查更新"本身崩掉；退化成"这次可能仍无反应"，但至少留了可查的日志
+                LogHelper.NewLog($"清除更新拦截状态失败：{ex.GetType().Name}：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 复刻 AutoUpdater.NET 内部计算注册表位置的逻辑（Software\{公司}\{标题}\AutoUpdater）。
+        /// 目的是在库自己懒初始化 PersistenceProvider 之前，就能读写它那份"稍后提醒"状态。
+        /// </summary>
+        static string GetAutoUpdaterRegistryLocation()
+        {
+            var asm = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+
+            var companyAttr = (AssemblyCompanyAttribute)Attribute.GetCustomAttribute(asm, typeof(AssemblyCompanyAttribute));
+            string appCompany = companyAttr != null ? companyAttr.Company : "";
+
+            string appTitle = AutoUpdater.AppTitle;
+            if (string.IsNullOrEmpty(appTitle))
+            {
+                var titleAttr = (AssemblyTitleAttribute)Attribute.GetCustomAttribute(asm, typeof(AssemblyTitleAttribute));
+                appTitle = titleAttr != null ? titleAttr.Title : asm.GetName().Name;
+            }
+
+            return !string.IsNullOrEmpty(appCompany)
+                ? $@"Software\{appCompany}\{appTitle}\AutoUpdater"
+                : $@"Software\{appTitle}\AutoUpdater";
         }
 
         /// <summary>

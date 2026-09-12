@@ -230,54 +230,30 @@ namespace Ink_Canvas
             }
         }
 
+        /// <summary>
+        /// 画笔四色（红/绿/蓝/黄）装载。
+        /// 2026-09-12 改：**不再按白板/黑板切换两套配色** —— 原来同一个"红"在白板/黑板下是两个色号，
+        /// 用户点色块拿到的颜色会随板面悄悄变，快捷换色条也跟着漂。现在只有一套：
+        /// 若存在 `Colors\Colors.ini`（四行：红/绿/蓝/黄）则用它覆盖，否则保持 MainWindow.xaml 的出厂色。
+        /// （旧的 Colors\Light.ini / Dark.ini 双套配色方案已废弃；Colors 目录本来也不存在。）
+        /// </summary>
         private void SetColors()
         {
-            if (currentMode != 0 && !Settings.Canvas.UsingWhiteboard)
+            string iniPath = App.RootPath + "Colors\\Colors.ini";
+            if (File.Exists(iniPath))
             {
-                if (File.Exists(App.RootPath + "Colors\\Light.ini"))
+                try
                 {
-                    try
+                    string[] colors = File.ReadAllLines(iniPath);
+                    if (colors.Length >= 4)
                     {
-                        string[] lightColors = File.ReadAllLines(App.RootPath + "Colors\\Light.ini");
-                        BtnColorRed.Background = new SolidColorBrush(StringToColor(lightColors[0]));
-                        BtnColorGreen.Background = new SolidColorBrush(StringToColor(lightColors[1]));
-                        BtnColorBlue.Background = new SolidColorBrush(StringToColor(lightColors[2]));
-                        BtnColorYellow.Background = new SolidColorBrush(StringToColor(lightColors[3]));
+                        BtnColorRed.Background = new SolidColorBrush(StringToColor(colors[0]));
+                        BtnColorGreen.Background = new SolidColorBrush(StringToColor(colors[1]));
+                        BtnColorBlue.Background = new SolidColorBrush(StringToColor(colors[2]));
+                        BtnColorYellow.Background = new SolidColorBrush(StringToColor(colors[3]));
                     }
-                    catch (Exception) { ShowNotification("读取亮色画笔颜色配置文件时遇到问题"); }
                 }
-                else
-                {
-                    // 白板（白底）默认 = 纯色网格、亮度适配白底：红纯红、绿/蓝降亮度保证对比度
-                    BtnColorRed.Background = new SolidColorBrush(StringToColor("#FFFF0000"));
-                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF00C000"));
-                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF0055E0"));
-                    BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFFFC000"));
-                }
-            }
-            else
-            {
-                if (File.Exists(App.RootPath + "Colors\\Dark.ini"))
-                {
-                    try
-                    {
-                        string[] darkColors = File.ReadAllLines(App.RootPath + "Colors\\Dark.ini");
-                        BtnColorRed.Background = new SolidColorBrush(StringToColor(darkColors[0]));
-                        BtnColorGreen.Background = new SolidColorBrush(StringToColor(darkColors[1]));
-                        BtnColorBlue.Background = new SolidColorBrush(StringToColor(darkColors[2]));
-                        BtnColorYellow.Background = new SolidColorBrush(StringToColor(darkColors[3]));
-                    }
-                    catch (Exception) { ShowNotification("读取深色画笔颜色配置文件时遇到问题"); }
-                }
-                else
-                {
-                    // 黑板（黑底）默认 = 纯色网格、亮度适配黑底：黄绿青用纯色（黑底上鲜艳），
-                    // 蓝提亮（纯蓝 #0000FF 在黑底上对比不足）、红微提亮
-                    BtnColorRed.Background = new SolidColorBrush(StringToColor("#FFFF3333"));
-                    BtnColorGreen.Background = new SolidColorBrush(StringToColor("#FF00E000"));
-                    BtnColorBlue.Background = new SolidColorBrush(StringToColor("#FF3D7BFF"));
-                    BtnColorYellow.Background = new SolidColorBrush(StringToColor("#FFFFFF00"));
-                }
+                catch (Exception) { ShowNotification("读取画笔颜色配置文件时遇到问题"); }
             }
 
             //换色后 BtnColorX.Background 是新 Brush 对象，笔图标 Fill 仍指旧引用——

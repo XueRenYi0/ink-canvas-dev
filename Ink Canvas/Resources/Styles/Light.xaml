@@ -5,6 +5,10 @@
          视觉上"背景残留物压过面板内容"导致看起来乱。85% 时透出降到 1.31:1（看不见）。
          仅改这一处即可全局生效（25 处容器共用此键）。 -->
     <SolidColorBrush x:Key="FloatBarBackground" Color="#D9FFFFFF"/>
+    <!-- 高不透明度版（α≈97%，247/255）：供"内容密集"的弹层使用，目前只有「更多」面板 BorderTools。
+         85% 版在背后是深色文字时仍会透出（2026-09-11 抓屏实证：面板内 15 个条目的文字与背后
+         窗口内容重影，视觉上"文字叠文字"）；内容越多越明显。单开一个键，避免影响其余共用 85% 键的容器。 -->
+    <SolidColorBrush x:Key="FloatBarBackgroundOpaque" Color="#F7FFFFFF"/>
     <SolidColorBrush x:Key="FloatBarBorderBrush" Color="#BF666666"/>
     <SolidColorBrush x:Key="FloatBarForeground" Color="#666666"/>
     <Color x:Key="FloatBarForegroundColor">#FF666666</Color>
