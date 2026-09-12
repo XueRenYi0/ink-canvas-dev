@@ -1,7 +1,9 @@
 using System;
 using System.Windows;
+using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas
 {
@@ -76,14 +78,42 @@ namespace Ink_Canvas
         /// 顺带得到"同组互斥"：点另一个图标时，先前那个面板先在这里被收掉，再由图标自己的 MouseUp toggle 打开。
         /// 点图标不处理，是因为图标自己的 MouseUp 要做 toggle，这里抢先收起会变成"点图标关不掉"（先关再开）。
         /// 只关面板、不设 e.Handled，不影响书写/擦除/双指手势。
+        /// （收起时"顺手画出的那一个点"由下方 DismissPressDown/Up 状态机负责丢弃，见其注释。）
         /// </summary>
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (!(e.OriginalSource is DependencyObject dep)) return;
+            Point pos = e.GetPosition(Main_Grid);
+            var dep = e.OriginalSource as DependencyObject;
 
             // 记录按下位置：快速截图后的白板单击检测用（Window_PreviewMouseUp 比较位移区分单击/书写）
-            _pasteClickDownPos = e.GetPosition(Main_Grid);
+            if (dep != null) _pasteClickDownPos = pos;
 
+            bool closedAny = CloseDismissibleLayersOutside(dep);
+            DismissPressDown(pos, closedAny);
+        }
+
+        /// <summary>触笔通道的"按下"。与鼠标通道共用同一套状态机，否则笔/鼠标/手指行为会不一致。</summary>
+        private void Window_PreviewStylusDown(object sender, StylusDownEventArgs e)
+        {
+            Point pos = e.GetPosition(Main_Grid);
+            var dep = e.OriginalSource as DependencyObject;
+            if (dep != null) _pasteClickDownPos = pos;
+
+            bool closedAny = CloseDismissibleLayersOutside(dep);
+            DismissPressDown(pos, closedAny);
+        }
+
+        /// <summary>触笔通道的"抬起"：交给同一条判定（重复调用安全，状态机会自己短路）。</summary>
+        private void Window_PreviewStylusUp(object sender, StylusEventArgs e)
+        {
+            DismissPressUp(e.GetPosition(Main_Grid));
+        }
+
+        /// <summary>把"按下点不在其内部、也不在其开关图标上"的可见面板全部收起；返回是否真的收起了至少一个。</summary>
+        private bool CloseDismissibleLayersOutside(DependencyObject dep)
+        {
+            if (dep == null) return false;
+            bool closed = false;
             var layers = GetDismissibleLayers();
             for (int i = 0; i < layers.Length; i++)
             {
@@ -92,7 +122,186 @@ namespace Ink_Canvas
                 if (IsVisualDescendantOf(dep, layer.Panel)) continue; // 点在面板内：不收（面板内可连续调整）
                 if (IsVisualDescendantOf(dep, layer.Anchor)) continue; // 点在开关图标：交给它自己 toggle
                 layer.Close();
+                closed = true;
             }
+            // 诊断（低频、只在真的收了面板时写一行）：这个功能的判定链较长，
+            // 有这行才能区分"没收到面板"（机制没启动）和"收了但点被留下"（判定出错）。
+            if (closed)
+                LogHelper.WriteLogToFile("[Popup] 点外收起：按下时收起了可见面板 → 本次抬起将按位移判定单击/书写",
+                    LogHelper.LogType.Event);
+            return closed;
+        }
+
+        // ==================== "点外收起"不要顺手画出一个点 ====================
+        //
+        // 现象：面板开着时点画布空白处收面板 —— 面板收起来了，但画布上多了一个点。
+        // 根因：收起面板是"不拦事件"的（上面那句注释：不影响书写/擦除/双指手势），
+        //       于是同一次点击继续落到 InkCanvas，抬起时提交了一根"单点笔迹"。
+        //
+        // 为什么不能干脆在按下时 e.Handled = true 一拦了事：
+        //   ① 会把"书写"手势的按下一起吞掉 → 面板开着时想直接写（调完笔设置立刻写，很常见）
+        //      的第一笔会丢；
+        //   ② 触摸被 WPF 提升为 Stylus，吞掉第一根手指的按下可能破坏双指手势。
+        // ⇒ 只能在**抬起时**用位移判定这次到底是"单击"还是"书写"。
+        //
+        // 时序（已按 WPF 源码核实 InkCanvas.cs: 先 Strokes.Add 再 OnStrokeCollected）：
+        //   按下(隧道) → [InkCanvas 落笔] → 抬起(隧道) → Strokes.Add（此时才记撤销） → StrokeCollected
+        //   ▲ 我们在这里判定                      ▲ 我们在这里改提交类型，来得及影响撤销记录
+        // 所以：单击 → 全程保持 CodeInput → "新增"和"删除"都不进撤销栈（零污染）；
+        //       书写 → 抬起时立刻恢复 UserInput → 这一次照常进撤销栈。
+        //
+        // 无痕移除的写法照抄既有先例 MW_PenSettings.cs 的激光笔淡出分支
+        // （_currentCommitType = CodeInput; Strokes.Remove(...); 恢复 UserInput）。
+
+        /// <summary>抬起时位移不超过这么多像素才算"单击"（与 MW_Capture 的粘贴气泡判定同一量级）。</summary>
+        private const double DismissTapMaxMovePx = 6.0;
+
+        /// <summary>
+        /// "同一次物理按下"的判定窗口（ms）。
+        /// ★ 实测（手写板 Ink 模式）：一次落笔会先来 Stylus 版的按下、紧接着再来一个被"提升"出来的
+        /// Mouse 版按下，两者相隔只有几毫秒。若当成两次独立按下，第二次会走"没收面板"分支，
+        /// 把第一次的待定状态和 CodeInput 一起冲掉 → 抬起判定失效 → 点被留下。
+        /// 80ms 远大于提升间隔（几毫秒），又远小于人手连按两次的间隔，能干净区分。
+        /// </summary>
+        private const int DismissSamePressMs = 80;
+
+        /// <summary>
+        /// "要丢弃"标记的保鲜期（ms）。超时说明这次按下早已结束（例如那一下没产生笔迹），
+        /// 不再认这个标记——否则会把之后一根真实的顿点也误删。
+        /// </summary>
+        private const int DismissDiscardFreshMs = 500;
+
+        private bool _dismissPressPending;   // 本次按下收起了面板，抬起时要判定
+        private bool _dismissPressDiscard;   // 判定为单击：随之而来的那根笔迹要丢弃
+        private Point _dismissPressDownPos;
+        private int _dismissPressDownTick;      // 按下时刻（TickCount）
+        private int _dismissPressDiscardTick;   // 判定为"要丢弃"的时刻
+
+        /// <summary>按下时调用（鼠标/触笔两条通道共用）。dismissedSomething = 本次按下是否真的收起了可见面板。</summary>
+        private void DismissPressDown(Point pos, bool dismissedSomething)
+        {
+            int now = Environment.TickCount;
+
+            // 同一次按下的第二条通道上报：保留已有状态（尤其不能把 CodeInput 冲掉），只更新坐标
+            if (_dismissPressPending && unchecked(now - _dismissPressDownTick) < DismissSamePressMs)
+            {
+                _dismissPressDownPos = pos;
+                return;
+            }
+
+            if (dismissedSomething)
+            {
+                _dismissPressPending = true;
+                _dismissPressDiscard = false;
+                _dismissPressDownPos = pos;
+                _dismissPressDownTick = now;
+                // 先假定要丢弃：这样连"新增笔迹"那一步都不会写进撤销栈。
+                // 若抬起判定是"书写"，会在 DismissPressUp 里立刻恢复。
+                _currentCommitType = CommitReason.CodeInput;
+            }
+            else if (_dismissPressPending)
+            {
+                // 新的一次按下、且没收面板，但上次的待定状态还挂着（例如抬起事件丢了）
+                // → 防御性复位，否则 CodeInput 会一直挂着，导致后续所有输入都不进撤销栈（很严重）。
+                LogHelper.WriteLogToFile(
+                    "[Popup] 防御性复位：新按下时没收面板，但上次的待定状态还挂着（上一次抬起没结算）",
+                    LogHelper.LogType.Event);
+                ResetDismissPress();
+            }
+        }
+
+        /// <summary>抬起时调用（鼠标/触笔两条通道共用；重复调用安全）。</summary>
+        private void DismissPressUp(Point pos)
+        {
+            // 未标记 → 直接返回。但若"刚收过面板"（2 秒内），说明待定状态被冲掉了，
+            // 这是"点了外面还留点"的唯一可疑路径，必须打出来才知道（否则整条链是静默的）。
+            if (!_dismissPressPending)
+            {
+                if (DismissPressRecent(2000))
+                    LogHelper.WriteLogToFile(
+                        "[Popup] ⚠ 抬起时待定状态已空（按下标记被冲掉）→ 这一次不会丢弃点",
+                        LogHelper.LogType.Event);
+                return;
+            }
+
+            // 同一次抬起的第二条通道上报 → 不重复判定，避免刷重复日志
+            if (_dismissPressDiscard) return;
+
+            if ((pos - _dismissPressDownPos).Length <= DismissTapMaxMovePx)
+            {
+                // 单击：这就是"点外收起"的那一下，不该留下墨迹。
+                // 保持 CodeInput，等笔迹提交后由 TryDiscardDismissTapStroke 静默移除。
+                _dismissPressDiscard = true;
+                _dismissPressDiscardTick = Environment.TickCount;
+                LogHelper.WriteLogToFile(
+                    $"[Popup] 抬起判定为单击（位移 {(pos - _dismissPressDownPos).Length:F1}px ≤ {DismissTapMaxMovePx}）→ 将丢弃随之产生的点",
+                    LogHelper.LogType.Event);
+            }
+            else
+            {
+                // 是书写：这次笔迹要正常进撤销栈 → 立刻把提交类型恢复回去。
+                // 隧道抬起事件早于 InkCanvas 提交笔迹，所以这里来得及。
+                LogHelper.WriteLogToFile(
+                    $"[Popup] 抬起判定为书写（位移 {(pos - _dismissPressDownPos).Length:F1}px）→ 笔迹照常进撤销栈",
+                    LogHelper.LogType.Event);
+                ResetDismissPress();
+            }
+        }
+
+        /// <summary>
+        /// 在 inkCanvas_StrokeCollected 最开始调用。
+        /// 返回 true = 这根笔迹是"收起面板的那次单击"产生的，已被静默丢弃（调用方应直接 return，跳过后续处理）。
+        /// </summary>
+        private bool TryDiscardDismissTapStroke(Stroke stroke)
+        {
+            if (!_dismissPressDiscard)
+            {
+                // 诊断：刚收过面板、却有笔迹到达，而"要丢弃"标记已失效 → 这根点会被留下。
+                // 这就是"点了外面还留点"的直接证据（2 秒门槛，普通书写不会刷这条）。
+                if (DismissPressRecent(2000))
+                    LogHelper.WriteLogToFile(
+                        "[Popup] ⚠ 有笔迹到达，但\"要丢弃\"标记已失效 → 这根点会留在画布上",
+                        LogHelper.LogType.Event);
+                return false;
+            }
+
+            // 保鲜期：标记过期说明这次按下早就结束了（例如那一下没产生笔迹），
+            // 不认它，免得把之后一根真实的顿点误删。
+            if (unchecked(Environment.TickCount - _dismissPressDiscardTick) > DismissDiscardFreshMs)
+            {
+                ResetDismissPress();
+                return false;
+            }
+
+            try
+            {
+                _currentCommitType = CommitReason.CodeInput;   // 删除这一步也不进撤销栈
+                inkCanvas.Strokes.Remove(stroke);
+                LogHelper.WriteLogToFile("[Popup] 已丢弃\"点外收起\"时顺手产生的点笔迹（新增与删除都不进撤销栈）",
+                    LogHelper.LogType.Event);
+            }
+            finally
+            {
+                ResetDismissPress();                          // 无论如何都要复位，不能让 CodeInput 泄漏
+            }
+            return true;
+        }
+
+        private void ResetDismissPress()
+        {
+            _dismissPressPending = false;
+            _dismissPressDiscard = false;
+            _currentCommitType = CommitReason.UserInput;
+        }
+
+        /// <summary>
+        /// 最近是否发生过"点外收起面板"的按下。仅用于给诊断日志设门槛——
+        /// 上面两个方法在每次落笔/每次抬起都会被调用，不加门槛会把日志刷爆。
+        /// </summary>
+        private bool DismissPressRecent(int ms)
+        {
+            return _dismissPressDownTick != 0
+                   && unchecked(Environment.TickCount - _dismissPressDownTick) < ms;
         }
 
         /// <summary>判断 visual 是否是 ancestor 的后代（自身或视觉树子孙）</summary>

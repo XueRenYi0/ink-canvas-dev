@@ -78,6 +78,14 @@ namespace Ink_Canvas
         public bool IsShowCursor { get; set; } = true; //默认开（笔形光标）：教室大屏距离远，笔形比红点好找落点；偏好红点可在设置里关
         [JsonProperty("inkStyle")]
         public int InkStyle { get; set; } = 0;
+        /// <summary>
+        /// 笔迹是否用贝塞尔曲线平滑渲染（对应 DrawingAttributes.FitToCurve）。
+        /// WPF 的默认值是 false —— 即把采样点用直线连起来，快速书写时线条会呈折线。
+        /// 默认开：鼠标 / 关闭 Windows Ink 的手写板受益最明显（采样点稀、折线感重）。
+        /// 副作用是个别汉字的尖角会略微变圆，觉得"太软"可以在设置里关掉。
+        /// </summary>
+        [JsonProperty("fitToCurve")]
+        public bool FitToCurve { get; set; } = true;
         /// <summary>笔种类：0=画笔 1=荧光笔 2=激光笔（笔设置面板选择，重启恢复）</summary>
         [JsonProperty("penType")]
         public int PenType { get; set; } = 0;

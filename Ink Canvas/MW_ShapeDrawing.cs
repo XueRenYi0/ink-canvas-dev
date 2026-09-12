@@ -1899,7 +1899,7 @@ namespace Ink_Canvas
                                 opFlag = false;
                                 break;
                             case OptionalOperation.Ask:
-                                opFlag = MessageBox.Show("是否移除渐近线？", "Inkboard", MessageBoxButton.YesNo) != MessageBoxResult.Yes;
+                                opFlag = MessageBox.Show("是否移除渐近线？", "InkClass", MessageBoxButton.YesNo) != MessageBoxResult.Yes;
                                 break;
                         };
                         if (opFlag)

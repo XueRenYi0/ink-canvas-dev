@@ -51,6 +51,12 @@ namespace Ink_Canvas
             {
                 inkCanvas.Opacity = 1;
 
+                // ★ "点面板外收起面板"的那次单击不该在画布上留下一个点：
+                //   静默丢弃它产生的那根单点笔迹（新增与删除都不进撤销栈）。
+                //   判定依据：按下时收起了可见面板 + 抬起时位移 ≤ 6px（状态机见 MW_PopupLayers.cs）。
+                //   放在最前面，是为了让这个点不经过墨迹转图形 / 笔锋 / 保角平滑等后续处理。
+                if (TryDiscardDismissTapStroke(e.Stroke)) return;
+
                 // 激光笔：临时指示笔迹——启动淡出计时后直接返回，
                 // 不走墨迹转图形/笔锋/直线拉直（见 MW_PenSettings.cs）
                 if (e.Stroke.DrawingAttributes.ContainsPropertyData(LaserStrokeGuid))
@@ -328,9 +334,14 @@ namespace Ink_Canvas
                                     //pointList.Add(p[0]);
                                     var point = new StylusPointCollection(pointList);
                                     // 均匀压力：识别出的三角形粗细一致，不跟随笔锋（与圆/椭圆分支表现统一）
+                                    // ★ 必须关掉 FitToCurve：识别出的图形是"只有 3 个角点"的折线，
+                                    //   贝塞尔拟合会通过折点切角 → 三角形被画成圆角（与 GraphBuilder
+                                    //   给函数曲线显式覆盖 FitToCurve 是同一个道理）。
+                                    var triangleAttrs = inkCanvas.DefaultDrawingAttributes.Clone();
+                                    triangleAttrs.FitToCurve = false;
                                     var stroke = new Stroke(GenerateUniformPressureTriangle(point))
                                     {
-                                        DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
+                                        DrawingAttributes = triangleAttrs
                                     };
                                     SetNewBackupOfStroke();
                                     _currentCommitType = CommitReason.ShapeRecognition;
@@ -369,9 +380,13 @@ namespace Ink_Canvas
                                     pointList.Add(p[0]);
                                     var point = new StylusPointCollection(pointList);
                                     // 均匀压力：识别出的矩形/菱形/平行四边形/正方形四边一样粗，不跟随笔锋
+                                    // ★ 必须关掉 FitToCurve：这四个角点构成的折线若走贝塞尔拟合，
+                                    //   直角会被切成圆角 —— 正方形就"变圆"了（本次回归的根因）。
+                                    var rectAttrs = inkCanvas.DefaultDrawingAttributes.Clone();
+                                    rectAttrs.FitToCurve = false;
                                     var stroke = new Stroke(GenerateUniformPressureRectangle(point))
                                     {
-                                        DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
+                                        DrawingAttributes = rectAttrs
                                     };
                                     SetNewBackupOfStroke();
                                     _currentCommitType = CommitReason.ShapeRecognition;
@@ -463,38 +478,142 @@ namespace Ink_Canvas
                 // 荧光笔：矩形笔头下压感渐变无意义，跳过笔锋处理（InkStyle）
                 if (e.Stroke.DrawingAttributes.IsHighlighter) return;
 
+                // ★ 保角平滑（2026-09-12，替代 WPF FitToCurve）：先对手写笔迹做"转角锚点 + 段内平滑"，
+                //   再由下面的 InkStyle 分支算笔锋（粗细）。两者正交：保角平滑管"路径顺不顺、转折留不留角"，
+                //   笔锋管"粗细"。手写笔迹的 DefaultDrawingAttributes.FitToCurve 已恒为 false（见 loadPenCanvas），
+                //   否则 WPF 贝塞尔拟合会把保角平滑保住的直角再次磨圆。
+                //   触发条件：设置开启 + 笔迹仍在画布上（若已被墨迹转图形替换成图形笔迹，就不再平滑，避免浪费）。
+                if (Settings.Canvas.FitToCurve && e.Stroke != null && inkCanvas.Strokes.Contains(e.Stroke))
+                {
+                    try { ApplyPreserveCornerSmoothing(e.Stroke); } catch { }
+                }
+
                 switch (Settings.Canvas.InkStyle)
                 {
                     case 1:
+                        // ===== 按"相对速度"模拟压感（2026-09-12 第二版）=====
+                        //
+                        // 第一版为什么难看（薛老师实机反馈"非常难看"）：
+                        //   ① 逐点瞬时速度，没有任何平滑 —— 设备一丢点/发重复点，相邻点的压力
+                        //      就突然跳变，线条出现"忽粗忽细的锯齿"；
+                        //   ② depth 0.38 太猛：最细只有均匀宽度的 60%（WPF 是线性缩放，
+                        //      线宽 = Width × PressureFactor），且变化挤在极短区间内，
+                        //      看起来像"抖动"而不是"运笔"；
+                        //   ③ 完全没有端点处理，起笔收笔和中段一样，缺少收束感。
+                        //
+                        // 第二版五步。关键认识：本函数在【抬笔之后】运行，整条笔迹都已到手，
+                        // 所以可以用"居中窗口"这种零相位滤波 —— 它没有 EMA 的相位滞后，
+                        // 是最适合"事后定型"的平滑方式（实时场景才只能用因果滤波）。
+                        //   1) 归一化：相邻点距 ÷ 整条笔迹平均点距 → 无量纲相对速度 r
+                        //      （自动抵消采样率与设备上报密度的差异，换板子/开关蓝牙都不变）
+                        //   2) 居中滑动平均平滑 r（零相位，去抖不滞后）
+                        //   3) 温和映射：p = 0.5 - Depth*tanh((r-1)*Sharp)，Depth 只取 0.20
+                        //      → 最细约 0.7×、最粗约 1.2× 均匀宽度，有笔感但不伤可读性
+                        //   4) 端点包络：起笔轻微加粗（顿）、收笔平滑收细（回锋），
+                        //      用 smoothstep 而不是线性斜坡 —— 避免 case 0 那种"尾巴突然变细"
+                        //   5) 变化率限制：相邻点压力差不超过 MaxStep，前扫+后扫各一遍
+                        //      → 从数学上保证不会出现粗细闪烁（参考 smooth-signature 的 maxWidthDiffRate）
                         try
                         {
-                            StylusPointCollection stylusPoints = new StylusPointCollection();
-                            int n = e.Stroke.StylusPoints.Count - 1;
-                            string s = "";
+                            StylusPointCollection pts = e.Stroke.StylusPoints;
+                            int n = pts.Count;
+                            if (n < 5) return;   // 太短（点一下、小标点）不做处理，保持均匀
 
-                            for (int i = 0; i <= n; i++)
+                            // ---- 手感参数：要调就调这三个数字 ----
+                            // 注：速度项本身已经让"起笔（落笔慢）"和"收笔（减速）"偏粗，
+                            //     所以 HeadGain 只需很小；TailDrop 要够大才能把收笔的自动增粗
+                            //     压回去，形成"收笔渐细"。
+                            const double Depth = 0.20;     // 速度影响深度（越大中段越细）
+                            const double Sharp = 1.0;      // 映射陡度
+                            const double HeadGain = 0.05;  // 起笔加粗量（顿笔感）
+                            const double TailDrop = 0.25;  // 收笔收细量
+                            const double PMin = 0.24;      // 压力下限（≈0.48× 线宽）
+                            const double PMax = 0.80;      // 压力上限（≈1.60× 线宽）
+
+                            // 1) 相邻点距 + 整条平均点距
+                            double[] dist = new double[n];
+                            double sum = 0;
+                            for (int i = 1; i < n; i++)
                             {
-                                double speed = GetPointSpeed(e.Stroke.StylusPoints[Math.Max(i - 1, 0)].ToPoint(), e.Stroke.StylusPoints[i].ToPoint(), e.Stroke.StylusPoints[Math.Min(i + 1, n)].ToPoint());
-                                s += speed.ToString() + "\t";
+                                double dx = pts[i].X - pts[i - 1].X;
+                                double dy = pts[i].Y - pts[i - 1].Y;
+                                dist[i - 1] = Math.Sqrt(dx * dx + dy * dy);
+                                sum += dist[i - 1];
+                            }
+                            dist[n - 1] = dist[n - 2];
+                            double mean = sum / (n - 1);
+                            if (mean < 1e-6) return;   // 几乎静止的点堆（按住不动）：不处理，避免除零
+
+                            // 2) 相对速度 + 居中滑动平均（零相位）
+                            double[] rel = new double[n];
+                            for (int i = 0; i < n; i++)
+                            {
+                                double a = dist[Math.Max(i - 1, 0)];
+                                double b = dist[Math.Min(i, n - 1)];
+                                rel[i] = ((a + b) * 0.5) / mean;
+                            }
+                            int win = Math.Max(3, Math.Min(9, n / 12));
+                            if (win % 2 == 0) win++;   // 取奇数，窗口才能左右对称
+                            int half = win / 2;
+                            double[] smooth = new double[n];
+                            for (int i = 0; i < n; i++)
+                            {
+                                double acc = 0; int cnt = 0;
+                                for (int j = i - half; j <= i + half; j++)
+                                {
+                                    if (j < 0 || j >= n) continue;
+                                    acc += rel[j]; cnt++;
+                                }
+                                smooth[i] = acc / cnt;
+                            }
+
+                            // 3) 速度 → 目标压力
+                            double[] p = new double[n];
+                            for (int i = 0; i < n; i++)
+                                p[i] = 0.5 - Depth * Math.Tanh((smooth[i] - 1.0) * Sharp);
+
+                            // 4) 端点包络（smoothstep：t*t*(3-2t)，两端斜率为 0，不会有硬拐角）
+                            int headLen = Math.Max(3, Math.Min(8, n / 10));
+                            int tailLen = Math.Max(4, Math.Min(12, n / 8));
+                            for (int i = 0; i < n; i++)
+                            {
+                                if (i < headLen)
+                                {
+                                    double t = 1.0 - (double)i / headLen;
+                                    p[i] += HeadGain * (t * t * (3 - 2 * t));
+                                }
+                                int fromEnd = n - 1 - i;
+                                if (fromEnd < tailLen)
+                                {
+                                    double t = 1.0 - (double)fromEnd / tailLen;
+                                    p[i] -= TailDrop * (t * t * (3 - 2 * t));
+                                }
+                            }
+
+                            // 5) 变化率限制（防粗细闪烁）：单个点的允许变化量随点数自适应，
+                            //    保证"整条笔迹能容纳的总变化量"不因笔画长短而缩水。
+                            double maxStep = Math.Max(0.005, 0.45 / Math.Max(8, n - 1));
+                            for (int i = 1; i < n; i++)
+                            {
+                                if (p[i] > p[i - 1] + maxStep) p[i] = p[i - 1] + maxStep;
+                                else if (p[i] < p[i - 1] - maxStep) p[i] = p[i - 1] - maxStep;
+                            }
+                            for (int i = n - 2; i >= 0; i--)
+                            {
+                                if (p[i] > p[i + 1] + maxStep) p[i] = p[i + 1] + maxStep;
+                                else if (p[i] < p[i + 1] - maxStep) p[i] = p[i + 1] - maxStep;
+                            }
+
+                            // 6) 落笔
+                            StylusPointCollection stylusPoints = new StylusPointCollection();
+                            for (int i = 0; i < n; i++)
+                            {
                                 StylusPoint point = new StylusPoint();
-                                if (speed >= 0.25)
-                                {
-                                    point.PressureFactor = (float)(0.5 - 0.3 * (Math.Min(speed, 1.5) - 0.3) / 1.2);
-                                }
-                                else if (speed >= 0.05)
-                                {
-                                    point.PressureFactor = (float)0.5;
-                                }
-                                else
-                                {
-                                    point.PressureFactor = (float)(0.5 + 0.4 * (0.05 - speed) / 0.05);
-                                }
-                                point.X = e.Stroke.StylusPoints[i].X;
-                                point.Y = e.Stroke.StylusPoints[i].Y;
+                                point.PressureFactor = (float)Math.Max(PMin, Math.Min(PMax, p[i]));
+                                point.X = pts[i].X;
+                                point.Y = pts[i].Y;
                                 stylusPoints.Add(point);
                             }
-                            //Label.Visibility = Visibility.Visible;
-                            //Label.Content = s;
                             e.Stroke.StylusPoints = stylusPoints;
                         }
                         catch

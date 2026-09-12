@@ -317,6 +317,13 @@ namespace Ink_Canvas
             // 图形笔宽用画笔宽度（图形是"墨迹类"笔迹，与荧光宽笔带无关）
             drawingAttributes.Width = _penWidth;
             drawingAttributes.Height = _penWidth;
+            // ★ 图形笔迹必须关掉曲线拟合（2026-09-12）：几何绘图生成的矩形/三角形等
+            //   都是"只有角点"的折线（见 MW_ShapeDrawing 里 40 多处
+            //   DefaultDrawingAttributes.Clone()），FitToCurve=true 会让贝塞尔通过
+            //   折点切角 → 直角变圆角。这里统一覆盖，不用逐个改那 40 多处；
+            //   切回画笔时由 ApplyPenTypeToDrawingAttributes 恢复用户设置。
+            //   （与 GraphBuilder 对函数曲线显式覆盖 FitToCurve 同一道理。）
+            drawingAttributes.FitToCurve = false;
         }
 
         /// <summary>把当前笔种类套用到 DefaultDrawingAttributes（笔宽/荧光标记/激光标记）</summary>
@@ -337,6 +344,11 @@ namespace Ink_Canvas
                 drawingAttributes.AddPropertyData(LaserStrokeGuid, true);
             else if (drawingAttributes.ContainsPropertyData(LaserStrokeGuid))
                 drawingAttributes.RemovePropertyData(LaserStrokeGuid);
+
+            // 回画笔时：WPF FitToCurve 恒为 false（2026-09-12 起）。
+            // 手写笔迹的平滑由"保角平滑"在数据层承担（MW_PreserveCornerSmoothing.cs），
+            // 这里不再从设置恢复贝塞尔拟合 —— 那会重新把汉字/识别图形的直角磨圆。
+            drawingAttributes.FitToCurve = false;
 
             UpdatePenIconHighlight();
         }

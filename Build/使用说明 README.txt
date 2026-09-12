@@ -1,6 +1,6 @@
 ========================================
-  Inkboard · 板书白板  v6.0.0
-  （原 Ink Canvas，v6.0.0 起更名为 Inkboard）
+  InkClass · 板书白板  v6.0.0
+  （原 Ink Canvas → InkClass；v6.6.2 起更名为 InkClass）
   https://github.com/XueRenYi0/ink-canvas-dev
 ========================================
 
@@ -14,8 +14,8 @@
 -------------------
 （绿色版压缩包步骤）
 1. 把整个文件夹解压到任意位置，例如：
-   D:\Programs\Inkboard\
-2. 双击运行 "Inkboard.exe"。
+   D:\Programs\InkClass\
+2. 双击运行 "InkClass.exe"。
 3. 建议：在 exe 上 右键 → 发送到 → 桌面快捷方式，方便以后启动。
 
 如果启动后 PPT 放映相关功能提示失败：
@@ -26,13 +26,13 @@
 三、安装包版怎么用
 -------------------
 方式一（推荐，单文件）：
-1. 下载 Inkboard-v6.0.0-Setup.exe（单个 exe，双击即装，无需解压）。
-2. 按向导下一步即可；安装后桌面、开始菜单出现 "Inkboard" 快捷方式。
+1. 下载 InkClass-v6.0.0-Setup.exe（单个 exe，双击即装，无需解压）。
+2. 按向导下一步即可；安装后桌面、开始菜单出现 "InkClass" 快捷方式。
 3. 从旧版 Ink Canvas（v5.x）升级：安装器会自动迁移 Settings.json、
    自定义图库（CustomShapes）等数据，并清理旧版快捷方式，无需手动操作。
 方式二（zip 分发）：
-1. 解压 Inkboard-v6.0.0-Portable.zip 到任意目录，双击 "Inkboard.exe" 即可运行。
-2. 卸载：控制面板 → 程序和功能 → Inkboard → 卸载（不会删除你自己的图库和 Settings.json 配置）。
+1. 解压 InkClass-v6.0.0-Portable.zip 到任意目录，双击 "InkClass.exe" 即可运行。
+2. 卸载：控制面板 → 程序和功能 → InkClass → 卸载（不会删除你自己的图库和 Settings.json 配置）。
 
 
 四、主界面 / 悬浮条图标说明

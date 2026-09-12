@@ -1,12 +1,12 @@
 ﻿$ErrorActionPreference = 'Continue'
 # 校验 Releases 下最新打包产物版本一致性（Portable.zip 内部 + 文件名 + VersionInfo.ini + 使用说明）
-# 产物：Inkboard-vX.Y.Z-Portable.zip + Inkboard-vX.Y.Z-Setup.exe（Setup 为 Inno 安装器，不内部解包校验）
+# 产物：InkClass-vX.Y.Z-Portable.zip + InkClass-vX.Y.Z-Setup.exe（Setup 为 Inno 安装器，不内部解包校验）
 $repo = Split-Path -Parent $PSScriptRoot
 $r = Join-Path $repo 'Releases'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$portable = Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Name -like 'Inkboard-*-Portable.zip' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-$setup = Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Name -like 'Inkboard-*-Setup.exe' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$portable = Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Name -like 'InkClass-*-Portable.zip' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$setup = Get-ChildItem -LiteralPath $r -File | Where-Object { $_.Name -like 'InkClass-*-Setup.exe' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $portable -or -not $setup) {
     Write-Host 'Missing artifacts in Releases:'
     Get-ChildItem -LiteralPath $r -File | ForEach-Object { Write-Host ('  ' + $_.Name + '  ' + [math]::Round($_.Length/1MB,2) + ' MB') }
@@ -24,7 +24,7 @@ if (Test-Path -LiteralPath $check) { Remove-Item -LiteralPath $check -Recurse -F
 New-Item -ItemType Directory -Path $check -Force | Out-Null
 [IO.Compression.ZipFile]::ExtractToDirectory($portable.FullName, (Join-Path $check 'portable'))
 
-$exe = Get-ChildItem -LiteralPath (Join-Path $check 'portable') -Recurse -Filter 'Inkboard.exe' | Select-Object -First 1
+$exe = Get-ChildItem -LiteralPath (Join-Path $check 'portable') -Recurse -Filter 'InkClass.exe' | Select-Object -First 1
 $ini = Get-ChildItem -LiteralPath (Join-Path $check 'portable') -Recurse -Filter 'VersionInfo.ini' | Select-Object -First 1
 $readme = Get-ChildItem -LiteralPath (Join-Path $check 'portable') -Recurse -Filter '*README*' | Select-Object -First 1
 

@@ -53,6 +53,11 @@ namespace Ink_Canvas
 
                 drawingAttributes.Height = 2.5;
                 drawingAttributes.Width = 2.5;
+                // 笔迹平滑（2026-09-12 起改为恒关）：WPF 的贝塞尔曲线拟合（FitToCurve）会把
+                // 识别出的图形和汉字的直角"一刀切"磨圆，所以画布默认画笔属性不再走它。
+                // 手写笔迹的平滑改由"保角平滑"在抬笔后于数据层完成（MW_PreserveCornerSmoothing.cs），
+                // 由设置项 Settings.Canvas.FitToCurve 开关控制（见 inkCanvas_StrokeCollected）。
+                drawingAttributes.FitToCurve = false;
 
                 inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
                 inkCanvas.Gesture += InkCanvas_Gesture;

@@ -14,7 +14,7 @@
         Loaded="Window_Loaded"
         Background="Transparent"
         ShowInTaskbar="False"
-        Title="Inkboard 画板"
+        Title="InkClass 画板"
         Topmost="True"
         KeyDown="Window_KeyDown"
         PreviewMouseUp="Window_PreviewMouseUp"
@@ -22,6 +22,8 @@
         Closed="Window_Closed"
         PreviewKeyDown="Main_Grid_PreviewKeyDown"
         PreviewMouseDown="Window_PreviewMouseDown"
+        PreviewStylusDown="Window_PreviewStylusDown"
+        PreviewStylusUp="Window_PreviewStylusUp"
         Height="10000" Width="1000"
         FontFamily="Microsoft YaHei UI"
         MouseWheel="Window_MouseWheel"
@@ -493,6 +495,8 @@
                                 </ComboBox>
                                 <ui:ToggleSwitch Name="ToggleSwitchHideStrokeWhenSelecting" Header="退出画板模式后隐藏墨迹" IsOn="False" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchHideStrokeWhenSelecting_Toggled"/>
                                 <ui:ToggleSwitch Name="ToggleSwitchUsingWhiteboard" Header="使用白板 (白色背景)" IsOn="False" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchUsingWhiteboard_Toggled"/>
+                                <ui:ToggleSwitch Name="ToggleSwitchFitToCurve" Header="笔迹平滑（保角，转折留棱角）" IsOn="True" FontFamily="Microsoft YaHei UI" OnContent="开" OffContent="关" Toggled="ToggleSwitchFitToCurve_Toggled"/>
+                                <TextBlock Text="开启后手写笔迹更顺滑，同时保留方折、竖钩、图框的直角（汉字和图形不再被磨圆）；关掉则完全按原始轨迹画。只影响此后新写的笔迹" TextWrapping="Wrap" Foreground="#666666"/>
                                 <TextBlock Text="保留双曲线渐近线" FontFamily="Microsoft YaHei UI" FontSize="14"/>
                                 <ComboBox Name="ComboBoxHyperbolaAsymptoteOption" FontFamily="Microsoft YaHei UI" SelectedIndex="2" SelectionChanged="ComboBoxHyperbolaAsymptoteOption_SelectionChanged">
                                     <ComboBoxItem Content="是" FontFamily="Microsoft YaHei UI"/>
@@ -674,7 +678,7 @@
                                 <TextBlock FontSize="14">
                                     <Bold>开源地址：</Bold>
                                     <Hyperlink Click="HyperlinkSource_Click">
-                                           <TextBlock Text="https://github.com/XueRenYi0/ink-canvas-dev"></TextBlock>
+                                           <TextBlock Text="https://github.com/XueRenYi0/InkClass"></TextBlock>
                                     </Hyperlink>
                                 </TextBlock>
                                 <!-- 上游原版项目地址：点击通过 HyperlinkUpstream_Click 打开浏览器 -->
@@ -1507,17 +1511,26 @@
                                          改为运行期解挂到 Main_Grid 根层 + 绝对定位，与笔/橡皮/选择三面板
                                          统一（见 MW_FloatBar.cs 的 DetachToolsPanelToRoot / PositionBorderTools）。
                                          底色单独用 FloatBarBackgroundOpaque（α97%）：本面板条目最多，
-                                         沿用 85% 半透明时文字会与背后窗口内容重影。 -->
-                                    <Border Name="BorderTools" Visibility="Collapsed" CornerRadius="5"
+                                         沿用 85% 半透明时文字会与背后窗口内容重影。
+                                         ★ 2026-09-12 防挤重构：① 删「更多」标题（图标本身就是入口，省 34px 纵向）；
+                                         ② Border 加 Padding 让四周有呼吸边距（原先靠行内 Margin 撑左边，右/下缘几乎贴边）；
+                                         ③ 每个条目行由 SimpleStackPanel(Spacing=14) 改为 4×52 等宽列 Grid ——
+                                         原先 5 行内容宽 88~172px 参差、短行右侧大留白，现各行左缘齐刷刷对齐成隐形网格；
+                                         ④ 组间距 6px → 10px（组标题 Margin 顶部加大），分组层级可辨。 -->
+                                    <Border Name="BorderTools" Visibility="Collapsed" CornerRadius="5" Padding="10,8,10,10"
                                             Background="{DynamicResource FloatBarBackgroundOpaque}"
                                             BorderThickness="1" BorderBrush="{DynamicResource FloatBarBorderBrush}">
                                         <ui:SimpleStackPanel>
-                                            <Label Content="更多" FontSize="14" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,8"/>
                                             <!-- ===== 组：手势 ===== -->
                                             <Label Content="手势" FontSize="12" Opacity="0.6" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,4,0,2"/>
-                                            <ui:SimpleStackPanel Orientation="Horizontal" Margin="12,0,0,0" Spacing="14">
+                                                   HorizontalAlignment="Left" Margin="0,0,0,3"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                </Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                     <Grid x:Name="GridGestureLock" Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           ToolTip="双指手势开关：锁定后双指不再平移/缩放/旋转墨迹（板书防误触）"
@@ -1545,7 +1558,7 @@
                                                      关＝图标叠斜杠（沿用双指手势同一套斜杠 Data 与 IconStrokeBold）。
                                                      ★ 点击必须写回 ToggleSwitchModeFinger.IsOn —— 它才是落盘通道，
                                                        其 Toggled 会同步「自动进入手指模式」并保存设置（MW_RightPanel.cs:456）。 -->
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="1">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           ToolTip="手指模式&#10;开启后把整根手指当笔（放大触摸面积阈值），适合没有笔的触摸屏"
                                                           MouseUp="SymbolIconFingerMode_MouseUp" MouseDown="Border_MouseDown">
@@ -1563,13 +1576,19 @@
                                                     <TextBlock Text="手指模式" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                            </ui:SimpleStackPanel>
+                                            </Grid>
                                             <!-- ===== 组：板面 ===== -->
                                             <Label Content="板面" FontSize="12" Opacity="0.6" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,4,0,2"/>
+                                                   HorizontalAlignment="Left" Margin="0,10,0,3"/>
                                             <!-- 白板相关条目：非白板模式下整组灰显（沿用"不适用功能灰显"规范，
                                                  与笔面板笔锋区同款），由 SymbolIconTools_MouseUp 打开面板时按 GridBackgroundCover 状态设置 -->
-                                            <ui:SimpleStackPanel x:Name="MoreToolsBoardSection" Orientation="Horizontal" Margin="12,0,0,0" Spacing="14">
+                                            <Grid x:Name="MoreToolsBoardSection">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                </Grid.ColumnDefinitions>
                                                 <!-- 白板底纹：菜单以本条目自身为锚点弹出 -->
                                                 <StackPanel>
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
@@ -1584,7 +1603,7 @@
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
                                                 <!-- 多人书写：点击切换单人/多人，状态用双 Path 切换 -->
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="1">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="BorderMultiTouchMode_MouseUp"
                                                           ToolTip="多人书写模式&#10;点击切换：多人（双人像）同时书写 / 仅单人（单人像）书写">
@@ -1601,7 +1620,7 @@
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
                                                 <!-- 白板/黑板切换：从白板底纹菜单顶部拆出来的独立入口 -->
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="2">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="MoreToolsBoardTheme_MouseUp"
                                                           ToolTip="白板 / 黑板切换&#10;板面色与界面深浅主题一起切换">
@@ -1613,11 +1632,17 @@
                                                     <TextBlock Text="白板/黑板" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                            </ui:SimpleStackPanel>
+                                            </Grid>
                                             <!-- ===== 组：墨迹 ===== -->
                                             <Label Content="墨迹" FontSize="12" Opacity="0.6" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,4,0,2"/>
-                                            <ui:SimpleStackPanel Orientation="Horizontal" Margin="12,0,0,0" Spacing="14">
+                                                   HorizontalAlignment="Left" Margin="0,10,0,3"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                </Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="SymbolIconSaveStrokes_MouseUp" ToolTip="保存墨迹到本地文件">
@@ -1626,7 +1651,7 @@
                                                     <TextBlock Text="保存" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="1">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="SymbolIconOpenStrokes_MouseUp" ToolTip="打开墨迹文件">
                                                         <ui:SymbolIcon Symbol="OpenFile" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
@@ -1634,7 +1659,7 @@
                                                     <TextBlock Text="打开" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="2">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="GridInkReplayButton_MouseUp" ToolTip="墨迹回放">
                                                         <ui:SymbolIcon Symbol="Edit" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
@@ -1645,11 +1670,17 @@
                                                     <TextBlock Text="回放" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                            </ui:SimpleStackPanel>
+                                            </Grid>
                                             <!-- ===== 组：工具 ===== -->
                                             <Label Content="工具" FontSize="12" Opacity="0.6" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,4,0,2"/>
-                                            <ui:SimpleStackPanel Margin="12,0,0,0" Spacing="14" Orientation="Horizontal">
+                                                   HorizontalAlignment="Left" Margin="0,10,0,3"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                </Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                 <Grid Width="20" Height="24" HorizontalAlignment="Center" Margin="0,0,0,2">
                                                     <Image Margin="-7" MouseDown="Border_MouseDown" MouseUp="ImageCountdownTimer_MouseUp">
@@ -1669,7 +1700,7 @@
                                                     <TextBlock Text="计时器" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="1">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="SymbolIconRand_MouseUp" ToolTip="随机点名（全名单）">
                                                         <ui:SymbolIcon Symbol="Shuffle" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
@@ -1677,7 +1708,7 @@
                                                     <TextBlock Text="随机点名" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="2">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseUp="SymbolIconRandOne_MouseUp" MouseDown="Border_MouseDown" ToolTip="随机一人（抽过的不重复）">
                                                         <ui:SymbolIcon Symbol="Shuffle" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource FloatBarForeground}"/>
@@ -1689,11 +1720,17 @@
                                                     <TextBlock Text="随机一人" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                            </ui:SimpleStackPanel>
+                                            </Grid>
                                             <!-- ===== 组：系统（设置/更新 + 原笑脸右键菜单的功能收拢到此）===== -->
                                             <Label Content="系统" FontSize="12" Opacity="0.6" Foreground="{DynamicResource FloatBarForeground}"
-                                                   HorizontalAlignment="Left" Margin="8,4,0,2"/>
-                                            <ui:SimpleStackPanel Margin="12,0,0,0" Spacing="14" Orientation="Horizontal">
+                                                   HorizontalAlignment="Left" Margin="0,10,0,3"/>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                    <ColumnDefinition Width="52"/>
+                                                </Grid.ColumnDefinitions>
                                                 <StackPanel>
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="MoreToolsSettings_MouseUp" ToolTip="打开设置">
@@ -1702,7 +1739,7 @@
                                                     <TextBlock Text="设置" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="1">
                                                     <!-- 检查更新用 Download（原来用 Sync，与主栏"重启画板"的 Refresh 都是循环箭头，容易看混） -->
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="MoreToolsCheckUpdate_MouseUp" ToolTip="检查更新&#10;手动检查新版本，已是最新时会给出提示">
@@ -1711,7 +1748,7 @@
                                                     <TextBlock Text="检查更新" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="2">
                                                     <!-- 查看快捷键：键盘轮廓（手绘 Path——Symbol 枚举里没有键盘类图标） -->
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="MoreToolsShowShortcuts_MouseUp"
@@ -1724,10 +1761,10 @@
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
                                                 <!-- 「恢复默认快捷键」条目已去掉（薛老师：不需要；该功能在设置页仍可操作） -->
-                                                <StackPanel>
+                                                <StackPanel Grid.Column="3">
                                                     <Grid Width="20" Height="24" HorizontalAlignment="Center" Background="Transparent"
                                                           MouseDown="Border_MouseDown" MouseUp="MoreToolsExit_MouseUp"
-                                                          ToolTip="退出 Inkboard&#10;会二次确认（未保存的板书将丢失）">
+                                                          ToolTip="退出 InkClass&#10;会二次确认（未保存的板书将丢失）">
                                                         <Path Data="M10,3 A8.5,8.5 0 1 0 10,20 A8.5,8.5 0 1 0 10,3 Z M7,8 L13,15 M13,8 L7,15"
                                                               Stroke="{DynamicResource FloatBarForeground}" StrokeThickness="{StaticResource IconStroke}"
                                                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
@@ -1735,7 +1772,7 @@
                                                     <TextBlock Text="退出" FontSize="10" Margin="0,3,0,0" HorizontalAlignment="Center"
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85"/>
                                                 </StackPanel>
-                                            </ui:SimpleStackPanel>
+                                            </Grid>
                                         </ui:SimpleStackPanel>
                                     </Border>
                                 </Grid>

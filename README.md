@@ -1,20 +1,20 @@
 <div align="center">
 
-[![LOGO](Ink%20Canvas/Resources/InkCanvas.png?raw=true "LOGO")](# "LOGO")
+[![LOGO](Ink%20Canvas/Resources/InkClass.png?raw=true "LOGO")](# "LOGO")
 
-# Ink Canvas · 板书白板
+# InkClass · 板书白板
 
-[直接下载](https://github.com/XueRenYi0/ink-canvas-dev/releases/latest "Latest Releases") | [使用指南](Manual.md "说明和指南") | [开发说明](DEVELOPMENT.md "开发文档") | [常见问题](#-faq "FAQ")
+[直接下载](https://github.com/XueRenYi0/InkClass/releases/latest "Latest Releases") | [使用指南](Manual.md "说明和指南") | [开发说明](DEVELOPMENT.md "开发文档") | [常见问题](#-faq "FAQ")
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg) ![Framework](https://img.shields.io/badge/.NET%20Framework-4.7.2%2B-purple.svg)
 
 </div>
 
-A fantastic Ink Canvas in WPF/C#, with fantastic support for Seewo Boards.
+InkClass — a WPF/C# whiteboard for classroom teaching, with solid support for Seewo Boards.
 
 学校从传统投影仪换成了希沃白板，由于自带的"希沃白板"软件太难用，也没有同类好用的画板软件，所以有了该画板。
 
-本仓库是 [WXRIW/Ink-Canvas](https://github.com/WXRIW/Ink-Canvas) 的优化分支（基于上游 master 分支），面向课堂板书场景持续增强，同样以 GPL-3.0 协议开源发布。当前版本 **v6.6.1**。
+本仓库是 [WXRIW/Ink-Canvas](https://github.com/WXRIW/Ink-Canvas) 的优化分支（基于上游 master 分支），面向课堂板书场景持续增强，同样以 GPL-3.0 协议开源发布。当前版本 **v6.6.2**。
 
 ## ✨ 本分支主要增强
 
@@ -76,10 +76,10 @@ A fantastic Ink Canvas in WPF/C#, with fantastic support for Seewo Boards.
 
 ## 📦 下载与安装
 
-前往 [Releases](https://github.com/XueRenYi0/ink-canvas-dev/releases/latest) 下载最新版本：
+前往 [Releases](https://github.com/XueRenYi0/InkClass/releases/latest) 下载最新版本：
 
-- `Inkboard-v6.6.1-Setup.exe` — 单文件安装包（推荐），双击即装，无需解压
-- `Inkboard-v6.6.1-Portable.zip` — 免安装绿色版，解压即用
+- `InkClass-v6.6.2-Setup.exe` — 单文件安装包（推荐），双击即装，无需解压
+- `InkClass-v6.6.2-Portable.zip` — 免安装绿色版，解压即用
 
 **系统要求**：Windows 10 及以上 · .NET Framework 4.7.2 或更高版本（Win10/11 系统自带，通常无需额外安装）· 需要使用 PPT 模式时请安装 Microsoft Office
 
@@ -121,7 +121,7 @@ msbuild "Ink Canvas.sln" /p:Configuration=Release /p:Platform=AnyCPU
 
 ### 我该在何处提出功能需求和错误报告？
 
-GitHub Issues：https://github.com/XueRenYi0/ink-canvas-dev/issues
+GitHub Issues：https://github.com/XueRenYi0/InkClass/issues
 
 ### 大小屏设备交替使用/手指或笔头过大 导致被识别成橡皮怎么办？
 点击画板的"设置"按钮并开启`特殊屏幕`选项即可

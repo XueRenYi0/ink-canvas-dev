@@ -101,7 +101,7 @@ namespace Ink_Canvas
             }
 
             TextBlockVersion.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            LogHelper.WriteLogToFile("Ink Canvas Loaded", LogHelper.LogType.Event);
+            LogHelper.WriteLogToFile("InkClass Loaded", LogHelper.LogType.Event);
 
             isLoaded = true;
 
@@ -128,15 +128,15 @@ namespace Ink_Canvas
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            LogHelper.WriteLogToFile("Ink Canvas closing", LogHelper.LogType.Event);
+            LogHelper.WriteLogToFile("InkClass closing", LogHelper.LogType.Event);
             if (!CloseIsFromButton)
             {
                 e.Cancel = true;
-                if (MessageBox.Show("是否继续关闭 Inkboard 画板，这将丢失当前未保存的工作。", "Inkboard 画板", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox.Show("是否继续关闭 InkClass 画板，这将丢失当前未保存的工作。", "InkClass 画板", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
-                    if (MessageBox.Show("真的狠心关闭 Inkboard 画板吗？", "Inkboard 画板", MessageBoxButton.OKCancel, MessageBoxImage.Error) == MessageBoxResult.OK)
+                    if (MessageBox.Show("真的狠心关闭 InkClass 画板吗？", "InkClass 画板", MessageBoxButton.OKCancel, MessageBoxImage.Error) == MessageBoxResult.OK)
                     {
-                        if (MessageBox.Show("是否取消关闭 Inkboard 画板？", "Inkboard 画板", MessageBoxButton.OKCancel, MessageBoxImage.Error) != MessageBoxResult.OK)
+                        if (MessageBox.Show("是否取消关闭 InkClass 画板？", "InkClass 画板", MessageBoxButton.OKCancel, MessageBoxImage.Error) != MessageBoxResult.OK)
                         {
                             e.Cancel = false;
                         }
@@ -145,13 +145,13 @@ namespace Ink_Canvas
             }
             if (e.Cancel)
             {
-                LogHelper.WriteLogToFile("Ink Canvas closing cancelled", LogHelper.LogType.Event);
+                LogHelper.WriteLogToFile("InkClass closing cancelled", LogHelper.LogType.Event);
             }
         }
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            LogHelper.WriteLogToFile("Ink Canvas closed", LogHelper.LogType.Event);
+            LogHelper.WriteLogToFile("InkClass closed", LogHelper.LogType.Event);
             //释放函数识别的数学面板 COM 资源（MW_MathGraph.cs）
             ReleaseMathInputPanel();
             //主动退出（退出/重启按钮路径）：立即终止进程释放单实例互斥锁。
@@ -401,6 +401,13 @@ namespace Ink_Canvas
                 }
 
                 ComboBoxPenStyle.SelectedIndex = Settings.Canvas.InkStyle;
+
+                // 笔迹平滑开关：回显。它现在驱动的是"保角平滑"（数据层，MW_PreserveCornerSmoothing.cs），
+                // 而不是 WPF 的贝塞尔拟合 —— 画布的 DefaultDrawingAttributes.FitToCurve 恒为 false。
+                ToggleSwitchFitToCurve.IsOn = Settings.Canvas.FitToCurve;
+                drawingAttributes.FitToCurve = false;
+                // 启动自检：把"保角平滑"的实际生效状态写进日志，便于区分"没生效"和"生效但看不出差别"。
+                LogHelper.WriteLogToFile($"[Canvas] 笔迹平滑（保角平滑）= {Settings.Canvas.FitToCurve}", LogHelper.LogType.Event);
 
                 ComboBoxEraserSize.SelectedIndex = Settings.Canvas.EraserSize;
 

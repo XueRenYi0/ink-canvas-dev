@@ -5,13 +5,13 @@ using System.Windows;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Inkboard · 板书白板")]
+[assembly: AssemblyTitle("InkClass · 板书白板")]
 [assembly: AssemblyDescription("适用于课堂 PPT 放映和演示场景的板书白板：支持 PPT 批注、自由书写、选择缩放旋转、自定义图形图库、快捷键、笔记滚动、矩形橡皮擦等。")]
 [assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyCompany("Inkboard Team")]
-[assembly: AssemblyProduct("Inkboard")]
-[assembly: AssemblyCopyright("Copyright © Inkboard (formerly Ink Canvas) 2023–2026")]
-[assembly: AssemblyTrademark("Inkboard")]
+[assembly: AssemblyCompany("InkClass Team")]
+[assembly: AssemblyProduct("InkClass")]
+[assembly: AssemblyCopyright("Copyright © InkClass (formerly Ink Canvas) 2023–2026")]
+[assembly: AssemblyTrademark("InkClass")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
@@ -49,7 +49,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 6.0.0：更名 Inkboard（原 Ink Canvas）、
+// 版本：主版本.次版本.修订(YYYYMMDD).编译号 — 6.0.0：更名 InkClass（原 Ink Canvas）、
 // MathGraph 函数绘图模块（MathML 解析 + 采样绘制 + sin 快捷按钮）、数学公式识别面板、
 // 停顿拉直（两条线修复）、选中框旋转手柄、框外直接书写、图形面板位置/图库高度优化、
 // 撤销/快捷键统一走 TimeMachine
@@ -94,6 +94,18 @@ using System.Windows;
 //            高不透明度背景键 FloatBarBackgroundOpaque（α≈97%），消除文字与背后窗口重影
 //         ⑤ 激光笔不参与停顿拉直：拉直生成的直线不经 StrokeCollected，激光淡出永不启动，
 //            会永久留在画布上且进不了撤销栈
-[assembly: AssemblyVersion("6.6.1.0")]
+// v6.6.2：更名 InkClass + 笔迹平滑重做 ——
+//         ① 软件与仓库更名为 InkClass（沿用 v6.0.0 改名先例：换新 AppId，
+//            PrepareToInstall 自动迁移旧 Inkboard 安装的配置/图库，并清理旧
+//            快捷方式、旧卸载注册表项与旧安装目录）
+//         ② 新增「保角平滑」替代 WPF 的 FitToCurve：转角锚点 + 段内居中平滑 ——
+//            手写更顺但方折/直角保留棱角；窗口按实际点距自适应，鼠标与手写板一致
+//         ③ 「按速度」模拟笔锋重写：整笔点距归一化 + tanh 映射 + 端点包络 +
+//            变化率限制 —— 消除设备采样率差异，并压掉相邻点粗细忽大忽小的锯齿
+//         ④ 修「点面板外收起时顺手在画布上画出一个点」：抬起按位移判定单击/书写，
+//            单击则静默丢弃该笔迹（新增与删除都不进撤销栈）；鼠标/触笔两条通道都覆盖
+//         ⑤ 程序化生成的图形笔迹不再走曲线拟合（识别出的图形、几何绘图），
+//            正方形/三角形的直角不再被磨圆
+[assembly: AssemblyVersion("6.6.2.0")]
 [assembly: AssemblyFileVersion("6.6.2026.0912")]
-[assembly: AssemblyInformationalVersion("6.6.1")]
+[assembly: AssemblyInformationalVersion("6.6.2")]

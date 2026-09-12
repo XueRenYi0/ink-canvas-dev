@@ -454,6 +454,12 @@ namespace Ink_Canvas
         /// </summary>
         internal void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
+            // ★ "点面板外收起面板"的那次单击不该画出点：先做单击/书写判定。
+            //   必须放在最前面 —— 隧道抬起事件早于 InkCanvas 提交笔迹，
+            //   在这里把提交类型恢复成 UserInput，才能让"书写"那一次照常进撤销栈。
+            //   状态机与原因见 MW_PopupLayers.cs 的 DismissPressDown / DismissPressUp。
+            DismissPressUp(e.GetPosition(Main_Grid));
+
             // 气泡已显示：点在气泡外 → 换位置（点画布）或关闭退出（点工具栏/面板等其他区域）
             if (BorderPastePrompt.Visibility == Visibility.Visible)
             {

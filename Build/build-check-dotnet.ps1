@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    用 dotnet build 验证 Inkboard 源码能否编译。
+    用 dotnet build 验证 InkClass 源码能否编译。
 .DESCRIPTION
     本机 MSBuild.exe 被安全策略拦截（csc/msbuild/InstallUtil 等 LOLBin 在命令黑名单里），
     但 dotnet 不在黑名单 —— 本脚本把源码复制到临时目录、把 COM 引用换成已生成的
@@ -78,7 +78,7 @@ try {
 }
 
 if ($code -eq 0) {
-    $exe = Join-Path $tmpProj "bin\Inkboard\Inkboard.exe"
+    $exe = Join-Path $tmpProj "bin\InkClass\InkClass.exe"
     Write-Host ""
     Write-Host "构建成功 -> $exe" -ForegroundColor Green
     Write-Host "（这是临时副本产物，仅用于验证编译；正式产物请用 VS 或 Build\rebuild-release-v5.ps1）" -ForegroundColor DarkGray

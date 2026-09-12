@@ -1,8 +1,8 @@
 ; =====================================================================
-; Inkboard 安装脚本（Inno Setup 6.3+）
+; InkClass 安装脚本（Inno Setup 6.3+）
 ; ---------------------------------------------------------------------
 ; 构建方式：Build\build-zips.ps1 在生成暂存目录后自动调用 ISCC 编译本脚本
-; 产物：Releases\Inkboard-v{版本}-Setup.exe（单文件安装包）
+; 产物：Releases\InkClass-v{版本}-Setup.exe（单文件安装包）
 ;
 ; 设计要点（改前请读）：
 ; 1. 【用户级安装】软件把 Settings.json / Log.txt / CustomShapes 等
@@ -20,19 +20,25 @@
 ;    + 新安装目录，PrepareToInstall 阶段自动把旧目录（{localappdata}\Programs
 ;    \Ink Canvas）里的 Settings.json / custom.json / CustomShapes 图库迁移
 ;    到新目录，并清理旧版快捷方式、旧卸载注册表项、旧安装目录。
+; 6. 【v6.6.2 更名迁移】软件由 Inkboard 更名为 InkClass：同样换用新 AppId
+;    + 新安装目录，PrepareToInstall 阶段把旧目录（{localappdata}\Programs
+;    \Inkboard）里的 Settings.json / custom.json / CustomShapes / Versions.ini
+;    迁移到新目录，并清理旧版快捷方式、旧卸载注册表项、旧安装目录。
 ; =====================================================================
 
-#define MyAppName "Inkboard"
-#define MyAppVersion "6.6.1"
-#define MyAppExeName "Inkboard.exe"
+#define MyAppName "InkClass"
+#define MyAppVersion "6.6.2"
+#define MyAppExeName "InkClass.exe"
 #define MyAppPublisher "XueRenYi0"
 ; 旧名（v5.x 及之前），仅在迁移清理代码中使用
 #define OldAppName "Ink Canvas"
+; 上一代名字（v6.0.0~v6.6.1），仅在迁移清理代码中使用
+#define PrevAppName "Inkboard"
 
 [Setup]
 ; 注意：此 GUID 是软件的永久身份标识，升级版本时切勿更改
 ; （v6.0.0 更名时换新 ID 是刻意的：与旧 Ink Canvas 安装解耦，走迁移而非原地升级）
-AppId={{7C1F9A4E-2D35-4B6A-8E77-9F0A1B2C3D4E}
+AppId={{847D7CFD-3BB2-4D10-BC4D-E2B26BB2F7BB}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
@@ -60,7 +66,7 @@ SolidCompression=yes
 
 ; 输出单文件安装包
 OutputDir=..\Releases
-OutputBaseFilename=Inkboard-v{#MyAppVersion}-Setup
+OutputBaseFilename=InkClass-v{#MyAppVersion}-Setup
 
 ; 覆盖安装时若软件正在运行，提示用户关闭（走 Windows 重启管理器）
 CloseApplications=yes
@@ -76,8 +82,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; 版本迭代防残留：安装前删掉旧版本号的快捷方式（旧脚本带版本号命名，
 ; 升级后旧 lnk 会留着，这里按通配符统一清掉再重建）
 Type: files; Name: "{group}\{#OldAppName}*.lnk"
+Type: files; Name: "{group}\{#PrevAppName}*.lnk"
 Type: files; Name: "{group}\{#MyAppName}*.lnk"
 Type: files; Name: "{autodesktop}\{#OldAppName}*.lnk"
+Type: files; Name: "{autodesktop}\{#PrevAppName}*.lnk"
 Type: files; Name: "{autodesktop}\{#MyAppName}*.lnk"
 ; v6.0.0 首包事故自愈：首个 6.0.0 安装包把文件误装进了 {app}\Inkboard v6.0.0\
 ; 嵌套目录（快捷方式因此找不到 exe）。这里把那个嵌套目录整个清掉，
@@ -86,10 +94,10 @@ Type: filesandordirs; Name: "{app}\Inkboard v6.0.0"
 
 [Files]
 ; 源自 build-zips.ps1 生成的暂存目录（已排除用户数据/调试文件）。
-; 注意暂存结构是 stage-v6\Inkboard v{版本}\（zip 打包需要这层文件夹），
-; 安装包必须穿透这层直接取内容，否则 exe 会装到 {app}\Inkboard v{版本}\ 里，
-; 快捷方式指向 {app}\Inkboard.exe 找不到文件 → "安装后打不开"（v6.0.0 首包真实踩过）
-Source: "..\Releases\stage-v6\Inkboard v{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 注意暂存结构是 stage-v6\InkClass v{版本}\（zip 打包需要这层文件夹），
+; 安装包必须穿透这层直接取内容，否则 exe 会装到 {app}\InkClass v{版本}\ 里，
+; 快捷方式指向 {app}\InkClass.exe 找不到文件 → "安装后打不开"（v6.0.0 首包真实踩过）
+Source: "..\Releases\stage-v6\InkClass v{#MyAppVersion}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; —— 主入口不带版本号（版本号在"应用和功能"里看），避免每次升级残留一套旧快捷方式
@@ -104,7 +112,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 ; ==============================================================
 ; 安装前处理（PrepareToInstall 阶段：安装向导点击"安装"后、复制文件前执行）
 ; --------------------------------------------------------------
-; A. v6.0.0 更名迁移（旧 Ink Canvas 用户级安装 → 新 Inkboard 目录）
+; A. v6.0.0 更名迁移（旧 Ink Canvas 用户级安装 → 新 InkClass 目录）
 ; B. 旧自制安装器残留清理（v5.1.0 及之前装在 Program Files 的版本）
 ; ==============================================================
 [Code]
@@ -229,7 +237,7 @@ begin
   end;
 end;
 
-// v6.0.0 更名迁移：把旧 Ink Canvas 用户级安装的数据搬到新 Inkboard 目录，
+// v6.0.0 更名迁移：把旧 Ink Canvas 用户级安装的数据搬到新 InkClass 目录，
 // 并清理旧快捷方式 / 旧卸载注册表 / 旧安装目录。
 // 用户级安装（{localappdata}）本账号有完整权限，可放心整目录删除。
 procedure MigrateFromOldInkCanvas;
@@ -240,7 +248,7 @@ var
   OldUninstKey: String;
 begin
   OldDir := ExpandConstant('{localappdata}\Programs\Ink Canvas');
-  NewDir := ExpandConstant('{localappdata}\Programs\Inkboard');
+  NewDir := ExpandConstant('{localappdata}\Programs\InkClass');
 
   // 没装过旧版（或已迁移过）：无事可做
   if not FileExists(OldDir + '\Ink Canvas.exe') then Exit;
@@ -285,7 +293,91 @@ begin
   if not DelTree(OldDir, True, True, True) then
     Log('[Migrate] WARN: 旧目录删除失败（可能有文件被占用），请手动删除: ' + OldDir);
 
-  Log('[Migrate] Ink Canvas → Inkboard 迁移完成');
+  Log('[Migrate] Ink Canvas → InkClass 迁移完成');
+end;
+
+// 删除当前用户开始菜单/桌面上指定名字的快捷方式（目标指向 OldDir 的）
+procedure DeleteUserShortcutsByBaseName(const BaseName, OldDir: String);
+var
+  Links: array of String;
+  I: Integer;
+  Target: String;
+begin
+  SetArrayLength(Links, 2);
+  Links[0] := ExpandConstant('{userprograms}\') + BaseName + '.lnk';
+  Links[1] := ExpandConstant('{userdesktop}\') + BaseName + '.lnk';
+  for I := 0 to GetArrayLength(Links) - 1 do
+  begin
+    if FileExists(Links[I]) then
+    begin
+      Target := GetShortcutTarget(Links[I]);
+      // 目标指向旧安装目录（或读不到目标也删：名字匹配的只剩它）
+      if (Pos(Lowercase(OldDir), Lowercase(Target)) > 0) or (Target = '') then
+      begin
+        DeleteFile(Links[I]);
+        Log('[Migrate] 删除旧快捷方式: ' + Links[I]);
+      end;
+    end;
+  end;
+end;
+
+// v6.6.2 更名迁移（Inkboard → InkClass）：把旧 Inkboard 用户级安装的数据搬到新 InkClass 目录，
+// 并清理旧快捷方式 / 旧卸载注册表 / 旧安装目录。
+// 用户级安装（{localappdata}）本账号有完整权限，可放心整目录删除。
+procedure MigrateFromOldInkboard;
+var
+  OldDir, NewDir: String;
+  Files: array of String;
+  I: Integer;
+  OldUninstKey: String;
+begin
+  OldDir := ExpandConstant('{localappdata}\Programs\Inkboard');
+  NewDir := ExpandConstant('{localappdata}\Programs\InkClass');
+
+  // 没装过旧版（或已迁移过）：无事可做
+  if not FileExists(OldDir + '\Inkboard.exe') then Exit;
+
+  // 1) 迁移用户数据：设置 + 图库 + 名单（不存在就跳过）
+  SetArrayLength(Files, 3);
+  Files[0] := 'Settings.json';
+  Files[1] := 'custom.json';
+  Files[2] := 'Versions.ini';
+  for I := 0 to GetArrayLength(Files) - 1 do
+  begin
+    if FileExists(OldDir + '\' + Files[I]) then
+    begin
+      ForceDirectories(NewDir);
+      if FileCopy(OldDir + '\' + Files[I], NewDir + '\' + Files[I], False) then
+        Log('[Migrate] 迁移配置: ' + Files[I]);
+    end;
+  end;
+
+  // 2) 迁移自定义图库目录（整目录复制，含全部 .isc 文件）
+  if DirExists(OldDir + '\CustomShapes') then
+  begin
+    ForceDirectories(NewDir + '\CustomShapes');
+    // 复制所有 .isc（自制墨迹图形）——旧库是纯数据，直接全量搬
+    if not CopyDirRecursive(OldDir + '\CustomShapes', NewDir + '\CustomShapes') then
+      Log('[Migrate] WARN: CustomShapes 迁移失败（旧目录保留，可手动拷贝）');
+  end;
+
+  // 3) 删除旧版快捷方式（用户开始菜单 + 用户桌面，指向旧目录的）
+  DeleteUserShortcutsByBaseName('Inkboard', OldDir);
+
+  // 4) 删除旧版卸载注册表项（用户级安装在 HKCU；v6.0.0 起的 Inkboard AppId）
+  OldUninstKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{7C1F9A4E-2D35-4B6A-8E77-9F0A1B2C3D4E}_is1';
+  if RegKeyExists(HKEY_CURRENT_USER, OldUninstKey) then
+  begin
+    RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, OldUninstKey);
+    Log('[Migrate] 删除旧版卸载注册表项');
+  end;
+
+  // 5) 删除旧安装目录（配置已迁移走；万一有没搬到的文件，放弃删除并记录日志）
+  // DelTree 签名：(Path, IsDir, DeleteFiles, DeleteSubdirsAlso)
+  if not DelTree(OldDir, True, True, True) then
+    Log('[Migrate] WARN: 旧目录删除失败（可能有文件被占用），请手动删除: ' + OldDir);
+
+  Log('[Migrate] Inkboard → InkClass 迁移完成');
 end;
 
 // 安装前：更名迁移 + 清理旧自制安装器残留并提示
@@ -298,6 +390,9 @@ begin
 
   // v6.0.0 更名：先迁移旧 Ink Canvas 用户级安装
   MigrateFromOldInkCanvas;
+
+  // v6.6.2 更名：再迁移旧 Inkboard 用户级安装
+  MigrateFromOldInkboard;
 
   // 再处理 v5.1.0 及之前 Program Files 里的自制安装器残留
   CleanupLegacyShortcuts;

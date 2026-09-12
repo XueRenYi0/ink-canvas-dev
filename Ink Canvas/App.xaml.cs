@@ -30,7 +30,7 @@ namespace Ink_Canvas
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            Ink_Canvas.MainWindow.ShowNewMessage("抱歉，出现未预期的异常，可能导致 Inkboard 画板运行不稳定。\n建议保存墨迹后重启应用。", true);
+            Ink_Canvas.MainWindow.ShowNewMessage("抱歉，出现未预期的异常，可能导致 InkClass 画板运行不稳定。\n建议保存墨迹后重启应用。", true);
             LogHelper.NewLog(e.Exception.ToString());
             e.Handled = true;
         }
@@ -39,7 +39,7 @@ namespace Ink_Canvas
         {
             if (!StoreHelper.IsStoreApp) RootPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
 
-            LogHelper.NewLog(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+            LogHelper.NewLog(string.Format("InkClass Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
 
             bool ret;
             mutex = new System.Threading.Mutex(true, "Ink_Canvas", out ret);
@@ -48,7 +48,7 @@ namespace Ink_Canvas
             {
                 LogHelper.NewLog("Detected existing instance");
                 MessageBox.Show("已有一个程序实例正在运行");
-                LogHelper.NewLog("Ink Canvas automatically closed");
+                LogHelper.NewLog("InkClass automatically closed");
                 Environment.Exit(0);
             }
 
@@ -67,9 +67,9 @@ namespace Ink_Canvas
         // gh-proxy.at9.net 为备胎。镜像是公益服务有跑路风险，所以末位保留 GitHub 直连兜底。
         static readonly string[] UpdateXmlUrls =
         {
-            "https://gh-proxy.com/https://raw.githubusercontent.com/XueRenYi0/ink-canvas-dev/master/update.xml",
-            "https://gh-proxy.at9.net/https://raw.githubusercontent.com/XueRenYi0/ink-canvas-dev/master/update.xml",
-            "https://raw.githubusercontent.com/XueRenYi0/ink-canvas-dev/master/update.xml"
+            "https://gh-proxy.com/https://raw.githubusercontent.com/XueRenYi0/InkClass/master/update.xml",
+            "https://gh-proxy.at9.net/https://raw.githubusercontent.com/XueRenYi0/InkClass/master/update.xml",
+            "https://raw.githubusercontent.com/XueRenYi0/InkClass/master/update.xml"
         };
 
         /// <summary>
@@ -150,7 +150,7 @@ namespace Ink_Canvas
         ///
         /// 根因（AutoUpdater.NET 1.8.1，两层拦截叠加，缺一不可）：
         ///   ① 持久层：延迟时间点写在注册表
-        ///      HKCU\Software\Inkboard Team\Inkboard · 板书白板\AutoUpdater\RemindLaterAt。
+        ///      HKCU\Software\InkClass Team\InkClass · 板书白板\AutoUpdater\RemindLaterAt。
         ///      CheckUpdate() 若读到"还没到点"就 `return remindLaterAt`（返回的不是 args），
         ///      于是 StartUpdate() 只挂一个定时器、**完全不触发 CheckForUpdateEvent**；
         ///      而我们的全部 UI 反馈都在这个事件里 → 静默。

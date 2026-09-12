@@ -2,7 +2,7 @@
 
 本项目基于 [WXRIW/Ink-Canvas](https://github.com/WXRIW/Ink-Canvas) 的个人优化分支，以 GPL-3.0 协议开源。
 原始软件是针对希沃白板和 PowerPoint 优化的轻量课堂画板（WPF, .NET Framework 4.7.2）。
-v6.0.0 起产品更名为 **Inkboard**。
+v6.0.0 起产品更名为 **InkClass**。
 
 > 本文档面向接手者：**怎么编译、怎么打包、发版要同步哪些文件** 全部在"构建方法"与"发版流程"两节，
 > 照着做即可，不依赖任何口口相传的知识。
@@ -10,11 +10,11 @@ v6.0.0 起产品更名为 **Inkboard**。
 ## 项目现状
 
 - **框架**：.NET Framework 4.7.2 WPF（保持不动，Win10/Win11 均可运行）
-- **版本**：6.6.1（版本号分散在 5 处，发版必须同步，见"版本号同步清单"）
+- **版本**：6.6.2（版本号分散在 5 处，发版必须同步，见"版本号同步清单"）
 - **主要依赖**：iNKORE UI WPF、Autoupdater.NET、Microsoft.Office.Interop.PowerPoint、
   内置墨迹识别库（IACore.dll / IALoader.dll / IAWinFX.dll / Microsoft.Ink.dll）
 - **csproj 为 SDK 风格**：新增 .cs 文件自动包含进编译，无需手动登记
-- **输出统一**：Debug/Release 都输出到 `Ink Canvas\bin\Inkboard\`，主程序名 `Inkboard.exe`
+- **输出统一**：Debug/Release 都输出到 `Ink Canvas\bin\InkClass\`，主程序名 `InkClass.exe`
   （v6.0.0 前叫 `Ink Canvas.exe`、输出在 `bin\Release\`——老文档/老脚本如还这么写就是过时的）
 
 ## 版本演进摘要（相对上游）
@@ -51,7 +51,7 @@ v6.0.0 起产品更名为 **Inkboard**。
 8. **v6.6.1**：颜色与面板定位修正版 ——
    ① **修「点检查更新没反应」**（用户反馈）：更新弹窗里选过"延迟 30 分钟"（或"跳过此版本"）之后，
    再点「检查更新」完全静默、连 toast 都不变。根因是 AutoUpdater.NET 1.8.1 的两层拦截叠加：
-   延迟时间点存在注册表 `HKCU\Software\Inkboard Team\Inkboard · 板书白板\AutoUpdater\RemindLaterAt`，
+   延迟时间点存在注册表 `HKCU\Software\InkClass Team\InkClass · 板书白板\AutoUpdater\RemindLaterAt`，
    `CheckUpdate()` 读到"还没到点"就 `return remindLaterAt`（不是 args）；同时 `UpdateForm` 会调
    `SetTimer()` 挂一个进程内 `_remindLaterTimer`，而 `Start()` 开头是
    `if (Running || _remindLaterTimer != null) return;` —— 于是请求都不发、也不触发
@@ -71,6 +71,28 @@ v6.0.0 起产品更名为 **Inkboard**。
    ⑤ **激光笔不参与停顿拉直**：拉直生成的直线走 `Strokes.Add` 程序化提交、不触发
    `StrokeCollected`，激光淡出永不启动，属性里又带着 `LaserStrokeGuid` → 直线永久留在画布上
    且被 TimeMachine 判为临时笔迹、进不了撤销栈
+
+9. **v6.6.2**：更名 InkClass + 笔迹平滑重做 ——
+   ① **软件与仓库更名为 InkClass**（`WXRIW/Ink-Canvas` → Inkboard → 本版 InkClass）：
+   沿用 v6.0.0 改名先例 —— 换新 AppId、新安装目录，`PrepareToInstall` 阶段自动把旧
+   `%LOCALAPPDATA%\Programs\Inkboard` 里的 `Settings.json` / `custom.json` /
+   `CustomShapes` / `Versions.ini` 迁移到新目录，并清理旧快捷方式、旧卸载注册表项与旧目录
+   ② **新增「保角平滑」**（新文件 `MW_PreserveCornerSmoothing.cs`）**替代 WPF 的 `FitToCurve`**：
+   先用「宏观转角」（前后各取一段连线求夹角，抗单点抖动）标出转折锚点，锚点不动、只对锚点
+   之间做居中滑动平均 —— 手写更顺但方折/直角保留棱角；窗口按实际平均点距自适应（手写板
+   一点 2~5px、鼠标合并后可能 90px），避免两种输入下尺度差 20 倍
+   ③ **「按速度」模拟笔锋重写**（`MW_SimulatePressure.cs`）：旧实现用纯点距当速度（不含时间），
+   采样率越高算出来越"慢"→ 线条反而越粗，且三段硬阈值让正常写字整段落在中性档；新版改为
+   **整笔平均点距归一化 + `tanh` 平滑映射 + 端点包络 + 变化率限制**，消除设备差异并压掉
+   相邻点粗细忽大忽小的锯齿（实测相邻点最大变化 0.173 → 0.0069）
+   ④ **修「点面板外收起时顺手画出一个点」**（`MW_PopupLayers.cs`）：按下收起面板时不拦事件
+   （否则"面板开着直接写"的第一笔会丢、触摸双指手势也会坏），改为**抬起时按位移判定** ——
+   ≤6px 视为"收起面板的单击"，该笔迹被静默丢弃且新增/删除都不进撤销栈；>6px 是书写则照常
+   入撤销栈。鼠标与触笔两条通道都覆盖；同一次按下若被两条通道重复上报（笔在 Ink 模式下会
+   先 Stylus 后 Mouse，相隔几毫秒），按 80ms 时间窗并作一次，避免状态被冲掉
+   ⑤ **程序化图形笔迹不再走曲线拟合**：识别出的图形（三角形/矩形族）与几何绘图生成的折线
+   只有角点，`FitToCurve` 会把直角磨圆 —— 统一关掉（`NormalizeAttributesForShapeMode` 一处
+   覆盖几何绘图 45 处）
 
 ## 已知待优化项（后续接手时先看这里）
 
@@ -113,7 +135,7 @@ v6.0.0 起产品更名为 **Inkboard**。
    & "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe" `
        "Ink Canvas\Ink Canvas.csproj" -p:Configuration=Debug
    ```
-   产物：`Ink Canvas\bin\Inkboard\Inkboard.exe`（Debug/Release 同目录，靠 csproj 顶层 OutputPath 统一）
+   产物：`Ink Canvas\bin\InkClass\InkClass.exe`（Debug/Release 同目录，靠 csproj 顶层 OutputPath 统一）
 
 ### 打包发布（打包菜单）
 
@@ -122,7 +144,7 @@ v6.0.0 起产品更名为 **Inkboard**。
 | 脚本 | 作用 |
 |---|---|
 | `rebuild-release-v5.ps1` | 重编 Release（脚本内 `$ver` 是版本号来源之一），刷新 bin 下使用说明版本、写 `VersionInfo.ini`、打印 exe 版本自检。参数 `-msb` 可覆盖 MSBuild 路径（默认指向 VS2022 Community，本机是 BuildTools 需传参） |
-| `build-zips.ps1` | 从 `bin\Inkboard` 生成 `Releases\Inkboard-vX.Y.Z-Portable.zip`（自动排除用户数据：Settings.json / Log.txt / CustomShapes / History Versions 等），并调 Inno Setup 编译出 `Inkboard-vX.Y.Z-Setup.exe`。打包内"使用说明 README.txt"取自 `Build\使用说明 README.txt` 模板，版本号由脚本正则自动刷新 |
+| `build-zips.ps1` | 从 `bin\InkClass` 生成 `Releases\InkClass-vX.Y.Z-Portable.zip`（自动排除用户数据：Settings.json / Log.txt / CustomShapes / History Versions 等），并调 Inno Setup 编译出 `InkClass-vX.Y.Z-Setup.exe`。打包内"使用说明 README.txt"取自 `Build\使用说明 README.txt` 模板，版本号由脚本正则自动刷新 |
 | `InkCanvas.iss` | Inno Setup 安装脚本：**用户级安装**（`%LocalAppData%\Programs`，免 UAC——软件把运行数据写在 exe 目录，装 Program Files 会导致普通权限无法保存设置），正规开始菜单/桌面快捷方式与卸载项 |
 | `verify-v5.ps1` | 校验 `Releases/` 下最新产物的版本一致性（zip 文件名 / exe AssemblyVersion / VersionInfo.ini 三处一致），不一致 exit 1 |
 | `read-logs.ps1` | 本地调试用：查看各输出目录下 Log.txt 尾部 |
@@ -180,15 +202,15 @@ $token = ($cred | Select-String '^password=(.+)$').Matches.Groups[1].Value
 
 # 建 Release（正文写进 json 文件，curl --data-binary 上传）
 curl.exe -s -x http://127.0.0.1:7890 -X POST `
-  "https://api.github.com/repos/XueRenYi0/ink-canvas-dev/releases" `
+  "https://api.github.com/repos/XueRenYi0/InkClass/releases" `
   -H "Authorization: token $token" -H "Content-Type: application/json" `
   --data-binary "@release-body.json"
 
 # 传附件（zip 用 application/zip，exe 用 application/octet-stream）
 curl.exe -s -x http://127.0.0.1:7890 -X POST `
-  "https://uploads.github.com/repos/XueRenYi0/ink-canvas-dev/releases/<id>/assets?name=Inkboard-vX.Y.Z-Setup.exe" `
+  "https://uploads.github.com/repos/XueRenYi0/InkClass/releases/<id>/assets?name=InkClass-vX.Y.Z-Setup.exe" `
   -H "Authorization: token $token" -H "Content-Type: application/octet-stream" `
-  --data-binary "@Releases\Inkboard-vX.Y.Z-Setup.exe"
+  --data-binary "@Releases\InkClass-vX.Y.Z-Setup.exe"
 ```
 
 ### 发版环境坑（都踩过，别再踩）
@@ -227,7 +249,7 @@ curl.exe -s -x http://127.0.0.1:7890 -X POST `
 # 原上游远程改名保留，方便日后比对/同步上游
 git remote rename origin upstream
 # 本仓库作为 origin
-git remote add origin https://github.com/XueRenYi0/ink-canvas-dev.git
+git remote add origin https://github.com/XueRenYi0/InkClass.git
 ```
 
 ## 人工验证清单（发版前过一遍）

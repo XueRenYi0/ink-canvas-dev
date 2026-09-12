@@ -9,14 +9,14 @@ $repo = Split-Path -Parent $PSScriptRoot
 if (-not $csproj)   { $csproj   = Join-Path $repo 'Ink Canvas\Ink Canvas.csproj' }
 if (-not $releases) { $releases = Join-Path $repo 'Releases' }
 $ErrorActionPreference = 'Continue'
-# 统一输出目录（csproj 已把 Debug/Release 都指向 bin\Inkboard，见 Ink Canvas.csproj 顶层 OutputPath）
-$out = Split-Path $csproj -Parent ; $out = Join-Path $out 'bin\Inkboard'
+# 统一输出目录（csproj 已把 Debug/Release 都指向 bin\InkClass，见 Ink Canvas.csproj 顶层 OutputPath）
+$out = Split-Path $csproj -Parent ; $out = Join-Path $out 'bin\InkClass'
 Write-Host ('--- MSBuild Rebuild Release (AnyCPU 32位首选，与 VS Debug 配置一致) ---')
 & $msb $csproj /t:Rebuild /p:Configuration=Release /p:Platform=AnyCPU /v:minimal
 Write-Host ('MSBuild exit: ' + $LASTEXITCODE)
 
 # 版本号（与 AssemblyInfo.cs / InkCanvas.iss / build-zips.ps1 保持一致，升级时四处同步改）
-$ver = '6.6.1'
+$ver = '6.6.2'
 
 # 版本 README 刷新（正则自动替换任意历史版本号，发版无需手改模板）
 $readme = Join-Path $out '使用说明 README.txt'
@@ -31,8 +31,8 @@ if (Test-Path -LiteralPath $readme) {
 # VersionInfo.ini 写回（Rebuild 可能清掉 bin\Release）
 [IO.File]::WriteAllText((Join-Path $out 'VersionInfo.ini'), $ver, [Text.ASCIIEncoding]::new())
 
-# 校验 exe 版本（v6.0.0 起 exe 更名为 Inkboard.exe）
-$exe = Join-Path $out 'Inkboard.exe'
+# 校验 exe 版本（v6.0.0 起 exe 更名为 InkClass.exe）
+$exe = Join-Path $out 'InkClass.exe'
 $fvi = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
 $asmV = [Reflection.AssemblyName]::GetAssemblyName($exe).Version
 Write-Host ('AssemblyVersion:  ' + $asmV)

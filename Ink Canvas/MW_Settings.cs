@@ -259,6 +259,22 @@ namespace Ink_Canvas
             SaveSettingsToFile();
         }
 
+        /// <summary>
+        /// 笔迹平滑（贝塞尔曲线拟合）。改完立即生效——只影响之后新写的笔迹，
+        /// 已有笔迹保留各自的绘图属性（所以不需要重绘整页）。
+        /// </summary>
+        private void ToggleSwitchFitToCurve_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (!isLoaded) return;
+
+            Settings.Canvas.FitToCurve = ToggleSwitchFitToCurve.IsOn;
+            // 注意：不要再动 inkCanvas.DefaultDrawingAttributes.FitToCurve —— 它恒为 false。
+            // 本开关驱动的是"保角平滑"（数据层，见 inkCanvas_StrokeCollected），
+            // 若在这里把 WPF 贝塞尔拟合打开，会重新把识别图形和汉字的直角磨圆。
+
+            SaveSettingsToFile();
+        }
+
         #endregion
 
         #region Canvas

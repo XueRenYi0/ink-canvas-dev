@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net472</TargetFramework>
-		<!--统一输出目录：无论 Debug 还是 Release 编译，产物全部输出到 bin\Inkboard\
-		（固定一处，方便直接找 Inkboard.exe 测试；顶层 PropertyGroup 对所有配置生效）-->
-		<OutputPath>bin\Inkboard\</OutputPath>
+		<!--统一输出目录：无论 Debug 还是 Release 编译，产物全部输出到 bin\InkClass\
+		（固定一处，方便直接找 InkClass.exe 测试；顶层 PropertyGroup 对所有配置生效）-->
+		<OutputPath>bin\InkClass\</OutputPath>
 		<RuntimeIdentifiers>win;win-x86;win-x64;win-arm64;win7;win7-x86;win7-x64</RuntimeIdentifiers>
 		<OutputType>WinExe</OutputType>
-		<!--软件名 v6.0.0 起改为 Inkboard（原 Ink Canvas）：输出 exe = Inkboard.exe-->
-		<AssemblyName>Inkboard</AssemblyName>
+		<!--软件名 v6.0.0 起改为 InkClass（原 Ink Canvas）：输出 exe = InkClass.exe-->
+		<AssemblyName>InkClass</AssemblyName>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<UseWindowsForms>true</UseWindowsForms>
 		<UseWPF>true</UseWPF>
@@ -30,7 +30,7 @@
 		<UpdateRequired>false</UpdateRequired>
 		<MapFileExtensions>true</MapFileExtensions>
 		<ApplicationRevision>0</ApplicationRevision>
-		<ApplicationVersion>6.6.1.0</ApplicationVersion>
+		<ApplicationVersion>6.6.2.0</ApplicationVersion>
 		<UseApplicationTrust>false</UseApplicationTrust>
 		<BootstrapperEnabled>false</BootstrapperEnabled>
 		<Platforms>AnyCPU;x86;x64;ARM64</Platforms>
