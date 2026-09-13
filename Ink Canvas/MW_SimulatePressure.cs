@@ -789,6 +789,8 @@ namespace Ink_Canvas
 
         private void inkCanvas_LineAssistStylusUp(object sender, StylusEventArgs e)
         {
+            //只在拉直已触发时记日志：普通书写每次抬笔都走这里，无条件记会淹掉 Log.txt
+            if (_lineAssistArmed) Helpers.LogHelper.WriteLogToFile("[LineAssist] StylusUp 到达（armed）", Helpers.LogHelper.LogType.Event);
             LineAssistEnd();
         }
 
@@ -810,6 +812,7 @@ namespace Ink_Canvas
         private void inkCanvas_LineAssistMouseUp(object sender, MouseButtonEventArgs e)
         {
             if (e.StylusDevice != null) return;
+            if (_lineAssistArmed) Helpers.LogHelper.WriteLogToFile("[LineAssist] MouseUp 到达（armed）", Helpers.LogHelper.LogType.Event);
             LineAssistEnd();
         }
 
@@ -820,6 +823,13 @@ namespace Ink_Canvas
         {
             try
             {
+                //★ 兜底：上一次拉直的预览线若没被摘掉，会永远留在画布上——它只是 Main_Grid 上的
+                //  一个 Line 元素，不是墨迹，所以橡皮擦不掉、清屏也清不掉，只能重启软件。
+                //  抬笔清理依赖 PreviewStylusUp/PreviewMouseLeftButtonUp，一旦这两个事件没送到
+                //  （鼠标在画布外抬起、被 Popup 捕获、异常路径提前 return 等），预览线就永久残留。
+                //  落笔是最高频动作，放这里保证"最迟下一次下笔就把上次的残留清干净"。
+                HideLineAssistPreview();
+
                 // 激光笔不参与拉直（与 inkCanvas_StrokeCollected 开头的激光笔 return 同口径：
                 // 激光笔迹不进任何识别流程）。原因：拉直生成的新直线走 Strokes.Add 程序化提交，
                 // 不触发 StrokeCollected → StartLaserFade 永不启动；而它的属性来自
@@ -958,6 +968,11 @@ namespace Ink_Canvas
         /// </summary>
         private void LineAssistEnd()
         {
+            //留痕：armed 后若这里一条日志都没有，说明抬笔事件根本没送到（预览线必然永久残留）
+            if (_lineAssistArmed) Helpers.LogHelper.WriteLogToFile(
+                $"[LineAssist] End 进入: tracking={_lineAssistTracking}, armed={_lineAssistArmed}, committed={_lineAssistCommitted}",
+                Helpers.LogHelper.LogType.Event);
+
             if (!_lineAssistTracking) return;
             _lineAssistTracking = false;
             try { _lineAssistTimer?.Stop(); } catch { }
@@ -971,14 +986,23 @@ namespace Ink_Canvas
                 catch { }
             }
 
+            //★ 抬笔即摘预览线，不再只靠下面的 ContextIdle 低优先级回调：
+            //  定型笔迹此刻已进 Strokes，视觉上由墨迹渲染接管，预览线没有继续存在的理由。
+            //  原来唯一的移除点挂在 ContextIdle 上，一旦被推迟或异常跳过，预览线就会一直挂着。
+            HideLineAssistPreview();
+
             //等事件队列排空（StrokeCollected 处理完残影后）再兜底清一次
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, (Action)(() =>
             {
-                if (!_lineAssistTracking && _lineAssistArmed) ResetLineAssist();
+                if (!_lineAssistTracking && _lineAssistArmed)
+                {
+                    Helpers.LogHelper.WriteLogToFile("[LineAssist] ContextIdle 兜底复位", Helpers.LogHelper.LogType.Event);
+                    ResetLineAssist();
+                }
             }));
         }
 
-        /// <summary>显示预览直线（颜色/粗细跟随当前画笔）</summary>
+        /// <summary>显示预览直线（颜色/粗细/透明度跟随当前画笔）</summary>
         private void ShowLineAssistPreview()
         {
             try
@@ -991,11 +1015,24 @@ namespace Ink_Canvas
                     };
                     Panel.SetZIndex(_lineAssistPreviewLine, 9999); //盖在最上层
                 }
-                _lineAssistPreviewLine.StrokeThickness = inkCanvas.DefaultDrawingAttributes.Width;
-                _lineAssistPreviewLine.Stroke = new SolidColorBrush(inkCanvas.DefaultDrawingAttributes.Color);
+
+                //属性每次重取：预览线对象是复用的，只在创建时套一遍会在切笔种类后留着旧值
+                DrawingAttributes da = inkCanvas.DefaultDrawingAttributes;
+                _lineAssistPreviewLine.StrokeThickness = da.Width;
+                _lineAssistPreviewLine.Stroke = new SolidColorBrush(da.Color);
+
+                //荧光笔的半透明不在 Color.A 上：WPF 渲染荧光笔时把 A 强制当 255 用
+                //（StrokeRenderer.GetHighlighterColor，注释原文 "color.A is overriden to be 255"），
+                //半透明是画在专用容器 Visual 的 0.5 Opacity 上（StrokeRenderer.HighlighterOpacity）。
+                //预览线是自绘 Line，不走墨迹渲染管线 → 必须自己补这 0.5，
+                //否则拖拽期间显示为不透明纯色、抬笔定型后才变半透明（视觉跳变）。
+                _lineAssistPreviewLine.Opacity = da.IsHighlighter ? 0.5 : 1.0;
 
                 if (!Main_Grid.Children.Contains(_lineAssistPreviewLine))
+                {
                     Main_Grid.Children.Add(_lineAssistPreviewLine);
+                    Helpers.LogHelper.WriteLogToFile("[LineAssist] 预览线已挂到 Main_Grid（armed）", Helpers.LogHelper.LogType.Event);
+                }
                 UpdateLineAssistPreview();
             }
             catch { }
@@ -1014,6 +1051,28 @@ namespace Ink_Canvas
                 _lineAssistPreviewLine.X2 = t.X; _lineAssistPreviewLine.Y2 = t.Y;
             }
             catch { }
+        }
+
+        /// <summary>
+        /// 移除预览线（幂等：不在 Main_Grid 上时什么都不做）。
+        /// 抽成独立方法是因为"摘下预览线"和"复位拉直状态机"是两件事：
+        /// 前者必须在下一次落笔前保证完成（它不进 Strokes、不是墨迹，橡皮/清屏都碰不到它，
+        /// 残留就只能重启软件），后者可以晚一点（等 StrokeCollected 处理完残影）。
+        /// </summary>
+        private void HideLineAssistPreview()
+        {
+            try
+            {
+                if (_lineAssistPreviewLine != null && Main_Grid.Children.Contains(_lineAssistPreviewLine))
+                {
+                    Main_Grid.Children.Remove(_lineAssistPreviewLine);
+                    Helpers.LogHelper.WriteLogToFile("[LineAssist] 预览线已移除", Helpers.LogHelper.LogType.Event);
+                }
+            }
+            catch (Exception ex)
+            {
+                Helpers.LogHelper.WriteLogToFile("[LineAssist] 移除预览线失败: " + ex.Message, Helpers.LogHelper.LogType.Error);
+            }
         }
 
         /// <summary>
@@ -1066,12 +1125,7 @@ namespace Ink_Canvas
             try { _lineAssistTimer?.Stop(); } catch { }
             //恢复触发前保存的采集模式（消除"两条线"时临时切的 None，异常路径也保证恢复）
             try { if (inkCanvas.EditingMode == InkCanvasEditingMode.None) inkCanvas.EditingMode = _lineAssistSavedMode; } catch { }
-            try
-            {
-                if (_lineAssistPreviewLine != null && Main_Grid.Children.Contains(_lineAssistPreviewLine))
-                    Main_Grid.Children.Remove(_lineAssistPreviewLine);
-            }
-            catch { }
+            HideLineAssistPreview();
         }
 
         #endregion

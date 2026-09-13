@@ -27,7 +27,7 @@
 ; =====================================================================
 
 #define MyAppName "InkClass"
-#define MyAppVersion "6.6.2"
+#define MyAppVersion "6.6.3"
 #define MyAppExeName "InkClass.exe"
 #define MyAppPublisher "XueRenYi0"
 ; 旧名（v5.x 及之前），仅在迁移清理代码中使用

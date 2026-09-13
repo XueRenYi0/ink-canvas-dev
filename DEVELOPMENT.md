@@ -10,7 +10,7 @@ v6.0.0 起产品更名为 **InkClass**。
 ## 项目现状
 
 - **框架**：.NET Framework 4.7.2 WPF（保持不动，Win10/Win11 均可运行）
-- **版本**：6.6.2（版本号分散在 5 处，发版必须同步，见"版本号同步清单"）
+- **版本**：6.6.3（版本号分散在 6 处，发版必须同步，见"版本号同步清单"）
 - **主要依赖**：iNKORE UI WPF、Autoupdater.NET、Microsoft.Office.Interop.PowerPoint、
   内置墨迹识别库（IACore.dll / IALoader.dll / IAWinFX.dll / Microsoft.Ink.dll）
 - **csproj 为 SDK 风格**：新增 .cs 文件自动包含进编译，无需手动登记
@@ -85,6 +85,20 @@ v6.0.0 起产品更名为 **InkClass**。
    采样率越高算出来越"慢"→ 线条反而越粗，且三段硬阈值让正常写字整段落在中性档；新版改为
    **整笔平均点距归一化 + `tanh` 平滑映射 + 端点包络 + 变化率限制**，消除设备差异并压掉
    相邻点粗细忽大忽小的锯齿（实测相邻点最大变化 0.173 → 0.0069）
+
+10. **v6.6.3**：停顿拉直（荧光笔）显示与残留修复 ——
+   ① **荧光笔拉直期间预览线是不透明纯色、松手定型后才变半透明**（视觉跳变）：
+   预览线取 `DrawingAttributes.Color` 当画刷，但 WPF 荧光笔的半透明**并不在 `Color.A` 上** ——
+   渲染荧光笔时 A 被强制当 255 用（`StrokeRenderer.GetHighlighterColor`），半透明画在
+   专用容器 Visual 的 0.5 Opacity 上（`StrokeRenderer.HighlighterOpacity`）。预览线是自绘
+   `Line`、不走墨迹渲染管线，所以必须自己按 `IsHighlighter` 补上这 0.5
+   ② **修「拉直出来的线一直留着、擦不掉，只能退出软件」**：预览线是挂在 `Main_Grid` 上的
+   `Line` 元素、不在 `Strokes` 里，橡皮（含图形整组擦除）与 `Strokes.Clear()` 都碰不到它；
+   原来只在抬笔时经 `DispatcherPriority.ContextIdle` 低优先级回调移除，抬笔事件一旦没送达
+   （鼠标在画布外抬起、被 Popup 捕获、异常路径提前 return）就永久残留。现在抽出幂等的
+   `HideLineAssistPreview()`，**落笔**（`LineAssistBegin`）、**抬笔**（`LineAssistEnd`，同步
+   执行不再等 ContextIdle）、**清屏**（`ClearStrokes`）三处都会清掉它；并补 `[LineAssist]`
+   埋点日志，便于下次直接定位是哪一环断的
    ④ **修「点面板外收起时顺手画出一个点」**（`MW_PopupLayers.cs`）：按下收起面板时不拦事件
    （否则"面板开着直接写"的第一笔会丢、触摸双指手势也会坏），改为**抬起时按位移判定** ——
    ≤6px 视为"收起面板的单击"，该笔迹被静默丢弃且新增/删除都不进撤销栈；>6px 是书写则照常
@@ -168,11 +182,12 @@ powershell -ExecutionPolicy Bypass -File Build\verify-v5.ps1
 
 | # | 文件 | 字段 |
 |---|---|---|
-| 1 | `Ink Canvas\Properties\AssemblyInfo.cs` | `AssemblyVersion` / `FileVersion` / `AssemblyInformationalVersion`（三行一起） |
-| 2 | `Build\InkCanvas.iss` | `#define MyAppVersion "X.Y.Z"` |
-| 3 | `Build\rebuild-release-v5.ps1` | `$ver = 'X.Y.Z'` |
-| 4 | `Build\build-zips.ps1` | `$ver = 'X.Y.Z'` |
-| 5 | `update.xml`（仓库根） | `<version>` + `<url>`（新 Setup.exe 的镜像地址）+ `<changelog>` |
+| 1 | `Ink Canvas\Properties\AssemblyInfo.cs` | `AssemblyVersion` / `FileVersion` / `AssemblyInformationalVersion`（三行一起）；**同文件顶部的变更日志注释块也要追加一条** |
+| 2 | `Ink Canvas\Ink Canvas.csproj` | `<ApplicationVersion>` |
+| 3 | `Build\InkCanvas.iss` | `#define MyAppVersion "X.Y.Z"` |
+| 4 | `Build\rebuild-release-v5.ps1` | `$ver = 'X.Y.Z'` |
+| 5 | `Build\build-zips.ps1` | `$ver = 'X.Y.Z'` |
+| 6 | `update.xml`（仓库根） | `<version>` + `<url>`（新 Setup.exe 的镜像地址）+ `<changelog>`（**第 ⑤ 步再改**，附件要先存在） |
 
 （打包内"使用说明"的版本由脚本正则自动刷，无需手改模板。）
 

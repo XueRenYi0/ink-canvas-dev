@@ -106,6 +106,15 @@ using System.Windows;
 //            单击则静默丢弃该笔迹（新增与删除都不进撤销栈）；鼠标/触笔两条通道都覆盖
 //         ⑤ 程序化生成的图形笔迹不再走曲线拟合（识别出的图形、几何绘图），
 //            正方形/三角形的直角不再被磨圆
-[assembly: AssemblyVersion("6.6.2.0")]
-[assembly: AssemblyFileVersion("6.6.2026.0912")]
-[assembly: AssemblyInformationalVersion("6.6.2")]
+// v6.6.3：停顿拉直（荧光笔）显示与残留修复 ——
+//         ① 荧光笔拉直期间预览线显示为不透明纯色、松手定型后才变半透明（视觉跳变）。
+//            根因：WPF 荧光笔的半透明不在 Color.A 上（渲染荧光笔时 A 被强制当 255 用），
+//            而是画在专用容器 Visual 的 0.5 Opacity 上；预览线是自绘 Line、不走墨迹
+//            渲染管线，所以必须自己补上这 0.5
+//         ② 修「拉直出来的线一直留在画布上擦不掉，只能退出软件」：预览线是 Main_Grid
+//            上的 Line 元素、不是墨迹，橡皮与清屏都碰不到它；原来只在抬笔时经
+//            ContextIdle 低优先级回调兜底移除，抬笔事件一旦没送达就永久残留。
+//            现在落笔、抬笔、清屏三处都会清掉它
+[assembly: AssemblyVersion("6.6.3.0")]
+[assembly: AssemblyFileVersion("6.6.2026.0913")]
+[assembly: AssemblyInformationalVersion("6.6.3")]

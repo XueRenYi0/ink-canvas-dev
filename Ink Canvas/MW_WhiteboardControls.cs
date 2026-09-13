@@ -70,6 +70,9 @@ namespace Ink_Canvas
 
         private void ClearStrokes(bool isErasedByCode)
         {
+            //顺手摘下拉直预览线：它是 Main_Grid 上的一个 Line 元素，不在 Strokes 里，
+            //下面的 Strokes.Clear() 清不掉它——不处理的话清屏后画布上会留一条擦不掉的线
+            HideLineAssistPreview();
 
             _currentCommitType = CommitReason.ClearingCanvas;
             if (isErasedByCode) _currentCommitType = CommitReason.CodeInput;
